@@ -1,0 +1,389 @@
+# Generic fallbacks
+gethorizon(arrow::Arrow) = gethorizon(getbalance(arrow))
+
+# Concrete types
+mutable struct BaseArrow <: Arrow
+    id::Id
+    balance::Balance
+    conversion::Conversion
+    loss::Union{Loss, Nothing}
+    isingoing::Bool
+
+    function BaseArrow(id, balance, conversion, isingoing)
+        new(id, balance, conversion, nothing, isingoing)
+    end
+
+    function BaseArrow(id, balance, conversion, loss, isingoing)
+        new(id, balance, conversion, loss, isingoing)
+    end
+end
+
+getid(arrow::BaseArrow) = arrow.id
+getbalance(arrow::BaseArrow) = arrow.balance
+getconversion(arrow::BaseArrow) = arrow.conversion
+getloss(arrow::BaseArrow) = arrow.loss
+
+getstatevariables(arrow::BaseArrow) = getstatevariables(arrow.flow, arrow, getlag(arrow))
+
+isingoing(arrow::BaseArrow) = arrow.isingoing
+
+setbalance!(arrow::BaseArrow, balance::Balance) = arrow.balance = balance
+setloss!(arrow::BaseArrow, loss::Loss) = arrow.loss = loss
+
+function build!(p::Prob, ::Any, arrow::BaseArrow)
+    build!(p, arrow.conversion)
+    return
+end
+
+function setconstants!(p::Prob, var::Any, arrow::BaseArrow)
+    setconstants!(p, arrow.conversion)
+
+    if !isexogen(arrow.balance)
+        if isnothing(arrow.loss)
+            param = arrow.conversion
+        else
+            if arrow.isingoing
+                param = InConversionLossParam(arrow.conversion, arrow.loss)
+            else
+                param = OutConversionLossParam(arrow.conversion, arrow.loss)
+            end
+        end
+
+        if isconstant(param)            
+            varhorizon = gethorizon(var)
+            balancehorizon = gethorizon(arrow.balance)
+
+            value = getparamvalue(param, ConstantTime(), MsTimeDelta(Hour(1)))
+            if !arrow.isingoing 
+                value = -value
+            end
+
+            for s in 1:getnumperiods(balancehorizon)
+                subperiods = getsubperiods(balancehorizon, varhorizon, s)
+                for t in subperiods
+                    setconcoeff!(p, getid(arrow.balance), getid(var), s, t, value)
+                end
+            end
+        end
+    end  
+end
+
+function update!(p::Prob, var::Any, arrow::BaseArrow, start::ProbTime)
+    update!(p, arrow.conversion)
+
+    if !isexogen(arrow.balance)
+        if isnothing(arrow.loss)
+            param = arrow.conversion
+        else
+            if arrow.isingoing
+                param = InConversionLossParam(arrow.conversion, arrow.loss)
+            else
+                param = OutConversionLossParam(arrow.conversion, arrow.loss)
+            end
+        end
+
+        if !isconstant(param)
+
+            varhorizon = gethorizon(var)
+            balancehorizon = gethorizon(arrow.balance)
+
+            for s in 1:getnumperiods(balancehorizon)
+                subperiods = getsubperiods(balancehorizon, varhorizon, s)
+                for t in subperiods
+                    querystart = getstarttime(varhorizon, t, start)
+                    querydelta = gettimedelta(varhorizon, t)
+                    value = getparamvalue(param, querystart, querydelta)
+                    if !arrow.isingoing 
+                        value = -value
+                    end
+
+                    setconcoeff!(p, getid(arrow.balance), getid(var), s, t, value)
+                end
+            end
+        end
+    end  
+end
+
+function getexogencost(arrow::BaseArrow)
+
+    if isexogen(arrow.balance)
+
+        if arrow.isingoing
+            if isnothing(arrow.loss) && isone(arrow.conversion)
+                param = getprice(arrow.balance)
+            elseif isnothing(arrow.loss)
+                param = ExogenIncomeParam(getprice(arrow.balance), arrow.conversion, SimpleLoss(0.0, 0.0))
+            else
+                param = ExogenIncomeParam(getprice(arrow.balance), arrow.conversion, arrow.loss)
+            end
+        else
+            if isnothing(arrow.loss) && isone(arrow.conversion)
+                param = getprice(arrow.balance)
+            elseif isnothing(arrow.loss)
+                param = ExogenCostParam(getprice(arrow.balance), arrow.conversion, SimpleLoss(0.0, 0.0))
+            else
+                param = ExogenCostParam(getprice(arrow.balance), arrow.conversion, arrow.loss)
+            end
+        end
+        
+        id = Id(COST_CONCEPT, "ExCost_" * getinstancename(arrow.id))
+        cost = CostTerm(id, param, !arrow.isingoing)
+        
+        return cost
+    else
+        return nothing
+    end
+end
+
+function includeBaseArrow!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    checkkey(lowlevel, elkey)
+
+    varname = getdictvalue(value, FLOW_CONCEPT, String, elkey) 
+    varkey = Id(FLOW_CONCEPT, varname)
+    haskey(toplevel, varkey) || return false
+    
+    balancename = getdictvalue(value, BALANCE_CONCEPT, String, elkey)
+    balancekey = Id(BALANCE_CONCEPT, balancename)
+    haskey(toplevel, balancekey) || return false
+
+    (conversion, ok) = getdictconversionvalue(lowlevel, elkey, value)
+    ok || return false
+    
+    isingoing = getdictisingoing(value, elkey)
+    balance   = toplevel[balancekey]
+    var      = toplevel[varkey]
+
+    objkey = getobjkey(elkey)
+
+    arrow = BaseArrow(objkey, balance, conversion, isingoing)
+    
+    addarrow!(var, arrow)
+    lowlevel[objkey] = arrow
+     
+    return true    
+end
+
+INCLUDEELEMENT[TypeKey(ARROW_CONCEPT, "BaseArrow")] = includeBaseArrow!
+
+#--------------------------------------------------------------------
+
+mutable struct SegmentedArrow <: Arrow
+    id::Id
+    balance::Balance
+    conversions::Vector{Conversion}
+    capacities::Vector{Param} # No difference in using Param instead of Capacity
+    isingoing::Bool
+end
+
+getid(arrow::SegmentedArrow) = arrow.id
+getbalance(arrow::SegmentedArrow) = arrow.balance
+getconversions(arrow::SegmentedArrow) = arrow.conversions
+getcapacities(arrow::SegmentedArrow) = arrow.capacities
+isingoing(arrow::SegmentedArrow) = arrow.isingoing
+
+getstatevariables(::SegmentedArrow) = StateVariableInfo[]
+getexogencost(::SegmentedArrow) = nothing
+
+setbalance!(arrow::SegmentedArrow, balance::Balance) = arrow.balance = balance
+
+getconversion(::SegmentedArrow) = error("Not supported")
+getloss(::SegmentedArrow) = nothing
+setloss!(::SegmentedArrow, loss::Loss) = error("SegmentedArrow does not support")
+
+function getsegmentid(arrow::SegmentedArrow, i::Int)
+    Id(getconceptname(arrow.id),string(getinstancename(arrow.id),i))
+end
+
+function geteqid(arrow::SegmentedArrow)
+    Id(getconceptname(arrow.id),string(getinstancename(arrow.id),"Eq"))
+end
+
+function build!(p::Prob, var::Any, arrow::SegmentedArrow)
+    T = getnumperiods(gethorizon(var))
+    
+    addeq!(p, geteqid(arrow), T) 
+
+    for i in eachindex(getconversions(arrow))
+        addvar!(p, getsegmentid(arrow, i), T)
+    end
+end
+
+function setconstants!(p::Prob, var::Any, arrow::SegmentedArrow)
+    varhorizon = gethorizon(var)
+    T = getnumperiods(gethorizon(var))
+
+    balancehorizon = gethorizon(arrow.balance)
+
+    conversions = getconversions(arrow)
+    capacities = getcapacities(arrow)
+    
+    eqid = geteqid(arrow)
+    for t in 1:T
+        setconcoeff!(p, eqid, getid(var), t, t, 1.0)
+    end
+
+    for i in eachindex(capacities)
+        for t in 1:T
+            setconcoeff!(p, eqid, getsegmentid(arrow,i), t, t, -1.0)
+
+            setlb!(p, getsegmentid(arrow, i), t, 0.0)
+        end
+    
+        capacity = capacities[i]
+        if !_must_dynamic_update(capacity, varhorizon)
+            if isdurational(capacity)
+                for t in 1:T
+                    querydelta = gettimedelta(varhorizon, t)
+                    value = getparamvalue(capacity, ConstantTime(), querydelta)
+                    setub!(p, getsegmentid(arrow, i), t, value)
+                end               
+            else
+                value = getparamvalue(capacity, ConstantTime(), MsTimeDelta(Hour(1)))
+                for t in 1:T 
+                    setub!(p, getsegmentid(arrow, i), t, value)
+                end
+            end
+        end
+
+        conversion = conversions[i]
+        if isexogen(arrow.balance)
+
+            if arrow.isingoing
+                if isone(conversion)
+                    param = getprice(arrow.balance)
+                else
+                    param = ExogenIncomeParam(getprice(arrow.balance), conversion, SimpleLoss(0.0, 0.0))
+                end
+            else
+                if isone(conversion)
+                    param = getprice(arrow.balance)
+                else
+                    param = ExogenCostParam(getprice(arrow.balance), conversion, SimpleLoss(0.0, 0.0))
+                end
+            end
+            if isconstant(param)
+                value = getparamvalue(param, ConstantTime(), MsTimeDelta(Hour(1)))
+                if !arrow.isingoing
+                    value = -value
+                end
+                for t in 1:T
+                    setobjcoeff!(p, getsegmentid(arrow, i), t, value)
+                end
+            end
+        else
+            if isconstant(conversion)
+                value = getparamvalue(conversion, ConstantTime(), MsTimeDelta(Hour(1)))
+                if !arrow.isingoing
+                    value = -value
+                end
+
+                for s in 1:getnumperiods(balancehorizon)
+                    subperiods = getsubperiods(balancehorizon, varhorizon, s)
+                    for t in subperiods        
+                        setconcoeff!(p, getid(arrow.balance), getsegmentid(arrow, i), s, t, value)
+                    end
+                end 
+            end
+        end
+    end
+    return
+end
+
+function update!(p::Prob, var::Any, arrow::SegmentedArrow, start::ProbTime)
+    varhorizon = gethorizon(var)
+    T = getnumperiods(varhorizon)
+
+    balancehorizon = gethorizon(arrow.balance)
+
+    conversions = getconversions(arrow)
+    capacities = getcapacities(arrow)
+
+    for i in eachindex(capacities)        
+        capacity = capacities[i]
+        if _must_dynamic_update(capacity, varhorizon)
+            for t in 1:T
+                querystart = getstarttime(varhorizon, t, start)
+                querydelta = gettimedelta(varhorizon, t)
+                value = getparamvalue(capacity, querystart, querydelta)  
+                setlb!(p, getsegmentid(arrow, i), t, 0.0)
+                setub!(p, getsegmentid(arrow, i), t, value)
+            end
+        end
+
+        conversion = conversions[i]
+
+        if isexogen(arrow.balance)
+
+            if arrow.isingoing
+                if isone(conversion)
+                    param = getprice(arrow.balance)
+                else
+                    param = ExogenIncomeParam(getprice(arrow.balance), conversion, SimpleLoss(0.0, 0.0))
+                end
+            else
+                if isone(conversion)
+                    param = getprice(arrow.balance)
+                else
+                    param = ExogenCostParam(getprice(arrow.balance), conversion, SimpleLoss(0.0, 0.0))
+                end
+            end
+            if !isconstant(param)
+                for t in 1:T
+                    querystart = getstarttime(varhorizon, t, start)
+                    querydelta = gettimedelta(varhorizon, t)
+                    value = getparamvalue(param, querystart, querydelta)
+                    if !arrow.isingoing
+                        value = -value
+                    end
+
+                    setobjcoeff!(p, getsegmentid(arrow, i), t, value)
+                end
+            end
+        else
+            if !isconstant(conversion)
+                for s in 1:getnumperiods(balancehorizon)
+                    subperiods = getsubperiods(balancehorizon, varhorizon, s)
+                    for t in subperiods
+                        querystart = getstarttime(varhorizon, t, start)
+                        querydelta = gettimedelta(varhorizon, t)
+                        value = getparamvalue(conversion, querystart, querydelta)
+                        if !arrow.isingoing
+                            value = -value
+                        end
+
+                        setconcoeff!(p, getid(arrow.balance), getsegmentid(arrow, i), s, t, value)
+                    end
+                end 
+            end
+        end
+    end
+    return
+end
+
+function includeSegmentedArrow!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    (conversionparams, ok) = getdictparamlist(lowlevel, elkey, value, CONVERSION_CONCEPT)
+    ok || return false
+    conversions = [BaseConversion(cp) for cp in conversionparams]
+    
+    (capacities, ok) = getdictparamlist(lowlevel, elkey, value, CAPACITY_CONCEPT)
+    ok || return false
+
+    balancename = getdictvalue(value, BALANCE_CONCEPT, String, elkey)
+    balancekey = Id(BALANCE_CONCEPT, balancename)
+    haskey(toplevel, balancekey) || return false
+    
+    varname = getdictvalue(value, FLOW_CONCEPT, String, elkey)
+    varkey = Id(FLOW_CONCEPT, varname)
+    haskey(toplevel, varkey) || return false
+    
+    isingoing = getdictisingoing(value, elkey)
+    balance   = toplevel[balancekey]
+    var      = toplevel[varkey]
+
+    arrow = SegmentedArrow(getobjkey(elkey), balance, conversions, capacities, isingoing)
+    addarrow!(var, arrow)
+     
+    return true    
+end
+
+INCLUDEELEMENT[TypeKey(ARROW_CONCEPT, "SegmentedArrow")] = includeSegmentedArrow!

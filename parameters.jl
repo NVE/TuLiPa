@@ -1,0 +1,321 @@
+# generic fallbacks
+
+function isconstant(param::Param)
+    for field in fieldnames(typeof(param))
+        isconstant(getfield(param, field)) || return false
+    end
+    return true
+end
+
+# ---- Concrete types ----
+
+struct FlipSignParam{param <: Param} <: Param
+    param::param
+
+    function FlipSignParam(param::Param)
+        if param isa FlipSignParam
+            return param.param
+        else
+            new{typeof(param)}(param)
+        end
+    end
+end
+
+struct ZeroParam     <: Param end
+struct PlusOneParam  <: Param end
+struct MinusOneParam <: Param end
+
+struct ConstantParam{T <: AbstractFloat} <: Param 
+    value::T
+end
+
+struct FossilMCParam{FL <: TimeVector, FP <: TimeVector, CF <: TimeVector, 
+    CL <: TimeVector, CP <: TimeVector, E <: TimeVector, V <: TimeVector} <: Param
+    fuellevel::FL
+    fuelprofile::FP
+    co2factor::CF
+    co2level::CL
+    co2profile::CP
+    efficiency::E
+    voc::V
+end
+
+struct M3SToMM3SeriesParam{L <: TimeVector, P <: TimeVector} <: Param
+    level::L
+    profile::P
+end
+
+struct MWToGWhSeriesParam{L <: TimeVector, P <: TimeVector} <: Param
+    level::L
+    profile::P
+end
+
+struct MeanSeriesParam{L <: TimeVector, P <: TimeVector} <: Param
+    level::L
+    profile::P
+end
+
+struct ExogenCostParam{P <: Price, C <: Conversion, L <: Loss} <: Param
+    price::P
+    conversion::C
+    loss::L
+end
+
+struct ExogenIncomeParam{P <: Price, C <: Conversion, L <: Loss} <: Param
+    price::P
+    conversion::C
+    loss::L
+end
+
+struct InConversionLossParam{C <: Conversion, L <: Loss} <: Param
+    conversion::C
+    loss::L
+end
+
+struct OutConversionLossParam{C <: Conversion, L <: Loss} <: Param
+    conversion::C
+    loss::L
+end
+
+struct TransmissionLossRHSParam{C <: Capacity} <: Param
+    capacity::C
+    loss::Float64
+    utilisation::Float64
+end
+
+function TransmissionLossRHSParam(capacity::Capacity, L::SimpleLoss)
+    return TransmissionLossRHSParam(capacity, L.value, L.utilisation)
+end
+
+# ---- General functions ----
+
+iszero(param::FlipSignParam) = iszero(param.param)
+iszero(param::ZeroParam) = true
+iszero(param::PlusOneParam) = false
+iszero(param::MinusOneParam) = false
+iszero(param::ConstantParam) = param.value == 0
+iszero(param::FossilMCParam) = false
+iszero(param::M3SToMM3SeriesParam) = false
+iszero(param::MWToGWhSeriesParam) = false
+iszero(param::MeanSeriesParam) = false
+
+iszero(param::ExogenCostParam) = iszero(param.price) && iszero(param.conversion)
+iszero(param::ExogenIncomeParam) = iszero(param.price) && iszero(param.conversion)
+iszero(param::InConversionLossParam) = iszero(param.conversion)
+iszero(param::OutConversionLossParam) = iszero(param.conversion)
+iszero(param::TransmissionLossRHSParam) = iszero(param.capacity)
+
+isone(param::FlipSignParam) = false
+isone(param::ZeroParam) = false
+isone(param::PlusOneParam) = true
+isone(param::MinusOneParam) = false
+isone(param::ConstantParam) = param.value == 1
+isone(param::FossilMCParam) = false
+isone(param::M3SToMM3SeriesParam) = false
+isone(param::MWToGWhSeriesParam) = false
+isone(param::MeanSeriesParam) = false
+
+isone(param::ExogenCostParam) = false
+isone(param::ExogenIncomeParam) = false
+isone(param::InConversionLossParam) = false
+isone(param::OutConversionLossParam) = false
+isone(param::TransmissionLossRHSParam) = false
+
+isdurational(param::FlipSignParam) = isdurational(param.param)
+isdurational(param::ZeroParam) = false
+isdurational(param::PlusOneParam) = false
+isdurational(param::MinusOneParam) = false
+isdurational(param::ConstantParam) = false
+isdurational(param::FossilMCParam) = false
+isdurational(param::M3SToMM3SeriesParam) = true
+isdurational(param::MWToGWhSeriesParam) = true
+isdurational(param::MeanSeriesParam) = false
+
+isdurational(param::ExogenCostParam) = isdurational(param.price) && isdurational(param.conversion) && isdurational(param.loss)
+isdurational(param::ExogenIncomeParam) = isdurational(param.price) && isdurational(param.conversion) && isdurational(param.loss)
+isdurational(param::InConversionLossParam) = isdurational(param.conversion) && isdurational(param.loss)
+isdurational(param::OutConversionLossParam) = isdurational(param.conversion) && isdurational(param.loss)
+isdurational(param::TransmissionLossRHSParam) = isdurational(param.capacity)
+
+getparamvalue(param::FlipSignParam, start::ProbTime, d::TimeDelta) = -getparamvalue(param.param, start, d)
+getparamvalue(param::ExogenIncomeParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.price, start, d)*getparamvalue(param.conversion, start, d)*(1-getparamvalue(param.loss, start, d))
+getparamvalue(param::ExogenCostParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.price, start, d)*getparamvalue(param.conversion, start, d)/(1-getparamvalue(param.loss, start, d))
+getparamvalue(param::InConversionLossParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.conversion, start, d)*(1-getparamvalue(param.loss, start, d))
+getparamvalue(param::OutConversionLossParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.conversion, start, d)/(1-getparamvalue(param.loss, start, d))
+getparamvalue(param::TransmissionLossRHSParam, t::ProbTime, d::TimeDelta) = getparamvalue(param.capacity, t, d)*param.loss*param.utilisation
+
+getparamvalue(::ZeroParam,     ::ProbTime, ::TimeDelta) =  0.0
+getparamvalue(::PlusOneParam,  ::ProbTime, ::TimeDelta) =  1.0
+getparamvalue(::MinusOneParam, ::ProbTime, ::TimeDelta) = -1.0
+getparamvalue(param::ConstantParam, ::ProbTime, ::TimeDelta) = param.value
+
+function getparamvalue(param::FossilMCParam, start::ProbTime, d::TimeDelta)
+    datatime = getdatatime(start)
+    scenariotime = getscenariotime(start)
+
+    fl = getweightedaverage(param.fuellevel,   datatime, d)
+    cf = getweightedaverage(param.co2factor,   datatime, d)
+    cl = getweightedaverage(param.co2level,    datatime, d)
+    ef = getweightedaverage(param.efficiency,  datatime, d)
+    vo = getweightedaverage(param.voc,         datatime, d)
+
+    cp = getweightedaverage(param.co2profile,  scenariotime, d)
+    fp = getweightedaverage(param.fuelprofile, scenariotime, d)
+    
+    return (fl * fp + cf * cl * cp) / ef + vo
+end
+
+function getparamvalue(param::M3SToMM3SeriesParam, start::ProbTime, d::TimeDelta)
+    datatime = getdatatime(start)
+    scenariotime = getscenariotime(start)
+    level_m3s = getweightedaverage(param.level,   datatime, d)
+    profile   = getweightedaverage(param.profile, scenariotime, d)
+    m3s = level_m3s * profile
+    seconds = float(getduration(d).value / 1000)
+    return m3s * seconds / 1e6
+end
+
+function getparamvalue(param::MWToGWhSeriesParam, start::ProbTime, d::TimeDelta)
+    datatime = getdatatime(start)
+    scenariotime = getscenariotime(start)
+    level_mw = getweightedaverage(param.level,   datatime, d)
+    profile  = getweightedaverage(param.profile, scenariotime, d)
+    mw = level_mw * profile
+    hours = float(getduration(d).value / 3600000)
+    return mw * hours / 1e3
+end
+
+function getparamvalue(param::MeanSeriesParam, start::ProbTime, d::TimeDelta)
+    datatime = getdatatime(start)
+    scenariotime = getscenariotime(start)
+    level = getweightedaverage(param.level, datatime, d)
+    profile = getweightedaverage(param.profile, scenariotime, d)
+    value = level * profile
+    return value
+end
+
+isconstant(::ConstantParam) = true
+isconstant(::ZeroParam) = true
+isconstant(::PlusOneParam) = true
+isconstant(::MinusOneParam) = true
+isconstant(param::TransmissionLossRHSParam) = isconstant(param.capacity)
+
+# --- Dynamic updates ---
+
+function _must_dynamic_update(param::Param, horizon::Horizon) # where should this be? some kind of util
+    isconstant(param) || return true
+
+    if isdurational(param) && !hasconstantdurations(horizon)
+        return true
+    end
+
+    return false
+end
+
+# --- FossilMCParam ---
+
+function includeFossilMCParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    checkkey(lowlevel, elkey)
+
+    fuellevel   = getdictvalue(value, "FuelLevel",   TIMEVECTORPARSETYPES, elkey)
+    fuelprofile = getdictvalue(value, "FuelProfile", TIMEVECTORPARSETYPES, elkey)
+    co2factor   = getdictvalue(value, "CO2Factor",   TIMEVECTORPARSETYPES, elkey)
+    co2level    = getdictvalue(value, "CO2Level",    TIMEVECTORPARSETYPES, elkey)
+    co2profile  = getdictvalue(value, "CO2Profile",  TIMEVECTORPARSETYPES, elkey)
+    efficiency  = getdictvalue(value, "Efficiency",  TIMEVECTORPARSETYPES, elkey)
+    voc         = getdictvalue(value, "VOC",         TIMEVECTORPARSETYPES, elkey)
+    
+    (fuellevel,   ok) = getdicttimevectorvalue(lowlevel, fuellevel)   ;  ok || return false
+    (fuelprofile, ok) = getdicttimevectorvalue(lowlevel, fuelprofile) ;  ok || return false
+    (co2factor,   ok) = getdicttimevectorvalue(lowlevel, co2factor)   ;  ok || return false
+    (co2level,    ok) = getdicttimevectorvalue(lowlevel, co2level)    ;  ok || return false
+    (co2profile,  ok) = getdicttimevectorvalue(lowlevel, co2profile)  ;  ok || return false
+    (efficiency,  ok) = getdicttimevectorvalue(lowlevel, efficiency)  ;  ok || return false
+    (voc,         ok) = getdicttimevectorvalue(lowlevel, voc)         ;  ok || return false
+    
+    obj = FossilMCParam(fuellevel, fuelprofile, co2factor, co2level, co2profile, efficiency, voc)
+    
+    lowlevel[getobjkey(elkey)] = obj
+    return true
+end
+
+# --- M3SToMM3SeriesParam ---
+
+function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    checkkey(lowlevel, elkey)
+    
+    level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
+    profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
+    
+    (level,   ok) = getdicttimevectorvalue(lowlevel, level)   ;  ok || return false
+    (profile, ok) = getdicttimevectorvalue(lowlevel, profile) ;  ok || return false
+    
+    lowlevel[getobjkey(elkey)] = M3SToMM3SeriesParam(level, profile)
+    return true
+end
+
+function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::M3SToMM3SeriesParam)::Bool
+    lowlevel[getobjkey(elkey)] = value
+    return true
+end
+
+function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)::Bool
+    level = ConstantTimeVector(value)
+    profile = ConstantTimeVector(one(typeof(value)))
+    lowlevel[getobjkey(elkey)] = M3SToMM3SeriesParam(level, profile)
+    return true
+end
+
+# --- MWToGWhSeriesParam ---
+
+function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    checkkey(lowlevel, elkey)
+    
+    level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
+    profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
+    
+    (level,   ok) = getdicttimevectorvalue(lowlevel, level)    ;  ok || return false
+    (profile, ok) = getdicttimevectorvalue(lowlevel, profile)  ;  ok || return false
+    
+    lowlevel[getobjkey(elkey)] = MWToGWhSeriesParam(level, profile)
+    return true
+end
+
+function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MWToGWhSeriesParam)::Bool
+    lowlevel[getobjkey(elkey)] = value
+    return true
+end
+
+function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)::Bool
+    level = ConstantTimeVector(value)
+    profile = ConstantTimeVector(one(typeof(value)))
+    lowlevel[getobjkey(elkey)] = MWToGWhSeriesParam(level, profile)
+    return true
+end
+
+# --- MeanSeriesParam ---
+
+function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    checkkey(lowlevel, elkey)
+    
+    level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
+    profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
+    
+    (level,   ok) = getdicttimevectorvalue(lowlevel, level)   ;  ok || return false
+    (profile, ok) = getdicttimevectorvalue(lowlevel, profile) ;  ok || return false
+    
+    lowlevel[getobjkey(elkey)] = MeanSeriesParam(level, profile)
+    return true
+end
+
+function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MeanSeriesParam)::Bool
+    lowlevel[getobjkey(elkey)] = value
+    return true
+end
+
+# --- Includefunctions ---
+
+INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "FossilMCParam")] = includeFossilMCParam!
+INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "M3SToMM3SeriesParam")] = includeM3SToMM3SeriesParam!
+INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MWToGWhSeriesParam")] = includeMWToGWhSeriesParam!
+INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MeanSeriesParam")] = includeMeanSeriesParam!

@@ -1,0 +1,158 @@
+# ----- Generic fallbacks --------------
+function _must_dynamic_update(capacity::Capacity, horizon::Horizon) 
+    isconstant(capacity) || return true
+
+    if isdurational(capacity) && !hasconstantdurations(horizon)
+        return true
+    end
+
+    return false
+end
+
+# ---- Concrete types ----
+struct PositiveCapacity <: Capacity
+    id::Id
+    param::Param
+    isupper::Bool
+end
+
+struct LowerZeroCapacity <: Capacity end
+
+# ---- General functions ----
+isconstant(capacity::PositiveCapacity) = isconstant(capacity.param)
+isconstant(::LowerZeroCapacity) = true
+
+iszero(::PositiveCapacity) = false
+iszero(::LowerZeroCapacity) = true
+
+isdurational(capacity::PositiveCapacity) = isdurational(capacity.param)
+isdurational(capacity::LowerZeroCapacity) = false
+
+isupper(capacity::PositiveCapacity) = capacity.isupper
+isupper(::LowerZeroCapacity) = false
+
+isnonnegative(::PositiveCapacity) = true
+isnonnegative(::LowerZeroCapacity) = true
+
+getparamvalue(capacity::PositiveCapacity, t::ProbTime, d::TimeDelta) = getparamvalue(capacity.param, t, d)
+getparamvalue(capacity::LowerZeroCapacity, t::ProbTime, d::TimeDelta) = 0.0
+
+getstatevariables(::PositiveCapacity) = nothing
+getstatevariables(::LowerZeroCapacity) = nothing
+
+build!(::Prob, ::Any, ::PositiveCapacity) = nothing
+build!(::Prob, ::Any, ::LowerZeroCapacity) = nothing
+
+function setconstants!(p::Prob, var::Any, capacity::PositiveCapacity)
+    horizon = gethorizon(var)
+    _must_dynamic_update(capacity, horizon) && return
+
+    T = getnumperiods(horizon)
+
+    varid = getid(var)
+
+    if isdurational(capacity)
+        dummytime = ConstantTime()
+        for t in 1:T
+            querydelta = gettimedelta(horizon, t)
+            value = getparamvalue(capacity, dummytime, querydelta)
+            if capacity.isupper
+                setub!(p, varid, t, value)
+            else
+                setlb!(p, varid, t, value)
+            end
+        end
+    else
+        dummytime = ConstantTime()
+        dummydelta = MsTimeDelta(Hour(1))
+        value = getparamvalue(capacity, dummytime, dummydelta)
+        for t in 1:T
+            if capacity.isupper
+                setub!(p, varid, t, value)
+            else
+                setlb!(p, varid, t, value)
+            end
+        end
+    end
+    return
+end
+
+function setconstants!(p::Prob, var::Any, capacity::LowerZeroCapacity)
+    T = getnumperiods(gethorizon(var))
+
+    varid = getid(var)
+
+    value = getparamvalue(capacity, ConstantTime(), MsTimeDelta(Hour(1)))
+    for t in 1:T
+        setlb!(p, varid, t, value)
+    end
+    return
+end
+
+function update!(p::Prob, var::Any, capacity::PositiveCapacity, start::ProbTime)
+    horizon = gethorizon(var)
+    _must_dynamic_update(capacity, horizon) || return
+
+    T = getnumperiods(horizon)
+
+    varid = getid(var)
+
+    for t in 1:T
+        querystart = getstarttime(horizon, t, start)
+        querydelta = gettimedelta(horizon, t)
+        value = getparamvalue(capacity, querystart, querydelta)
+        if capacity.isupper
+            setub!(p, varid, t, value)
+        else
+            setlb!(p, varid, t, value)
+        end
+    end
+    return
+end
+
+update!(::Prob, ::Any, ::LowerZeroCapacity, ::ProbTime) = nothing
+
+# ------ Includefunctions ----------------
+function includePositiveCapacity!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    (param, ok) = getdictparamvalue(lowlevel, elkey, value)
+    ok || return false
+    
+    varname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
+    varconcept = getdictvalue(value, WHICHCONCEPT,  String, elkey)
+    varkey = Id(varconcept, varname)
+    haskey(toplevel, varkey) || return false
+
+    var = toplevel[varkey]
+
+    isupper = getdictisupper(value, elkey)
+    
+    id = getobjkey(elkey)
+
+    capacity = PositiveCapacity(id, param, isupper)
+
+    if isupper
+        setub!(var, capacity)
+    else
+        setlb!(var, capacity)
+    end
+    
+    return true    
+end
+
+function includeLowerZeroCapacity!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
+    varname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
+    varconcept = getdictvalue(value, WHICHCONCEPT,  String, elkey)
+    varkey = BaseId(varconcept, varname)
+    haskey(toplevel, varkey) || return false
+
+    var = toplevel[varkey]
+
+    capacity = LowerZeroCapacity()
+
+    setlb!(var, capacity)
+    
+    return true    
+end
+
+INCLUDEELEMENT[TypeKey(CAPACITY_CONCEPT, "PositiveCapacity")] = includePositiveCapacity!
+INCLUDEELEMENT[TypeKey(CAPACITY_CONCEPT, "LowerZeroCapacity")] = includeLowerZeroCapacity!;

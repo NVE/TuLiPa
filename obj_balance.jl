@@ -1,0 +1,138 @@
+# We implement two types of Balance: BaseBalance and ExogenBalance
+
+mutable struct BaseBalance <: Balance
+    id::Id
+    commodity::Commodity
+    horizon::Union{Horizon, Nothing}
+    rhsterms::Vector{RHSTerm}
+    metadata::Dict
+    
+    function BaseBalance(id, commodity)
+        # Q: Why not init horizon as well?
+        # A: Then Horizon must be in dataset, and we want Horizon to be set later as run settings
+        #    We also may want to set horizon either through Commodity or directly on Balance
+        new(id, commodity, nothing, [], Dict()) 
+    end
+end
+
+mutable struct ExogenBalance <: Balance
+    id::Id
+    commodity::Commodity
+    horizon::Union{Horizon, Nothing}
+    price::Price
+    metadata::Dict
+    
+    function ExogenBalance(id, commodity, price)
+        new(id, commodity, nothing, price, Dict())
+    end
+end
+
+# Implementation of Balance interface for our Balance types
+const OurBalanceTypes = Union{BaseBalance, ExogenBalance}
+
+getid(balance::OurBalanceTypes) = balance.id
+gethorizon(balance::OurBalanceTypes) = balance.horizon
+getcommodity(balance::OurBalanceTypes) = balance.commodity
+
+# Since isexogen is false we must implement getrhsterms and addrhsterm!
+isexogen(::BaseBalance) = false
+getrhsterms(balance::BaseBalance) = balance.rhsterms
+addrhsterm!(balance::BaseBalance, rhsterm::RHSTerm) = push!(balance.rhsterms, rhsterm) ; return
+
+# Since isexogen is true we must implement getprice
+isexogen(::ExogenBalance) = true
+getprice(balance::ExogenBalance) = balance.price
+
+# ExogenBalance does not add equations but can update the priceelement
+build!(p::Prob, balance::ExogenBalance) = build!(p, balance.price)
+setconstants!(p::Prob, balance::ExogenBalance) = setconstants!(p, balance.price)
+update!(p::Prob, balance::ExogenBalance, start::ProbTime) = update!(p, balance.price, start)
+
+# BaseBalance does does something in build!, setconstants! and update!
+function build!(p::Prob, balance::BaseBalance)
+    addeq!(p, balance.id, getnumperiods(balance.horizon))
+    return
+end
+
+function setconstants!(p::Prob, balance::BaseBalance)
+    hasconstantdurations(balance.horizon) || return
+
+    for rhsterm in balance.rhsterms
+        if isconstant(rhsterm)
+            dummytime = ConstantTime()
+            for t in 1:getnumperiods(balance.horizon)
+                querystart = getstarttime(balance.horizon, t, dummytime)
+                querydelta = gettimedelta(balance.horizon, t)
+                value = getparamvalue(rhsterm, querystart, querydelta)
+                if isingoing(rhsterm)
+                    value = -value
+                end
+                setrhsterm!(p, balance.id, getid(rhsterm), t, value)
+            end
+        end
+    end
+    return
+end
+
+function update!(p::Prob, balance::BaseBalance, start::ProbTime)
+
+    for rhsterm in balance.rhsterms
+        if !isconstant(rhsterm) || !hasconstantdurations(balance.horizon)
+            for t in 1:getnumperiods(balance.horizon)
+                querystart = getstarttime(balance.horizon, t, start)
+                querydelta = gettimedelta(balance.horizon, t)
+                value = getparamvalue(rhsterm, querystart, querydelta)
+                if isingoing(rhsterm)
+                    value = -value
+                end
+                setrhsterm!(p, balance.id, getid(rhsterm), t, value)
+            end
+        end
+    end
+    return
+end
+
+# Balance types are toplevel objects in dataset_compiler, som we must implement assemble!
+
+function assemble!(balance::OurBalanceTypes)::Bool 
+    if isnothing(balance.horizon)
+        horizon = gethorizon(balance.commodity)
+        isnothing(horizon) && error("No horizon for $(balance.id)")
+        balance.horizon = horizon
+    end
+    return true
+end
+
+function includeBaseBalance!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    checkkey(toplevel, elkey)
+    
+    commodityname = getdictvalue(value, COMMODITY_CONCEPT, String, elkey)
+    commoditykey = Id(COMMODITY_CONCEPT, commodityname)
+    haskey(lowlevel, commoditykey) || return false
+    
+    id = getobjkey(elkey)
+    
+    toplevel[id] = BaseBalance(id, lowlevel[commoditykey])
+    
+    return true    
+end
+
+function includeExogenBalance!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    checkkey(toplevel, elkey)
+
+    (price, ok) = getdictpricevalue(lowlevel, elkey, value)
+    ok || return false
+    
+    commodityname = getdictvalue(value, COMMODITY_CONCEPT, String, elkey)
+    commoditykey = Id(COMMODITY_CONCEPT, commodityname)
+    haskey(lowlevel, commoditykey) || return false
+    
+    id = getobjkey(elkey)
+    
+    toplevel[id] = ExogenBalance(id, lowlevel[commoditykey], price)
+    
+    return true    
+end
+
+INCLUDEELEMENT[TypeKey(BALANCE_CONCEPT, "BaseBalance")] = includeBaseBalance!
+INCLUDEELEMENT[TypeKey(BALANCE_CONCEPT, "ExogenBalance")] = includeExogenBalance!
