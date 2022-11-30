@@ -304,6 +304,7 @@ abstract type Cost end
 #
 # Property of Flow and Storage
 # Represents upper or lower bound parameter for a variable with Horizon
+# Some capacity types can have variables and equations (e.g. InvestmentProjectCapacity)
 #
 # Interface:
 #   getparamvalue(capacity, probtime, timedelta)
