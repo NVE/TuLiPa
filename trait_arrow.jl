@@ -23,7 +23,7 @@ getbalance(arrow::BaseArrow) = arrow.balance
 getconversion(arrow::BaseArrow) = arrow.conversion
 getloss(arrow::BaseArrow) = arrow.loss
 
-getstatevariables(arrow::BaseArrow) = getstatevariables(arrow.flow, arrow, getlag(arrow))
+getstatevariables(::BaseArrow) = StateVariableInfo[]
 
 isingoing(arrow::BaseArrow) = arrow.isingoing
 
