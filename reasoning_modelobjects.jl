@@ -386,8 +386,8 @@ function replacebalance!(x::BaseFlow, coupling, modelobjects)
                 rhsname = string("TransmLoss", getinstancename(getid(arrow)))
                 id = Id(RHSTERM_CONCEPT, rhsname)
                 param = TransmissionLossRHSParam(getub(x), getloss(arrow)) # assumes conversion = 1
-                data = SimpleTrait(id, param, UPS_All(), false, false)
-                addrhsterm!(getbalance(arrow), BaseRHSTerm(data))
+                rhsterm = BaseRHSTerm(id, param, false)
+                addrhsterm!(getbalance(arrow), rhsterm)
             end
         end
         delete!(modelobjects, getid(x))
