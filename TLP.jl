@@ -30,7 +30,6 @@ include("boundary_conditions.jl")
 
 include("trait_arrow.jl")
 include("trait_rhsterm.jl")
-include("trait_lag.jl")
 
 include("obj_balance.jl")
 include("obj_flow.jl")

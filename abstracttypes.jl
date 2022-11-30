@@ -285,8 +285,6 @@ abstract type Loss end
 #
 abstract type Conversion end
 
-abstract type Lag end
-
 
 # ---- Cost ----
 #
