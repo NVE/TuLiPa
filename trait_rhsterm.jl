@@ -1,4 +1,6 @@
 
+# TODO: Implement RoRRHSTerm
+
 isdurational(rhsterm::RHSTerm) = true
 
 struct BaseRHSTerm <: RHSTerm
