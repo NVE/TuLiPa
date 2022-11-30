@@ -13,7 +13,7 @@ isconstant(::SimpleLoss) = true
 
 # ------ Includefunctions ----------------
 
-function includeSimpleLoss!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeSimpleLoss!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     lossvalue = getdictvalue(value, LOSSFACTORKEY, Float64, elkey)
     @assert 0.0 <= lossvalue <= 1.0
 
@@ -23,9 +23,14 @@ function includeSimpleLoss!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Di
     objname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
     objconcept = getdictvalue(value, WHICHCONCEPT,  String, elkey)
     objkey = Id(objconcept, objname)
-    haskey(toplevel, varkey) || return false
 
-    obj = toplevel[objkey]
+    if haskey(lowlevel, varkey)
+        obj = lowlevel[objkey]
+    elseif haskey(toplevel, varkey)
+        obj = toplevel[objkey]
+    else
+        return
+    end
 
     loss = SimpleLoss(lossvalue, utilization)
 
