@@ -1,4 +1,23 @@
-# We implement two types of Balance: BaseBalance and ExogenBalance
+"""
+We implement two types of Balance: BaseBalance and ExogenBalance
+Both are defined for a commodity, horizon and they both have metadata
+
+BaseBalance is a conventional balance defined for each period in the horizon
+It can take contributions from variables (e.g. Flow or Storage) or parameters (from RHSTerm)
+The contribution from each variable is decided by arrows (it converts the variable into
+the Commodity of the Balance, and may take into account losses and lag)
+
+ExogenBalance represent an exogen system, and holds the Price of the Commodity in this system.
+Flows (with Arrow) that contribute to this Balance will have an income or cost,
+which is included in the objective function.
+The contribution to the objective function is decided by the price of the commodity
+multiplied with the contribution from the variable into the Balance.
+
+This framework make us able to use the same dataset regardless of if a Flow (with Arrow)
+is connected to an Endogenous or Exogenous system. For example can a hydropower system be
+switched from being connected to a power market (endogenous) to a price (exogenous),
+and only the Balance object will have to be changed.
+"""
 
 mutable struct BaseBalance <: Balance
     id::Id
