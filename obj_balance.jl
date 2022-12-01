@@ -48,7 +48,7 @@ build!(p::Prob, balance::ExogenBalance) = build!(p, balance.price)
 setconstants!(p::Prob, balance::ExogenBalance) = setconstants!(p, balance.price)
 update!(p::Prob, balance::ExogenBalance, start::ProbTime) = update!(p, balance.price, start)
 
-# BaseBalance does does something in build!, setconstants! and update!
+# BaseBalance does do something in build!, setconstants! and update!
 function build!(p::Prob, balance::BaseBalance)
     addeq!(p, balance.id, getnumperiods(balance.horizon))
     return
@@ -93,7 +93,6 @@ function update!(p::Prob, balance::BaseBalance, start::ProbTime)
 end
 
 # Balance types are toplevel objects in dataset_compiler, som we must implement assemble!
-
 function assemble!(balance::OurBalanceTypes)::Bool 
     if isnothing(balance.horizon)
         horizon = gethorizon(balance.commodity)
@@ -103,6 +102,7 @@ function assemble!(balance::OurBalanceTypes)::Bool
     return true
 end
 
+# Includefunctions
 function includeBaseBalance!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(toplevel, elkey)
     
