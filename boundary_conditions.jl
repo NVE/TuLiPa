@@ -136,7 +136,7 @@ mutable struct SimpleSingleCuts <: BoundaryCondition
         # sanity checks
         @assert maxcuts > 0
         @assert length(objects) > 0
-        for object in objets
+        for object in objects
             @assert length(getstatevariables(object)) > 0 
         end
         @assert length(probabilities) > 0
