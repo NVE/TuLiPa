@@ -166,6 +166,8 @@ mutable struct SimpleSingleCuts <: BoundaryCondition
     end
 end
 
+getid(x::SimpleSingleCuts) = x.id
+
 isinitialcondition(::SimpleSingleCuts)  = false
 isterminalcondition(::SimpleSingleCuts) = true
 
