@@ -140,7 +140,7 @@ mutable struct SimpleSingleCuts <: BoundaryCondition
             @assert length(getstatevariables(object)) > 0 
         end
         @assert length(probabilities) > 0
-        @assert sum(probabilities) == 1.0
+        @assert sum(probabilities) ≈ 1.0
         for probability in probabilities
             @assert probability >= 0.0
         end
