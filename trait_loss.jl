@@ -13,7 +13,7 @@ isconstant(::SimpleLoss) = true
 
 # ------ Includefunctions ----------------
 
-function includeSimpleLoss!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeSimpleLoss!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     lossvalue = getdictvalue(value, LOSSFACTORKEY, Float64, elkey)
     @assert 0.0 <= lossvalue <= 1.0
 
