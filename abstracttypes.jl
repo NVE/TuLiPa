@@ -206,7 +206,7 @@ abstract type Commodity end
 #
 # Property of Balance
 # Holds data that will be included in the RHS of Balance equation
-# Has Direction
+# Has Direction to represent positive or negative contribution
 #
 # Interface:
 #    getid(rhsterm)
@@ -222,7 +222,7 @@ abstract type RHSTerm end
 # Property of Balance
 # Holds data that represents the dual solution of a Balance
 # Exogen Balances must hold a Price
-# Has Direction
+# Has Direction to represent positive or negative contribution
 #
 # Interface:
 #    getparamvalue(price, probtime, timedelta)
@@ -240,6 +240,8 @@ abstract type Price end
 # the Flow variable in the Balance equation
 # When Balance is exogenous, the arrow model the connection
 # using terms in the objective function
+# Must have parameters that describe the contribution
+# of the Flow in the Balance (e.g. Conversion or Loss)
 #
 # Some Arrow types create variables and equations (see SegmentedArrow)
 #
@@ -349,23 +351,25 @@ abstract type Capacity end
 abstract type AggSupplyCurve  end
 
 
+
 abstract type StartUpCost end
 
 # ---- SoftBound ----
 #
-# Represents soft upper or lower bounds to variables (e.g. Flow or Storage)
+# Optional trait object that affects a variable object (e.g. Flow or Storage)
+# Represents soft upper or lower bounds to variables 
 # Exceeding the soft bound will lead to an economic penalty
-# 
 # Makes necessary variables and balances for each period in an Horizon.
 #
 # Interface: 
-# getid(var)
-# getbalance(var)
-# getflows(var)
-# getmainmodelobject(var)
-# build!(var)
-# setconstants!(var)
-# update!(var)
+# getid(trait)
+# getvar(trait)
+# isupper(trait)
+# getmainmodelobject(trait)
+# assemble(trait)
+# build!(trait)
+# setconstants!(trait)
+# update!(trait)
 
 abstract type SoftBound end
 
@@ -385,6 +389,7 @@ abstract type SoftBound end
 #    setconstants!(prob, boundary_condition)
 #    update!(prob, boundary_condition, probtime)
 # 
+
 abstract type BoundaryCondition end
 
 
@@ -393,10 +398,31 @@ abstract type BoundaryCondition end
 # Dataset system
 abstract type DataElement end # TODO: Make this concrete
 
-# Problem data
+# ---- Param ------------
+# 
+# Parameters that that store problem data
+# Can store one or several of for example
+# floats, Timevector, Price, Conversion or Loss
+# Can be durational
+# 
+# Interface:
+# isconstant(param)
+# iszero(param)
+# isone(param)
+# isdurational(param)
+# getparamvalue(param, starttime, timedelta)
+# _must_dynamic_update(param, horizon)
+
 abstract type Param end
 
-# Time series data
+# ---- TimeVector -------------------
+# 
+# Objects that store time series data 
+# 
+# Interface:
+# isconstant(timevector)
+# getweightedaverage(timevector, starttime, timedelta)
+
 abstract type TimeVector end
 
 
