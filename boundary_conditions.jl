@@ -285,7 +285,7 @@ function clearcuts!(p::Prob, x::SimpleSingleCuts)
     avgslopes = getslopes(x)
     
     # inactivate cut parameters in internal storage
-    fill!(avgconstants, -Inf)
+    fill!(avgconstants, x.lower_bound)
     for slopes in avgslopes
         _set_values_to_zero!(slopes)
     end
