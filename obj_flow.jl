@@ -137,6 +137,7 @@ function getstatevariables(var::BaseFlow)
             push!(vars, s)
         end
     end
+    return vars
 end
 
 function includeBaseFlow!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
