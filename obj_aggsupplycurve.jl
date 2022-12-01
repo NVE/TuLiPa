@@ -10,7 +10,7 @@ getbalance(var::BaseAggSupplyCurve) = var.balance
 getflows(var::BaseAggSupplyCurve) = var.flows
 getnumclusters(var::BaseAggSupplyCurve) = var.numclusters
 
-getmainmodelobject(var::AggSupplyCurve) = getbalance(var)
+getmainmodelobject(var::AggSupplyCurve) = var.balance
 
 function build!(p::Prob, var::AggSupplyCurve)
     varname = getinstancename(var.id)

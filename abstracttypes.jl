@@ -190,35 +190,6 @@ abstract type Storage end
 #
 abstract type Balance end
 
-
-# ---- Arrow ----
-#
-# Represents edge with direction that connects Flow to Balance
-# When Balance is endogeneous, the arrow connects 
-# the Flow variable in the Balance equation
-# When Balance is exogenous, the arrow model the connection
-# using terms in the objective function
-#
-# Some Arrow types create variables and equations (see SegmentedArrow)
-#
-# In the future, we want to implement an Arrow type with time delay, 
-# e.g. to model which would have state variables
-#
-# Interface:
-#    getid(arrow)
-#    getbalance(arrow)
-#    setbalance!(arrow, balance)
-#    isingoing(arrow)
-#
-#    build!(prob, arrow)
-#    setconstants!(prob, arrow)
-#    update!(prob, arrow, start)
-#
-#    getexogencost(arrow)
-#
-abstract type Arrow end
-
-
 # ---- Commodity ----
 #
 # Property of Balance
@@ -262,6 +233,51 @@ abstract type RHSTerm end
 #
 abstract type Price end
 
+# ---- Arrow ----
+#
+# Represents edge with direction that connects Flow to Balance
+# When Balance is endogeneous, the arrow connects 
+# the Flow variable in the Balance equation
+# When Balance is exogenous, the arrow model the connection
+# using terms in the objective function
+#
+# Some Arrow types create variables and equations (see SegmentedArrow)
+#
+# In the future, we want to implement an Arrow type with time delay, 
+# e.g. to model which would have state variables
+#
+# Interface:
+#    getid(arrow)
+#    getbalance(arrow)
+#    setbalance!(arrow, balance)
+#    isingoing(arrow)
+#
+#    build!(prob, arrow)
+#    setconstants!(prob, arrow)
+#    update!(prob, arrow, start)
+#
+#    getexogencost(arrow)
+#
+abstract type Arrow end
+
+# ---- Conversion ----
+#
+# Property of some Arrow types
+# Represents the conversion factor to include a Flow in a Balance
+# (e.g. 1 to include a hydro release in a hydro balance, or the energy
+# equivalent to include a hydro release in a power balance)
+#
+# Interface:
+#   getparamvalue(conversion, probtime, timedelta)
+#   isconstant(conversion)
+#   isone(conversion)
+#   iszero(conversion)
+#   isdurational(conversion)
+#   build!(prob, conversion)
+#   setconstants!(prob, conversion)
+#   update!(prob, conversion, probtime)
+
+abstract type Conversion end
 
 # ---- Loss ----
 #
@@ -280,12 +296,6 @@ abstract type Price end
 
 abstract type Loss end
 
-# ---- Conversion ----
-#
-#
-abstract type Conversion end
-
-
 # ---- Cost ----
 #
 # Many objects may have this property, including Flow and Storage
@@ -298,7 +308,6 @@ abstract type Conversion end
 #   isdurational(cost)
 #
 abstract type Cost end
-
 
 # ---- Capacity ----
 #
@@ -315,24 +324,50 @@ abstract type Cost end
 #   isdurational(capacity)
 #   build!(prob, capacity)
 #   setconstants!(prob, capacity)
-#   update!(prob, capacity, probtime),
+#   update!(prob, capacity, probtime)
 #
 abstract type Capacity end
 
 # ---- AggSupplyCurve ----
 #
+# Flows connected to the same Balance are grouped together to
+# one or several "equivalent Flows"
+# E.g. 20 thermal plants in DEU are represented by 3 equivalent plants 
+# One or several variables for each period in an Horizon.
+# Possible to aggregate marginal costs, capacities and other Flow traits
+# Calculations can be done dynamically as the problem is updated
 #
 # Interface: 
-#
-#
+# getid(var)
+# getbalance(var)
+# getflows(var)
+# getmainmodelobject(var)
+# build!(var)
+# setconstants!(var)
+# update!(var)
+
 abstract type AggSupplyCurve  end
 
 
 abstract type StartUpCost end
 
+# ---- SoftBound ----
+#
+# Represents soft upper or lower bounds to variables (e.g. Flow or Storage)
+# Exceeding the soft bound will lead to an economic penalty
+# 
+# Makes necessary variables and balances for each period in an Horizon.
+#
+# Interface: 
+# getid(var)
+# getbalance(var)
+# getflows(var)
+# getmainmodelobject(var)
+# build!(var)
+# setconstants!(var)
+# update!(var)
 
 abstract type SoftBound end
-
 
 # ---- Boundary condition ----
 #
