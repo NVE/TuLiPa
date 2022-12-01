@@ -23,9 +23,14 @@ function includeSimpleLoss!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, v
     objname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
     objconcept = getdictvalue(value, WHICHCONCEPT,  String, elkey)
     objkey = Id(objconcept, objname)
-    haskey(toplevel, varkey) || return false
 
-    obj = toplevel[objkey]
+    if haskey(lowlevel, objkey)
+        obj = lowlevel[objkey]
+    elseif haskey(toplevel, objkey)
+        obj = toplevel[objkey]
+    else
+        return false
+    end
 
     loss = SimpleLoss(lossvalue, utilization)
 

@@ -69,7 +69,7 @@ function setconstants!(p::Prob, var::Any, arrow::BaseArrow)
 end
 
 function update!(p::Prob, var::Any, arrow::BaseArrow, start::ProbTime)
-    update!(p, arrow.conversion)
+    update!(p, arrow.conversion, start)
 
     if !isexogen(arrow.balance)
         if isnothing(arrow.loss)
