@@ -202,7 +202,7 @@ isconstant(param::TransmissionLossRHSParam) = isconstant(param.capacity)
 
 # --- Dynamic updates ---
 
-function _must_dynamic_update(param::Param, horizon::Horizon) # where should this be? some kind of util
+function _must_dynamic_update(param::Param, horizon::Horizon)
     isconstant(param) || return true
 
     if isdurational(param) && !hasconstantdurations(horizon)
