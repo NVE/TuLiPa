@@ -17,7 +17,7 @@ in the clustering and should be deleted if this type is used
 This method assumes that the Flows are connected to an endogenous Balance.
 If the Balance is exogenous the "simple" Flows are excessive
 
-# TODO: SegmentedArrow (efficiency segments) not supported. Add support or add check. 
+SegmentedArrow (production represented by efficiency segments) not supported
 """
 
 struct BaseAggSupplyCurve <: AggSupplyCurve
