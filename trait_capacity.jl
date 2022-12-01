@@ -37,9 +37,6 @@ isnonnegative(::LowerZeroCapacity) = true
 getparamvalue(capacity::PositiveCapacity, t::ProbTime, d::TimeDelta) = getparamvalue(capacity.param, t, d)
 getparamvalue(capacity::LowerZeroCapacity, t::ProbTime, d::TimeDelta) = 0.0
 
-getstatevariables(::PositiveCapacity) = nothing
-getstatevariables(::LowerZeroCapacity) = nothing
-
 build!(::Prob, ::Any, ::PositiveCapacity) = nothing
 build!(::Prob, ::Any, ::LowerZeroCapacity) = nothing
 

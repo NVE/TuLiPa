@@ -124,8 +124,10 @@ end
 
 function getstatevariables(var::BaseFlow)
     vars = StateVariableInfo[]
-    for s in getstatevariables(var.lb)
-        push!(vars, s)
+    if !isnothing(var.lb)
+        for s in getstatevariables(var.lb)
+            push!(vars, s)
+        end
     end
     if !isnothing(var.ub)
         for s in getstatevariables(var.ub)
