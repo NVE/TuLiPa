@@ -131,8 +131,9 @@ mutable struct SimpleSingleCuts <: BoundaryCondition
     maxcuts::Int
     numcuts::Int
     cutix::Int
+    lower_bound::Float64
 
-    function SimpleSingleCuts(id::Id, objects::Vector{Any}, probabilities::Vector{Float64}, maxcuts::Int)
+    function SimpleSingleCuts(id::Id, objects::Vector{Any}, probabilities::Vector{Float64}, maxcuts::Int, lower_bound::Float64)
         # sanity checks
         @assert maxcuts > 0
         @assert length(objects) > 0
@@ -162,7 +163,7 @@ mutable struct SimpleSingleCuts <: BoundaryCondition
         numcuts = 0
         cutix = 0
 
-        return new(id, objects, probabilities, constants, slopes, maxcuts, numcuts, cutix)
+        return new(id, objects, probabilities, constants, slopes, maxcuts, numcuts, cutix, lower_bound)
     end
 end
 
@@ -213,7 +214,7 @@ function setconstants!(p::Prob, x::SimpleSingleCuts)
         setconcoeff!(p, getcutconid(x), getfuturecostvarid(x), cutix, 1, 1.0)
 
         # inactivate cut constant
-        setrhsterm!(p, getcutconid(x), getcutconstantid(x), cutix, -Inf)
+        setrhsterm!(p, getcutconid(x), getcutconstantid(x), cutix, x.lower_bound)
 
         # inactivate cut slopes
         for object in getobjects(x)
