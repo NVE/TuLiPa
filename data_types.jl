@@ -2,7 +2,7 @@
 The DataElement type we use
 """
 
-struct Element <: DataElement
+struct DataElement
     conceptname::String
     typename::String
     instancename::String

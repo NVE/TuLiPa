@@ -392,11 +392,7 @@ abstract type SoftBound end
 
 abstract type BoundaryCondition end
 
-
 # abstract type Group end # Do we need this?
-
-# Dataset system
-abstract type DataElement end # TODO: Make this concrete
 
 # ---- Param ------------
 # 
