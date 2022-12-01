@@ -187,7 +187,7 @@ function getfuturecostvarid(x::SimpleSingleCuts)
 end
 
 function getcutconid(x::SimpleSingleCuts)
-    return Id(getconceptname(x), string(getinstancename(x), "CutConstraint"))
+    return Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "CutConstraint"))
 end
 
 function build!(p::Prob, x::SimpleSingleCuts)
