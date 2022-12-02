@@ -22,7 +22,7 @@ mutable struct BaseFlow <: Flow
     end
 end
 
-# General functions
+# Object functions
 getid(var::BaseFlow) = var.id
 gethorizon(var::BaseFlow) = var.horizon
 getub(var::BaseFlow) = var.ub
@@ -35,9 +35,31 @@ hascost(var::BaseFlow) = var.sumcost !== nothing
 setub!(var::BaseFlow, capacity::Capacity) = var.ub = capacity
 setlb!(var::BaseFlow, capacity::Capacity) = var.lb = capacity
 sethorizon!(var::BaseFlow, horizon::Horizon) = var.horizon = horizon
+setmetadata!(var::BaseFlow, k::String, v::Any) = var.metadata[k] = v
 
 addarrow!(var::BaseFlow, arrow::Arrow) = push!(var.arrows, arrow)
 addcost!(var::BaseFlow, cost::Cost) = push!(var.costs, cost)
+
+# Flow objects can have state variables depending on the capacities and arrows
+function getstatevariables(var::BaseFlow)
+    vars = StateVariableInfo[]
+    if !isnothing(var.lb)
+        for s in getstatevariables(var.lb)
+            push!(vars, s)
+        end
+    end
+    if !isnothing(var.ub)
+        for s in getstatevariables(var.ub)
+            push!(vars, s)
+        end
+    end
+    for arrow in getarrows(var)
+        for s in getstatevariables(arrow)
+            push!(vars, s)
+        end
+    end
+    return vars
+end
 
 # Build the variable for each time period in the horizon
 # Set upper and lower bounds (capacities)
@@ -127,27 +149,6 @@ function assemble!(var::BaseFlow)::Bool
     end
 
     return true
-end
-
-# Flow objects can have state variables depending on the capacities and arrows
-function getstatevariables(var::BaseFlow)
-    vars = StateVariableInfo[]
-    if !isnothing(var.lb)
-        for s in getstatevariables(var.lb)
-            push!(vars, s)
-        end
-    end
-    if !isnothing(var.ub)
-        for s in getstatevariables(var.ub)
-            push!(vars, s)
-        end
-    end
-    for arrow in getarrows(var)
-        for s in getstatevariables(arrow)
-            push!(vars, s)
-        end
-    end
-    return vars
 end
 
 # Includefunction

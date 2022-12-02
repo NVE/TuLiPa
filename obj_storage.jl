@@ -1,16 +1,11 @@
+"""
+We implement BaseStorage (see abstracttypes.jl)
+"""
 
 # Generic fallbacks
 gethorizon(storage::Storage) = gethorizon(getbalance(storage))
 
-function getstatevariables(x::Storage)
-    var_in_id = getstartvarid(x)
-    var_out_id = getid(x)
-    var_out_ix = getnumperiods(gethorizon(getbalance(x)))
-    info = StateVariableInfo((var_in_id, 1), (var_out_id, var_out_ix))
-    return [info]
-end
-
-# --- BaseStorage ---
+# Object and interface for BaseStorage
 mutable struct BaseStorage <: Storage
     id::Id
     balance::Balance
@@ -28,13 +23,22 @@ mutable struct BaseStorage <: Storage
     end
 end
 
+# Object functions
 getid(var::BaseStorage) = var.id
 
 getloss(var::BaseStorage) = var.loss
 getub(var::BaseStorage) = var.ub
 getlb(var::BaseStorage) = var.lb
 getcosts(var::BaseStorage) = var.costs
+getbalance(var::BaseStorage) = var.balance
 
+setub!(var::BaseStorage, ub::Capacity) = var.ub = ub
+setlb!(var::BaseStorage, lb::Capacity) = var.lb = lb
+setloss!(var::BaseStorage, loss::Loss) = var.loss = loss
+addcost!(var::BaseStorage, cost::Cost) = push!(var.costs, cost)
+
+# We store StorageHint in the metadata element
+setmetadata!(var::BaseStorage, k::String, v::Any) = var.metadata[k] = v
 function getstoragehint(var::BaseStorage)
     if haskey(var.metadata, STORAGEHINTKEY)
         return var.metadata[STORAGEHINTKEY]
@@ -43,18 +47,22 @@ function getstoragehint(var::BaseStorage)
     end
 end
 
-setub!(var::BaseStorage, ub::Capacity) = var.ub = ub
-setlb!(var::BaseStorage, lb::Capacity) = var.lb = lb
-setloss!(var::BaseStorage, loss::Loss) = var.loss = loss
-
-setmetadata!(var::BaseStorage, k::String, v::Any) = var.metadata[k] = v
-
-addcost!(var::BaseStorage, cost::Cost) = push!(var.costs, cost)
-
-getbalance(var::BaseStorage) = var.balance
-
+# Storage has statevariables
+# x[T] (var_out) is part of the storage variable while x[0] (var_in) has to be named and built seperately
+function getstatevariables(x::Storage)
+    var_in_id = getstartvarid(x)
+    var_out_id = getid(x)
+    var_out_ix = getnumperiods(gethorizon(getbalance(x)))
+    info = StateVariableInfo((var_in_id, 1), (var_out_id, var_out_ix))
+    return [info]
+end
 getstartvarid(var::BaseStorage) = Id(getconceptname(var.id), string("Start", getinstancename(var.id)))
 
+# Build the variable for each time period in the horizon,
+# and build the start variable x[0]. Also make state variables fixable
+# Set upper and lower bounds (capacities)
+# Include costs in the objective function (sumcost)
+# Include variables in the balances
 function build!(p::Prob, var::BaseStorage)
     T = getnumperiods(gethorizon(var))
     addvar!(p, var.id, T)
@@ -127,6 +135,7 @@ function update!(p::Prob, var::BaseStorage, start::ProbTime)
     return
 end
 
+# Storage types are toplevel objects in dataset_compiler, som we must implement assemble!
 function assemble!(var::BaseStorage)::Bool
     id = getid(var)
 
@@ -148,6 +157,7 @@ function assemble!(var::BaseStorage)::Bool
     return true
 end
 
+# Include functions
 function includeBaseStorage!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(toplevel, elkey)
     

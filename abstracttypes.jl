@@ -134,10 +134,11 @@ abstract type Flow end
 
 # ---- Storage ----
 #
-# Represents variable for each period in an Horizon
-# Have upper and lower Capacity. May have Cost terms.
-# Has a Balance and the time differential 
-# of the Storage variable is connected to the outgoing side of theBalance
+# Represents a Storage variable for each period in an Horizon
+# Connected to a Balance.
+# For each period the time differential (x[t-1]-x[t]) is added to the Balance
+# The time differential of the Storage variable is ingoing to the Balance
+# Have upper and lower Capacity. May have Cost terms. May have Loss
 # May be affected by other traits indirectly
 #
 # Interface:

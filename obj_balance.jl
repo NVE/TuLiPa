@@ -53,6 +53,8 @@ getid(balance::OurBalanceTypes) = balance.id
 gethorizon(balance::OurBalanceTypes) = balance.horizon
 getcommodity(balance::OurBalanceTypes) = balance.commodity
 
+setmetadata!(var::OurBalanceTypes, k::String, v::Any) = var.metadata[k] = v
+
 # Since isexogen is false we must implement getrhsterms and addrhsterm!
 isexogen(::BaseBalance) = false
 getrhsterms(balance::BaseBalance) = balance.rhsterms
@@ -114,6 +116,7 @@ function update!(p::Prob, balance::BaseBalance, start::ProbTime)
 end
 
 # Balance types are toplevel objects in dataset_compiler, som we must implement assemble!
+# If horizon is nothing it is initialized from the commodity
 function assemble!(balance::OurBalanceTypes)::Bool 
     if isnothing(balance.horizon)
         horizon = gethorizon(balance.commodity)
