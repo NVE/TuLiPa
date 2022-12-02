@@ -1,5 +1,6 @@
 """
 Implementation of HiGHS_Prob <: Prob
+Here we build or problem on the package HiGHS, and the HiGHS solver
 
 Inspiration and also some code from 
 https://github.com/jump-dev/HiGHS.jl/blob/master/src/MOI_wrapper.jl

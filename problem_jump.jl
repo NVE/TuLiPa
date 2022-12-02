@@ -1,6 +1,7 @@
 """
 Implementation of JuMP_Prob <: Prob
-
+Here we use the JuMP modelling framework
+https://github.com/jump-dev/JuMP.jl
 """
 
 using JuMP

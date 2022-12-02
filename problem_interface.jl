@@ -1,4 +1,8 @@
+"""
+General problem interface and fallback
+"""
 
+# General update function
 function update!(p::Prob, start::ProbTime)
     for horizon in gethorizons(p)
         update!(horizon, start)
@@ -8,6 +12,7 @@ function update!(p::Prob, start::ProbTime)
     end
 end
 
+# Fallbacks
 notimplementederror() = error("Not implemented")
 
 build!(::Prob, ::Any, ::ProbTime) = notimplementederror()
