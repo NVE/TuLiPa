@@ -1,5 +1,4 @@
 # generic fallbacks
-
 function isconstant(param::Param)
     for field in fieldnames(typeof(param))
         isconstant(getfield(param, field)) || return false
@@ -8,7 +7,6 @@ function isconstant(param::Param)
 end
 
 # ---- Concrete types ----
-
 struct FlipSignParam{param <: Param} <: Param
     param::param
 
