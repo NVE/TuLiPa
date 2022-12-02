@@ -1,4 +1,8 @@
-# generic fallbacks
+"""
+We implement several concrete parameter types (see abstracttypes.jl)
+"""
+
+# ---- Generic fallbacks -----
 function isconstant(param::Param)
     for field in fieldnames(typeof(param))
         isconstant(getfield(param, field)) || return false
@@ -7,6 +11,16 @@ function isconstant(param::Param)
 end
 
 # ---- Concrete types ----
+
+# Some simple concrete types
+struct ZeroParam     <: Param end
+struct PlusOneParam  <: Param end
+struct MinusOneParam <: Param end
+struct ConstantParam{T <: AbstractFloat} <: Param 
+    value::T
+end
+
+# Sometimes we want the contribution of the parameter to be negative
 struct FlipSignParam{param <: Param} <: Param
     param::param
 
@@ -19,14 +33,7 @@ struct FlipSignParam{param <: Param} <: Param
     end
 end
 
-struct ZeroParam     <: Param end
-struct PlusOneParam  <: Param end
-struct MinusOneParam <: Param end
-
-struct ConstantParam{T <: AbstractFloat} <: Param 
-    value::T
-end
-
+# This parameter stores everything needed to calculate the marginal cost of a thermal plant
 struct FossilMCParam{FL <: TimeVector, FP <: TimeVector, CF <: TimeVector, 
     CL <: TimeVector, CP <: TimeVector, E <: TimeVector, V <: TimeVector} <: Param
     fuellevel::FL
@@ -36,6 +43,16 @@ struct FossilMCParam{FL <: TimeVector, FP <: TimeVector, CF <: TimeVector,
     co2profile::CP
     efficiency::E
     voc::V
+end
+
+# These parameters are a combination of a level and profile TimeVector
+# The level is often an InfiniteTimeVector (e.g. installed wind power in 2021, 2025, 2030)
+# The profile is often a RotatingTimeVector (e.g. a wind profile ranging from 0-1)
+# MeanSeriesParam multiplies the two values together, while the two
+# others also take into account the temporal aspect (e.g. MW to GWh or m3/s to Mm3)
+struct MeanSeriesParam{L <: TimeVector, P <: TimeVector} <: Param
+    level::L
+    profile::P
 end
 
 struct M3SToMM3SeriesParam{L <: TimeVector, P <: TimeVector} <: Param
@@ -48,11 +65,7 @@ struct MWToGWhSeriesParam{L <: TimeVector, P <: TimeVector} <: Param
     profile::P
 end
 
-struct MeanSeriesParam{L <: TimeVector, P <: TimeVector} <: Param
-    level::L
-    profile::P
-end
-
+# These concrete types uses Price, Conversion, Loss and Capacity types
 struct ExogenCostParam{P <: Price, C <: Conversion, L <: Loss} <: Param
     price::P
     conversion::C
@@ -86,7 +99,6 @@ function TransmissionLossRHSParam(capacity::Capacity, L::SimpleLoss)
 end
 
 # ---- General functions ----
-
 iszero(param::FlipSignParam) = iszero(param.param)
 iszero(param::ZeroParam) = true
 iszero(param::PlusOneParam) = false
@@ -96,7 +108,6 @@ iszero(param::FossilMCParam) = false
 iszero(param::M3SToMM3SeriesParam) = false
 iszero(param::MWToGWhSeriesParam) = false
 iszero(param::MeanSeriesParam) = false
-
 iszero(param::ExogenCostParam) = iszero(param.price) && iszero(param.conversion)
 iszero(param::ExogenIncomeParam) = iszero(param.price) && iszero(param.conversion)
 iszero(param::InConversionLossParam) = iszero(param.conversion)
@@ -112,13 +123,21 @@ isone(param::FossilMCParam) = false
 isone(param::M3SToMM3SeriesParam) = false
 isone(param::MWToGWhSeriesParam) = false
 isone(param::MeanSeriesParam) = false
-
 isone(param::ExogenCostParam) = false
 isone(param::ExogenIncomeParam) = false
 isone(param::InConversionLossParam) = false
 isone(param::OutConversionLossParam) = false
 isone(param::TransmissionLossRHSParam) = false
 
+isconstant(::ConstantParam) = true
+isconstant(::ZeroParam) = true
+isconstant(::PlusOneParam) = true
+isconstant(::MinusOneParam) = true
+isconstant(param::TransmissionLossRHSParam) = isconstant(param.capacity)
+
+# Is the parameter value dependant on the temporal aspect?
+# Example: MWToGWhSeriesParam is durational since the power produced (GWh),
+# will depend on how long you produce for
 isdurational(param::FlipSignParam) = isdurational(param.param)
 isdurational(param::ZeroParam) = false
 isdurational(param::PlusOneParam) = false
@@ -128,24 +147,23 @@ isdurational(param::FossilMCParam) = false
 isdurational(param::M3SToMM3SeriesParam) = true
 isdurational(param::MWToGWhSeriesParam) = true
 isdurational(param::MeanSeriesParam) = false
-
 isdurational(param::ExogenCostParam) = isdurational(param.price) && isdurational(param.conversion) && isdurational(param.loss)
 isdurational(param::ExogenIncomeParam) = isdurational(param.price) && isdurational(param.conversion) && isdurational(param.loss)
 isdurational(param::InConversionLossParam) = isdurational(param.conversion) && isdurational(param.loss)
 isdurational(param::OutConversionLossParam) = isdurational(param.conversion) && isdurational(param.loss)
 isdurational(param::TransmissionLossRHSParam) = isdurational(param.capacity)
 
+# Calculate the parameter value for a given parameter, problem time and timedelta duration
+getparamvalue(::ZeroParam,     ::ProbTime, ::TimeDelta) =  0.0
+getparamvalue(::PlusOneParam,  ::ProbTime, ::TimeDelta) =  1.0
+getparamvalue(::MinusOneParam, ::ProbTime, ::TimeDelta) = -1.0
+getparamvalue(param::ConstantParam, ::ProbTime, ::TimeDelta) = param.value
 getparamvalue(param::FlipSignParam, start::ProbTime, d::TimeDelta) = -getparamvalue(param.param, start, d)
 getparamvalue(param::ExogenIncomeParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.price, start, d)*getparamvalue(param.conversion, start, d)*(1-getparamvalue(param.loss, start, d))
 getparamvalue(param::ExogenCostParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.price, start, d)*getparamvalue(param.conversion, start, d)/(1-getparamvalue(param.loss, start, d))
 getparamvalue(param::InConversionLossParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.conversion, start, d)*(1-getparamvalue(param.loss, start, d))
 getparamvalue(param::OutConversionLossParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.conversion, start, d)/(1-getparamvalue(param.loss, start, d))
 getparamvalue(param::TransmissionLossRHSParam, t::ProbTime, d::TimeDelta) = getparamvalue(param.capacity, t, d)*param.loss*param.utilisation
-
-getparamvalue(::ZeroParam,     ::ProbTime, ::TimeDelta) =  0.0
-getparamvalue(::PlusOneParam,  ::ProbTime, ::TimeDelta) =  1.0
-getparamvalue(::MinusOneParam, ::ProbTime, ::TimeDelta) = -1.0
-getparamvalue(param::ConstantParam, ::ProbTime, ::TimeDelta) = param.value
 
 function getparamvalue(param::FossilMCParam, start::ProbTime, d::TimeDelta)
     datatime = getdatatime(start)
@@ -192,14 +210,11 @@ function getparamvalue(param::MeanSeriesParam, start::ProbTime, d::TimeDelta)
     return value
 end
 
-isconstant(::ConstantParam) = true
-isconstant(::ZeroParam) = true
-isconstant(::PlusOneParam) = true
-isconstant(::MinusOneParam) = true
-isconstant(param::TransmissionLossRHSParam) = isconstant(param.capacity)
-
 # --- Dynamic updates ---
-
+# We want to update the problem efficiently, so we check if 
+# problem values must be updated dynamically
+# If the value is the same for all scenarios and time periods, 
+# it should only be updated once
 function _must_dynamic_update(param::Param, horizon::Horizon)
     isconstant(param) || return true
 
@@ -210,8 +225,7 @@ function _must_dynamic_update(param::Param, horizon::Horizon)
     return false
 end
 
-# --- FossilMCParam ---
-
+# ---- Includefunctions --------
 function includeFossilMCParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
 
@@ -236,8 +250,6 @@ function includeFossilMCParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value:
     lowlevel[getobjkey(elkey)] = obj
     return true
 end
-
-# --- M3SToMM3SeriesParam ---
 
 function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
@@ -264,8 +276,6 @@ function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, 
     return true
 end
 
-# --- MWToGWhSeriesParam ---
-
 function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
     
@@ -291,8 +301,6 @@ function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, v
     return true
 end
 
-# --- MeanSeriesParam ---
-
 function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
     
@@ -310,8 +318,6 @@ function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, valu
     lowlevel[getobjkey(elkey)] = value
     return true
 end
-
-# --- Includefunctions ---
 
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "FossilMCParam")] = includeFossilMCParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "M3SToMM3SeriesParam")] = includeM3SToMM3SeriesParam!
