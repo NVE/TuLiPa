@@ -177,15 +177,15 @@ abstract type Storage end
 #    getid(balance)
 #    gethorzion(balance)
 #    assemble!(balance)
+#    build!(prob, balance)
+#    setconstants!(prob, balance)
+#    update!(prob, balance, start)
 #
 #    if isexogen(balance)
 #       getprice(balance)
 #    else
 #       getrhstems(balance)
 #       addrhsterm!(balance, rhsterm)
-#       build!(prob, balance)
-#       setconstants!(prob, balance)
-#       update!(prob, balance, start)
 #    end
 #
 abstract type Balance end

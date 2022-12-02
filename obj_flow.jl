@@ -1,4 +1,6 @@
-# ----- BaseFlow -----
+"""
+We implement BaseFlow (see general description in abstracttypes.jl)
+"""
 
 mutable struct BaseFlow <: Flow
     id::Id
@@ -20,6 +22,7 @@ mutable struct BaseFlow <: Flow
     end
 end
 
+# General functions
 getid(var::BaseFlow) = var.id
 gethorizon(var::BaseFlow) = var.horizon
 getub(var::BaseFlow) = var.ub
@@ -36,6 +39,10 @@ sethorizon!(var::BaseFlow, horizon::Horizon) = var.horizon = horizon
 addarrow!(var::BaseFlow, arrow::Arrow) = push!(var.arrows, arrow)
 addcost!(var::BaseFlow, cost::Cost) = push!(var.costs, cost)
 
+# Build the variable for each time period in the horizon
+# Set upper and lower bounds (capacities)
+# Include costs in the objective function (sumcost)
+# Include variables in the balances (arrows)
 function build!(p::Prob, var::BaseFlow)
     addvar!(p, var.id, getnumperiods(var.horizon))
 
@@ -95,6 +102,7 @@ function update!(p::Prob, var::BaseFlow, start::ProbTime)
     return
 end
 
+# Flow types are toplevel objects in dataset_compiler, som we must implement assemble!
 function assemble!(var::BaseFlow)::Bool
     isempty(var.arrows) && error("No arrows for $(var.id)")
 
@@ -109,7 +117,6 @@ function assemble!(var::BaseFlow)::Bool
     var.horizon = gethorizon(first(var.arrows))
     for i in 2:lastindex(var.arrows)
         h = gethorizon(var.arrows[i])
-        # TODO: instead use h > var.horizon
         if getnumperiods(h) > getnumperiods(var.horizon)
             var.horizon = h
         end
@@ -122,6 +129,7 @@ function assemble!(var::BaseFlow)::Bool
     return true
 end
 
+# Flow objects can have state variables depending on the capacities and arrows
 function getstatevariables(var::BaseFlow)
     vars = StateVariableInfo[]
     if !isnothing(var.lb)
@@ -142,6 +150,7 @@ function getstatevariables(var::BaseFlow)
     return vars
 end
 
+# Includefunction
 function includeBaseFlow!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(toplevel, elkey)
     

@@ -67,12 +67,13 @@ build!(p::Prob, balance::ExogenBalance) = build!(p, balance.price)
 setconstants!(p::Prob, balance::ExogenBalance) = setconstants!(p, balance.price)
 update!(p::Prob, balance::ExogenBalance, start::ProbTime) = update!(p, balance.price, start)
 
-# BaseBalance does do something in build!, setconstants! and update!
+# Build empty balance equation
 function build!(p::Prob, balance::BaseBalance)
     addeq!(p, balance.id, getnumperiods(balance.horizon))
     return
 end
 
+# Set RHSterms if they are constant 
 function setconstants!(p::Prob, balance::BaseBalance)
     hasconstantdurations(balance.horizon) || return
 
@@ -93,6 +94,7 @@ function setconstants!(p::Prob, balance::BaseBalance)
     return
 end
 
+# Set RHSterms if they have to be updated dynamically
 function update!(p::Prob, balance::BaseBalance, start::ProbTime)
 
     for rhsterm in balance.rhsterms
