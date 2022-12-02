@@ -45,7 +45,7 @@ function update!(p::Prob, var::AggSupplyCurve, start::ProbTime)
     lbs = zeros(Float64,T,numflows)
     ubs = zeros(Float64,T,numflows)
     
-    querystarts = Vector{TwoTime}(undef, T)
+    querystarts = Vector{typeof(start)}(undef, T)
     querydeltas = Vector{Any}(undef,T) 
     
     dummytime = ConstantTime()
