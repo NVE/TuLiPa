@@ -1,4 +1,23 @@
-# We implement two types of Balance: BaseBalance and ExogenBalance
+"""
+We implement two types of Balance: BaseBalance and ExogenBalance
+Both are defined for a commodity, horizon and they both have metadata
+
+BaseBalance is a conventional balance defined for each period in the horizon
+It can take contributions from variables (e.g. Flow or Storage) or parameters (from RHSTerm)
+The contribution from each variable is decided by arrows (it converts the variable into
+the Commodity of the Balance, and may take into account losses and lag)
+
+ExogenBalance represent an exogen system, and holds the Price of the Commodity in this system.
+Flows (with Arrow) that contribute to this Balance will have an income or cost,
+which is included in the objective function.
+The contribution to the objective function is decided by the price of the commodity
+multiplied with the contribution from the variable into the Balance.
+
+This framework make us able to use the same dataset regardless of if a Flow (with Arrow)
+is connected to an Endogenous or Exogenous system. For example can a hydropower system be
+switched from being connected to a power market (endogenous) to a price (exogenous),
+and only the Balance object will have to be changed.
+"""
 
 mutable struct BaseBalance <: Balance
     id::Id
@@ -34,6 +53,8 @@ getid(balance::OurBalanceTypes) = balance.id
 gethorizon(balance::OurBalanceTypes) = balance.horizon
 getcommodity(balance::OurBalanceTypes) = balance.commodity
 
+setmetadata!(var::OurBalanceTypes, k::String, v::Any) = var.metadata[k] = v
+
 # Since isexogen is false we must implement getrhsterms and addrhsterm!
 isexogen(::BaseBalance) = false
 getrhsterms(balance::BaseBalance) = balance.rhsterms
@@ -48,12 +69,13 @@ build!(p::Prob, balance::ExogenBalance) = build!(p, balance.price)
 setconstants!(p::Prob, balance::ExogenBalance) = setconstants!(p, balance.price)
 update!(p::Prob, balance::ExogenBalance, start::ProbTime) = update!(p, balance.price, start)
 
-# BaseBalance does does something in build!, setconstants! and update!
+# Build empty balance equation
 function build!(p::Prob, balance::BaseBalance)
     addeq!(p, balance.id, getnumperiods(balance.horizon))
     return
 end
 
+# Set RHSterms if they are constant 
 function setconstants!(p::Prob, balance::BaseBalance)
     hasconstantdurations(balance.horizon) || return
 
@@ -74,6 +96,7 @@ function setconstants!(p::Prob, balance::BaseBalance)
     return
 end
 
+# Set RHSterms if they have to be updated dynamically
 function update!(p::Prob, balance::BaseBalance, start::ProbTime)
 
     for rhsterm in balance.rhsterms
@@ -93,7 +116,7 @@ function update!(p::Prob, balance::BaseBalance, start::ProbTime)
 end
 
 # Balance types are toplevel objects in dataset_compiler, som we must implement assemble!
-
+# If horizon is nothing it is initialized from the commodity
 function assemble!(balance::OurBalanceTypes)::Bool 
     if isnothing(balance.horizon)
         horizon = gethorizon(balance.commodity)
@@ -103,6 +126,7 @@ function assemble!(balance::OurBalanceTypes)::Bool
     return true
 end
 
+# Includefunctions
 function includeBaseBalance!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(toplevel, elkey)
     
