@@ -19,7 +19,7 @@ ELEMENTFAILED  = Dict()
 # Limit error output
 MAXPRINTERRORS = 10000
 
-function getmodelobjects(elements::Vector{T} where {T <: DataElement})
+function getmodelobjects(elements::Vector{DataElement})
     check_duplicates(elements)
     
     modelobjects = include_all_elements(elements)

@@ -30,13 +30,13 @@ getconceptname(x::Id) = x.conceptname
 getname(x::Id) = "$(x.conceptname)$(x.instancename)" 
 
 # To implement DataElement interface 
-getelkey(x::Element) = ElementKey(x.conceptname, x.typename, x.instancename)
+getelkey(x::DataElement) = ElementKey(x.conceptname, x.typename, x.instancename)
 
-getelvalue(x::Element) = x.value
+getelvalue(x::DataElement) = x.value
 
-getobjkey(x::Element) = Id(x.conceptname, x.instancename)
+getobjkey(x::DataElement) = Id(x.conceptname, x.instancename)
 
-gettypekey(x::Element) = TypeKey(x.conceptname, x.typename)
+gettypekey(x::DataElement) = TypeKey(x.conceptname, x.typename)
 
 getobjkey(x::ElementKey) = Id(x.conceptname, x.instancename)
 gettypekey(x::ElementKey) = TypeKey(x.conceptname, x.typename)
