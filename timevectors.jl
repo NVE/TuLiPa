@@ -308,8 +308,6 @@ end
 
 """
 Here we register functions to include data elements relating to TimeVector
-
-Note that we include OneYearTimeVector, which is just a RotatingTimeVector with one year data
 """
 
 function _isdifferent(index, values)
@@ -319,12 +317,25 @@ function _isdifferent(index, values)
         return length(collect(index)) == length(values)
     end
 end
-
-
 # TODO: Probably move checks to constructor
 
-# --- RangeTimeIndex ---
+# --- VectorTimeIndex ---
+# TimeIndex described by a Vector
+function includeVectorTimeIndex!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractVector{DateTime})::Bool
+    checkkey(lowlevel, elkey)
+    length(value) > 0  || error("Vector has no elements for $elkey")
+    issorted(value)    || error(     "Vector not sorted for $elkey")
+    lowlevel[getobjkey(elkey)] = value
+    return true
+end
 
+function includeVectorTimeIndex!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    vector = getdictvalue(value, "Vector", AbstractVector{DateTime}, elkey)
+    includeVectorTimeIndex!(toplevel, lowlevel, elkey, vector)
+end
+
+# --- RangeTimeIndex ---
+# TimeIndex described by a StepRange.
 function includeRangeTimeIndex!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
     
@@ -354,23 +365,24 @@ function includeRangeTimeIndex!(::Dict, lowlevel::Dict, elkey::ElementKey, value
     return true
 end
 
-# --- VectorTimeIndex ---
-
-function includeVectorTimeIndex!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractVector{DateTime})::Bool
+# --- VectorTimeValues ---
+# TimeValues described by a Vector
+function includeVectorTimeValues!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
-    length(value) > 0  || error("Vector has no elements for $elkey")
-    issorted(value)    || error(     "Vector not sorted for $elkey")
-    lowlevel[getobjkey(elkey)] = value
+    
+    vector = getdictvalue(value, "Vector", AbstractVector{<:AbstractFloat}, elkey)
+    
+    length(vector) > 0  || error("Vector has no elements for $elkey")
+    
+    lowlevel[getobjkey(elkey)] = vector
     return true
 end
 
-function includeVectorTimeIndex!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
-    vector = getdictvalue(value, "Vector", AbstractVector{DateTime}, elkey)
-    includeVectorTimeIndex!(toplevel, lowlevel, elkey, vector)
-end
-
 # ----- BaseTable -----
-
+# Stores multiple VectorTimeValues together
+# Dictionary with a matrix and a list of column names
+# Rows in the matrix represents a TimeIndex and the columns are connected 
+# to the name list (each representing a VectorTimeValues)
 function includeBaseTable!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
     
@@ -386,22 +398,8 @@ function includeBaseTable!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dic
     return true
 end
 
-
-# --- VectorTimeValues ---
-
-function includeVectorTimeValues!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
-    checkkey(lowlevel, elkey)
-    
-    vector = getdictvalue(value, "Vector", AbstractVector{<:AbstractFloat}, elkey)
-    
-    length(vector) > 0  || error("Vector has no elements for $elkey")
-    
-    lowlevel[getobjkey(elkey)] = vector
-    return true
-end
-
 # --- ColumnTimeValues ---
-
+# VectorTimeValues that gets its data from a BaseTable
 function includeColumnTimeValues!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
     
@@ -427,7 +425,6 @@ end
 
 
 # --- RotatingTimeVector ---
-
 function includeRotatingTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
     
@@ -461,7 +458,7 @@ function includeRotatingTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, v
 end
 
 # --- OneYearTimeVector ---
-
+# A RotatingTimeVector with one year of data
 function includeOneYearTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
     
@@ -492,7 +489,6 @@ function includeOneYearTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, va
 end
 
 # --- InfiniteTimeVector ---
-
 function includeInfiniteTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
     
@@ -516,7 +512,6 @@ function includeInfiniteTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, v
 end
 
 # --- ConstantTimeVector ---
-
 function includeConstantTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
     constant = getdictvalue(value, "Value",  AbstractFloat, elkey)
