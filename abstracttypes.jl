@@ -194,8 +194,10 @@ abstract type Balance end
 
 # ---- Commodity ----
 #
-# Property of Balance
+# Gives information about a commodity
 # Has Horizon
+# Property of Balance. Balances assigned a Commodity inherits its traits (i.e. its Horizon)
+# Makes it easy to differentiate which modelobjects that are in the same system
 #
 # Interface:
 #    getid(commodity)
