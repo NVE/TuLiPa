@@ -1,5 +1,22 @@
 """
-TimeVector supports isconstant and getweightedaverage
+We implement several concrete TimeVectors.
+Supports isconstant() and getweightedaverage()
+- getweightedaverage() outputs the weighted average of the TimeVector
+from a starting time and over a timedelta
+- getweightedaverage() is implemented for different TimeDeltas
+
+ConstantTimeVector constains a single value
+
+RotatingTimeVector contains a time-series. When we get to the end of the
+time-series we reuse it (therefore rotating)
+Start and stop indicates which part of the timeseries should be used
+Uses getsimilardatetime() to find values for a problem time which is 
+not necessarily inside the range of the time-series
+Used for profile i.e wind profile from 1981-2010
+
+InfiniteTimeVector contains a time-series that represents the
+value at a given problem time (infinite because it does not rotate)
+Used for level i.e. installed wind capacity in 2021, 2030, 2040 and 2050
 """
 
 struct ConstantTimeVector <: TimeVector
@@ -18,6 +35,7 @@ struct RotatingTimeVector{I, V} <: TimeVector
     stop::DateTime
 end
 
+# ---- General functions -----------
 isconstant(::ConstantTimeVector) = true
 isconstant(::InfiniteTimeVector) = false
 isconstant(::RotatingTimeVector) = false
