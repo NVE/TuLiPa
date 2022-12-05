@@ -38,7 +38,7 @@ mutable struct UnitsTimeDelta <: TimeDelta
     unit_duration::Millisecond
 end
 
-# ------ General functions ------------
+# --------- Interface functions ------------
 
 # Get the total duration of the TimeDelta
 getduration(x::MsTimeDelta) = x.ms
@@ -53,7 +53,7 @@ function getlength(x::UnitsTimeDelta)
     return sum(length(r) for r in x.units)
 end
 
-# ---- Includefunction -----
+# ------ Include dataelements -------
 function includeMsTimeDelta!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
     

@@ -4,15 +4,13 @@ struct SimpleLoss <: Loss
     utilisation::Float64
 end
 
-# ---- General functions ----
-
+# --------- Interface functions ------------
 getutilisation(loss::SimpleLoss) = loss.utilisation
 isdurational(loss::SimpleLoss) = false
 getparamvalue(loss::SimpleLoss, ::ProbTime, ::TimeDelta) = loss.value
 isconstant(::SimpleLoss) = true
 
-# ------ Includefunctions ----------------
-
+# ------ Include dataelements -------
 function includeSimpleLoss!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     lossvalue = getdictvalue(value, LOSSFACTORKEY, Float64, elkey)
     @assert 0.0 <= lossvalue <= 1.0

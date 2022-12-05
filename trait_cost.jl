@@ -7,10 +7,12 @@ struct CostTerm <: Cost
     isingoing::Bool
 end
 
+# --------- Interface functions ------------
 isconstant(cost::CostTerm) = isconstant(cost.param)
 getparamvalue(cost::CostTerm, t::ProbTime, d::TimeDelta) = getparamvalue(cost.param, t, d)
 isingoing(cost::CostTerm) = cost.isingoing
 
+# ------ Include dataelements -------
 function includeCostTerm!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     (param, ok) = getdictparamvalue(lowlevel, elkey, value)
     ok || return false

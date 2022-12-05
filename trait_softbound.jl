@@ -1,3 +1,4 @@
+# ----------- Concrete types -------------
 mutable struct BaseSoftBound <: SoftBound
     id::Id
     var::Any
@@ -10,6 +11,7 @@ mutable struct BaseSoftBound <: SoftBound
     end
 end
 
+# --------- Interface functions ------------
 getid(trait::BaseSoftBound) = trait.id
 getvar(trait::BaseSoftBound) = trait.var
 getsoftcap(trait::BaseSoftBound) = trait.softcap
@@ -18,6 +20,7 @@ isupper(trait::BaseSoftBound) = trait.isupper
 
 getmainmodelobject(trait::BaseSoftBound) = trait.var
 
+# ------ Include dataelements -------
 function includeBaseSoftBound!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     (softcap, ok) = getdictparamvalue(lowlevel, elkey, value, SOFTCAPKEY)
     ok || return false

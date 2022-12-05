@@ -102,7 +102,7 @@ function TransmissionLossRHSParam(capacity::Capacity, L::SimpleLoss)
     return TransmissionLossRHSParam(capacity, L.value, L.utilisation)
 end
 
-# ---- General functions ----
+# --- Interface functions ---
 iszero(param::FlipSignParam) = iszero(param.param)
 iszero(param::ZeroParam) = true
 iszero(param::PlusOneParam) = false
@@ -233,7 +233,7 @@ function _must_dynamic_update(param::Param, horizon::Horizon)
     return false
 end
 
-# ---- Includefunctions --------
+# ------ Include dataelements -------
 function includeFossilMCParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
 
