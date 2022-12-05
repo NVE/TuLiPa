@@ -19,6 +19,7 @@ value at a given problem time (infinite because it does not rotate)
 Used for level i.e. installed wind capacity in 2021, 2030, 2040 and 2050
 """
 
+# ----- Concrete types -----------
 struct ConstantTimeVector <: TimeVector
     value::Float64
 end

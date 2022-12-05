@@ -19,6 +19,10 @@ struct MinusOneParam <: Param end
 struct ConstantParam{T <: AbstractFloat} <: Param 
     value::T
 end
+struct TwoProductParam{P1 <: Any, P2 <: Any} <: Param
+    param1::P1
+    param2::P2
+end
 
 # Sometimes we want the contribution of the parameter to be negative
 struct FlipSignParam{param <: Param} <: Param
@@ -104,6 +108,7 @@ iszero(param::ZeroParam) = true
 iszero(param::PlusOneParam) = false
 iszero(param::MinusOneParam) = false
 iszero(param::ConstantParam) = param.value == 0
+iszero(param::TwoProductParam) = iszero(param.param1) && iszero(param.param2)
 iszero(param::FossilMCParam) = false
 iszero(param::M3SToMM3SeriesParam) = false
 iszero(param::MWToGWhSeriesParam) = false
@@ -119,6 +124,7 @@ isone(param::ZeroParam) = false
 isone(param::PlusOneParam) = true
 isone(param::MinusOneParam) = false
 isone(param::ConstantParam) = param.value == 1
+isone(param::TwoProductParam) = iszero(param.param1) && iszero(param.param2)
 isone(param::FossilMCParam) = false
 isone(param::M3SToMM3SeriesParam) = false
 isone(param::MWToGWhSeriesParam) = false
@@ -143,6 +149,7 @@ isdurational(param::ZeroParam) = false
 isdurational(param::PlusOneParam) = false
 isdurational(param::MinusOneParam) = false
 isdurational(param::ConstantParam) = false
+isdurational(param::TwoProductParam) = isdurational(param.param1) && isdurational(param.param2)
 isdurational(param::FossilMCParam) = false
 isdurational(param::M3SToMM3SeriesParam) = true
 isdurational(param::MWToGWhSeriesParam) = true
@@ -158,6 +165,7 @@ getparamvalue(::ZeroParam,     ::ProbTime, ::TimeDelta) =  0.0
 getparamvalue(::PlusOneParam,  ::ProbTime, ::TimeDelta) =  1.0
 getparamvalue(::MinusOneParam, ::ProbTime, ::TimeDelta) = -1.0
 getparamvalue(param::ConstantParam, ::ProbTime, ::TimeDelta) = param.value
+getparamvalue(param::TwoProductParam, ::ProbTime, ::TimeDelta) = getparamvalue(param.param1)*getparamvalue(param.param2)
 getparamvalue(param::FlipSignParam, start::ProbTime, d::TimeDelta) = -getparamvalue(param.param, start, d)
 getparamvalue(param::ExogenIncomeParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.price, start, d)*getparamvalue(param.conversion, start, d)*(1-getparamvalue(param.loss, start, d))
 getparamvalue(param::ExogenCostParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.price, start, d)*getparamvalue(param.conversion, start, d)/(1-getparamvalue(param.loss, start, d))
