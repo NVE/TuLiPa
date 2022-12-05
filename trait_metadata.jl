@@ -14,7 +14,7 @@ run for a coarse horizon
 TODO: Add metadata for all objects?
 """
 
-# Includefunction
+# ------ Include dataelements -------
 function includeStoragehint!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(toplevel, elkey)
     

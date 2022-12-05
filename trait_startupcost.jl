@@ -156,7 +156,7 @@ function assemble!(trait::BaseStartUpCost)
     return true
 end
 
-# getmodelobjects interface
+# ------ Include dataelements -------
 function includeBaseStartUpCost!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(toplevel, elkey)
     

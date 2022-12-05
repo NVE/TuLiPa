@@ -33,7 +33,7 @@ end
 
 struct LowerZeroCapacity <: Capacity end
 
-# ---- General functions ----
+# --------- Interface functions ------------
 isconstant(capacity::PositiveCapacity) = isconstant(capacity.param)
 isconstant(::LowerZeroCapacity) = true
 
@@ -128,7 +128,7 @@ end
 
 update!(::Prob, ::Any, ::LowerZeroCapacity, ::ProbTime) = nothing
 
-# ------ Includefunctions ----------------
+# ------ Include dataelements -------
 function includePositiveCapacity!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     (param, ok) = getdictparamvalue(lowlevel, elkey, value)
     ok || return false

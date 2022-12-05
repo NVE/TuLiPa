@@ -8,11 +8,11 @@ mutable struct BaseCommodity <: Commodity
     horizon::Horizon
 end
 
-# --- Interface functions ---
+# --------- Interface functions ------------
 getid(commodity::BaseCommodity) = commodity.id
 gethorizon(commodity::BaseCommodity) = commodity.horizon
 
-# --- Convert dataelements to modelobjects ---
+# ------ Include dataelements -------
 function includeBaseCommodity!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
     

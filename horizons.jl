@@ -601,6 +601,7 @@ function assign_blocks!(method::KMeansAHMethod, X::Matrix{Float64})
     return result.assignments
 end
 
+# ------ Include dataelements -------
 function includeBaseHorizon!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
     

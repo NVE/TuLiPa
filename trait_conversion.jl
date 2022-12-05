@@ -8,7 +8,7 @@ mutable struct BaseConversion <: Conversion
     end
 end
 
-# ---- General functions ----
+# --------- Interface functions ------------
 isconstant(conversion::BaseConversion) = isconstant(conversion.param)
 iszero(conversion::BaseConversion) = iszero(conversion.param)
 isone(conversion::BaseConversion) = isone(conversion.param)
@@ -19,7 +19,7 @@ build!(::Prob, ::BaseConversion) = nothing
 setconstants!(::Prob, ::BaseConversion) = nothing
 update!(::Prob, ::BaseConversion, ::ProbTime) = nothing
 
-# ------ Includefunctions ----------------
+# ------ Include dataelements -------
 function includeBaseConversion!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
     

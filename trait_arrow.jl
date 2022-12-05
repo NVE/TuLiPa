@@ -41,7 +41,7 @@ setbalance!(arrow::OurArrowTypes, balance::Balance) = arrow.balance = balance
 
 isingoing(arrow::OurArrowTypes) = arrow.isingoing
 
-# -------- General functions ----------------
+# --------- Interface functions ------------
 # BaseArrow has these elements describing the contribution of the variable in the Balance
 getconversion(arrow::BaseArrow) = arrow.conversion
 getloss(arrow::BaseArrow) = arrow.loss
@@ -352,7 +352,7 @@ function update!(p::Prob, var::Any, arrow::SegmentedArrow, start::ProbTime)
     return
 end
 
-# ---------- Include functions -----------------
+# ------ Include dataelements -------
 function includeBaseArrow!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
 
