@@ -111,7 +111,8 @@ function build!(p::Prob, ::Any, arrow::BaseArrow)
     return
 end
 
-# Segmentedarrow creates equations and variables
+# Segmentedarrow creates segment variables and the equations that
+# connect them to the main variable
 function build!(p::Prob, var::Any, arrow::SegmentedArrow)
     T = getnumperiods(gethorizon(var))
     
