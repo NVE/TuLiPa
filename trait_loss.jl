@@ -1,3 +1,7 @@
+"""
+We implement SimpleLoss (see abstracttypes.jl)
+"""
+
 # ---- Concrete types ----
 struct SimpleLoss <: Loss
     value::Float64
