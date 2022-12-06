@@ -1,3 +1,7 @@
+"""
+We implement BaseConversion (see abstracttypes.jl)
+"""
+
 # ---- Concrete types ----
 mutable struct BaseConversion <: Conversion
     param::Param
@@ -15,6 +19,7 @@ isone(conversion::BaseConversion) = isone(conversion.param)
 isdurational(conversion::BaseConversion) = false
 getparamvalue(conversion::BaseConversion, t::ProbTime, d::TimeDelta) = getparamvalue(conversion.param, t, d)
 
+# Only does something for more complex Conversions
 build!(::Prob, ::BaseConversion) = nothing
 setconstants!(::Prob, ::BaseConversion) = nothing
 update!(::Prob, ::BaseConversion, ::ProbTime) = nothing

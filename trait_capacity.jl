@@ -82,7 +82,7 @@ function setconstants!(p::Prob, var::Any, capacity::PositiveCapacity)
     return
 end
 
-function setconstants!(p::Prob, var::Any, capacity::LowerZeroCapacity)
+function setconstants!(p::Prob, var::Any, ::LowerZeroCapacity)
     T = getnumperiods(gethorizon(var))
 
     varid = getid(var)
