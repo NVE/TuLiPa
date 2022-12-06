@@ -1,7 +1,7 @@
 """
 Assumptions: 
  - Main model objects are Storage, Flow or Balance
- - Other model objects belong to a main model object i.e. supporting getmainmodelobject(obj) -> object of type Storage, or Flow or Balance
+ - Other model objects belong to a main model object i.e. supporting getparent(obj) -> object of type Storage, or Flow or Balance
 """
 
 # kan ikke ha hvilke som helst modellobjekter

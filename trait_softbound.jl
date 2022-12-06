@@ -3,7 +3,9 @@ We implement BaseSoftBound (see abstracttypes.jl)
 
 It builds the following equation depending on if the the 
 softbound is upper (sign = 1) or lower (sign = -1):
-sign*var[t] - breachvar[t] <= sign*softcap
+sign*var[t] - breachvar[t] <= sign*softcap[t]
+
+# TODO: Also constrain the state variables of the parent object
 """
 
 # ----------- Concrete types -------------

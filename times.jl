@@ -1,11 +1,11 @@
 """
-A ProbTime have at least two dimentions. 
+A ProbTime have at least two dimensions. 
 The first dimention is datatime, the second is scenariotime.
 We use datatime to look up capacities and such.
 We use scenariotime to look up profile values.
-"""
 
 # TODO: Should all ProbTime types implement getdatatime and getscenariotime?
+"""
 
 using Dates
 
