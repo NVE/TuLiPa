@@ -10,19 +10,7 @@ TODO: Support variables that can be positve and negative
 
 # ----- Generic fallbacks --------------
 
-# We want to update the problem efficiently, so we check if 
-# problem values must be updated dynamically
-# If the value is the same for all scenarios and time periods, 
-# it should only be updated once using setconstants! instead of update!
-function _must_dynamic_update(capacity::Capacity, horizon::Horizon) 
-    isconstant(capacity) || return true
 
-    if isdurational(capacity) && !hasconstantdurations(horizon)
-        return true
-    end
-
-    return false
-end
 
 # ---- Concrete types ----
 struct PositiveCapacity <: Capacity
