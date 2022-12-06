@@ -1,4 +1,6 @@
-
+"""
+We implement BasePrice (see abstracttypes.jl)
+"""
 
 # ---- Concrete types ----
 mutable struct BasePrice <: Price
@@ -16,6 +18,7 @@ iszero(price::BasePrice) = iszero(price.param)
 isdurational(price::BasePrice) = false
 getparamvalue(price::BasePrice, t::ProbTime, d::TimeDelta) = getparamvalue(price.param, t, d)
 
+# Only does something for more complex Prices
 build!(::Prob, ::BasePrice) = nothing
 setconstants!(::Prob, ::BasePrice) = nothing
 update!(::Prob, ::BasePrice, ::ProbTime) = nothing
