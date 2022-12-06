@@ -218,21 +218,6 @@ function getparamvalue(param::MeanSeriesParam, start::ProbTime, d::TimeDelta)
     return value
 end
 
-# --- Dynamic updates ---
-# We want to update the problem efficiently, so we check if 
-# problem values must be updated dynamically
-# If the value is the same for all scenarios and time periods, 
-# it should only be updated once using setconstants! instead of update!
-function _must_dynamic_update(param::Param, horizon::Horizon)
-    isconstant(param) || return true
-
-    if isdurational(param) && !hasconstantdurations(horizon)
-        return true
-    end
-
-    return false
-end
-
 # ------ Include dataelements -------
 function includeFossilMCParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
