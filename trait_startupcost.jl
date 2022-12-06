@@ -7,8 +7,7 @@ function getstatevariables(trait::StartUpCost)
     return [info]
 end
 
-# TODO: getparent(obj) = Nothing or Something
-getmainmodelobject(trait::StartUpCost) = getflow(trait)
+getparent(trait::StartUpCost) = getflow(trait)
 
 # Prob interface 
 
@@ -117,6 +116,7 @@ end
 
 getid(trait::BaseStartUpCost) = trait.id
 
+# BaseStartUpCost creates variables and equations that needs ids/names
 function getonlinevarid(trait::BaseStartUpCost)
     Id(getconceptname(trait.id), "OnlineCap" * getinstancename(trait.id))
 end

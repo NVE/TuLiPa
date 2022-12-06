@@ -34,7 +34,7 @@ getbalance(var::BaseAggSupplyCurve) = var.balance
 getflows(var::BaseAggSupplyCurve) = var.flows
 getnumclusters(var::BaseAggSupplyCurve) = var.numclusters
 
-getmainmodelobject(var::AggSupplyCurve) = var.balance
+getparent(var::AggSupplyCurve) = var.balance
 
 # Build the equivalent variables
 function build!(p::Prob, var::AggSupplyCurve)

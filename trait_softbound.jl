@@ -22,7 +22,7 @@ getsoftcap(trait::BaseSoftBound) = trait.softcap
 getpenalty(trait::BaseSoftBound) = trait.penalty
 isupper(trait::BaseSoftBound) = trait.isupper
 
-getmainmodelobject(trait::BaseSoftBound) = trait.var
+getparent(trait::BaseSoftBound) = trait.var
 
 # BaseSoftBound creates variables and equations that needs ids/names
 function getleid(trait::BaseSoftBound)

@@ -16,7 +16,7 @@ function getmainmodelobjects(modelobjects::Dict)
                 d[obj] = Set()
             end
         else
-            mainobj = getmainmodelobject(obj)
+            mainobj = getparent(obj)
 
             if !(mainobj isa MAINTYPES)
                 error("Main model object for $id is not $MAINTYPES. Got $(typeof(mainobj))")
