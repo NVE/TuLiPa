@@ -1,7 +1,11 @@
 """
+Here we store functions that manipulate the model objects after they are fully put together
+
 Assumptions: 
  - Main model objects are Storage, Flow or Balance
  - Other model objects belong to a main model object i.e. supporting getparent(obj) -> object of type Storage, or Flow or Balance
+
+ TODO: Clean up this file
 """
 
 # kan ikke ha hvilke som helst modellobjekter
