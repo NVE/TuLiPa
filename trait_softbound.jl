@@ -1,10 +1,6 @@
 """
 We implement BaseSoftBound (see abstracttypes.jl)
 
-It builds the following equation depending on if the the 
-softbound is upper (sign = 1) or lower (sign = -1):
-sign*var[t] - breachvar[t] <= sign*softcap[t]
-
 # TODO: Also constrain the state variables of the parent object
 """
 
@@ -73,6 +69,7 @@ function setconstants!(p::Prob, trait::BaseSoftBound)
         setlb!(p, breachvarid, t, 0.0)
 
         # Var and breachvar in softbound equation
+        # sign*var[t] - breachvar[t] <= sign*softcap[t]
         setconcoeff!(p, leid, varid, t, t, sign)
         setconcoeff!(p, leid, breachvarid, t, t, -1.0)
     end

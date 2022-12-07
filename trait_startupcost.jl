@@ -1,120 +1,46 @@
+"""
+We implement BaseStartUpCost (also see abstracttypes.jl)
+This is a linear cost of increasing a Flow 
+from 0 up to minimal stable load.
+- startupcost is the hourly startup cost per unit (GW for thermal) increase
+- starthours is the amount of hours the startup takes
+- msl is the minimal stable load as a percentage of capacity
 
-function getstatevariables(trait::StartUpCost)
-    var_in_id = getstartonlinevarid(trait)
-    var_out_id = getonlinevarid(trait)
-    var_out_ix = getnumperiods(gethorizon(getflow(trait)))
-    info = StateVariableInfo((var_in_id, 1), (var_out_id, var_out_ix))
-    return [info]
-end
+Internal non-negative variables: online and startvar
+Equations restricting the Flow:
+flow[t] >= online[t] * msl
+flow[t] <= online[t]
+startvar[t] >= (d/dt) online[t] * msl (therefore online has statevariables)
+Objective function contribution:
+startupcost * starthours * startvar[t] / ub(flow)[t] 
 
-getparent(trait::StartUpCost) = getflow(trait)
+# TODO: Restrict ramping based on starthours
+"""
 
-# Prob interface 
-
-function build!(p::Prob, trait::StartUpCost)
-    T = getnumperiods(gethorizon(getflow(trait)))
-
-    addvar!(p, getonlinevarid(trait), T)
-    addvar!(p, getstartvarid(trait), T)
-
-    addge!(p, getstartconid(trait), T)
-    addge!(p, getlbconid(trait), T)
-    addle!(p, getubconid(trait), T)
-
-    addvar!(p, getstartonlinevarid(trait), 1)
-
-    # make ingoing and outgoing state variables fixable
-    makefixable!(p, getstartonlinevarid(trait), 1)
-    makefixable!(p, getonlinevarid(trait), T)
-
-    return
-end
-
-function update!(p::Prob, trait::StartUpCost, start::ProbTime)
-    # Set objective coeff if its not constant
-    startvarid = getstartvarid(trait)
-    cap = getub(trait.flow)
-    if !isconstant(cap)
-        F = trait.startcost * trait.starthours / trait.msl
-        h = gethorizon(trait.flow)
-        
-        for t in 1:getnumperiods(h)
-            querystart = getstarttime(h, t, start)
-            querydelta = gettimedelta(h, t)
-            capvalue = getparamvalue(cap, querystart, querydelta)
-            if capvalue > 0.0
-                c = F / capvalue
-            else
-                c = 0.0
-            end
-            setobjcoeff!(p, startvarid, t, c)
-        end
-    end
-    return
-end
-
-function setconstants!(p::Prob, trait::StartUpCost)
-    T = getnumperiods(gethorizon(trait.flow))
-
-    flowid = getid(trait.flow)
-    startvarid = getstartvarid(trait)
-    startconid = getstartconid(trait)
-    onlinevarid = getonlinevarid(trait)
-    lbconid = getlbconid(trait)
-    ubconid = getubconid(trait)
-
-    # Set objective coeff if it is constant
-    cap = getub(trait.flow)
-    if isconstant(cap)
-        capvalue = getparamvalue(cap, ConstantTime(), MsTimeDelta(Hour(1)))
-        @assert capvalue > 0.0
-        c = trait.startcost * trait.starthours / (capvalue * trait.msl)
-        for t in 1:T
-            setobjcoeff!(p, startvarid, t, c)
-        end
-    end
-
-    for t in 1:T
-        # Non-negative vars
-        setlb!(p, onlinevarid, t, 0.0)
-        setlb!(p, startvarid,  t, 0.0)
-
-        # gen[t] >= online[t] * msl
-        setconcoeff!(p, lbconid, flowid,   t, t, 1.0)
-        setconcoeff!(p, lbconid, onlinevarid, t, t, -trait.msl)
-
-        # gen[t] <= online[t]
-        setconcoeff!(p, ubconid, flowid, t, t, 1.0)
-        setconcoeff!(p, ubconid, onlinevarid, t, t, -1.0)
-
-        # startvar[t] >= (d/dt) online[t] for t > 1
-        setconcoeff!(p, startconid, startvarid, t, t, 1.0)
-        setconcoeff!(p, startconid, onlinevarid, t, t, -1.0)
-        if t > 1
-            setconcoeff!(p, startconid, onlinevarid, t, t-1, 1.0)
-        end
-    end
-
-    # set state variable
-    start_id = getstartonlinevarid(trait)
-    setconcoeff!(p, startconid, start_id, 1, 1, 1.0)
-
-    return
-end
-
+# ------- Concrete type --------------------
 mutable struct BaseStartUpCost <: StartUpCost
     id::Id
     flow::Flow
     startcost::Float64
     starthours::Float64
     msl::Float64
-    
-    function BaseStartUpCost(id, genflow, startcost, starthours, msl)
-        return new(id, genflow, startcost, starthours, msl)
-    end
 end
 
+# ------- Interface functions ----------------
 getid(trait::BaseStartUpCost) = trait.id
+getflow(trait::BaseStartUpCost) = trait.flow
+
+getparent(trait::BaseStartUpCost) = getflow(trait)
+
+# BaseStartUpCost needs internal statevariables for online
+# x[T] (var_out) is part of the online variable while x[0] (var_in) has to be named and built seperately
+function getstatevariables(trait::BaseStartUpCost)
+    var_in_id = getstartonlinevarid(trait)
+    var_out_id = getonlinevarid(trait)
+    var_out_ix = getnumperiods(gethorizon(getflow(trait)))
+    info = StateVariableInfo((var_in_id, 1), (var_out_id, var_out_ix))
+    return [info]
+end
 
 # BaseStartUpCost creates variables and equations that needs ids/names
 function getonlinevarid(trait::BaseStartUpCost)
@@ -141,10 +67,107 @@ function getlbconid(trait::BaseStartUpCost)
     Id(getconceptname(trait.id), "LB" * getinstancename(trait.id))
 end
 
-getflow(trait::BaseStartUpCost) = trait.flow
+function build!(p::Prob, trait::StartUpCost)
+    T = getnumperiods(gethorizon(getflow(trait)))
 
-# Assemble interface
+    # Build internal variables and equations
+    addvar!(p, getonlinevarid(trait), T)
+    addvar!(p, getstartvarid(trait), T)
 
+    addge!(p, getstartconid(trait), T)
+    addge!(p, getlbconid(trait), T)
+    addle!(p, getubconid(trait), T)
+
+    addvar!(p, getstartonlinevarid(trait), 1)
+
+    # make ingoing and outgoing state variables fixable
+    makefixable!(p, getstartonlinevarid(trait), 1)
+    makefixable!(p, getonlinevarid(trait), T)
+
+    return
+end
+
+function setconstants!(p::Prob, trait::StartUpCost)
+    T = getnumperiods(gethorizon(trait.flow))
+
+    flowid = getid(trait.flow)
+    startvarid = getstartvarid(trait)
+    startconid = getstartconid(trait)
+    onlinevarid = getonlinevarid(trait)
+    lbconid = getlbconid(trait)
+    ubconid = getubconid(trait)
+
+    for t in 1:T
+        # Non-negative vars
+        setlb!(p, onlinevarid, t, 0.0)
+        setlb!(p, startvarid,  t, 0.0)
+
+        # Include variables in equations
+        # flow[t] >= online[t] * msl
+        setconcoeff!(p, lbconid, flowid,   t, t, 1.0)
+        setconcoeff!(p, lbconid, onlinevarid, t, t, -trait.msl)
+
+        # flow[t] <= online[t]
+        setconcoeff!(p, ubconid, flowid, t, t, 1.0)
+        setconcoeff!(p, ubconid, onlinevarid, t, t, -1.0)
+
+        # startvar[t] >= (d/dt) online[t] * msl for t > 1
+        setconcoeff!(p, startconid, startvarid, t, t, 1.0)
+        setconcoeff!(p, startconid, onlinevarid, t, t, -trait.msl) 
+        if t > 1
+            setconcoeff!(p, startconid, onlinevarid, t, t-1, trait.msl) 
+        end
+    end
+
+    # set state variable
+    start_id = getstartonlinevarid(trait)
+    setconcoeff!(p, startconid, start_id, 1, 1, trait.msl)
+
+    # Set objective coeff if it is constant
+    cap = getub(trait.flow)
+    if isconstant(cap)
+        capvalue = getparamvalue(cap, ConstantTime(), MsTimeDelta(Hour(1)))
+        @assert capvalue > 0.0
+        cost = trait.startcost * trait.starthours # cost of full startup
+
+        # We want in objective [cost of 100% startup] * [share of capacity started]
+        # Which is the same as
+        # [cost of 100% startup] * [cap_started_GWh/Installed_Cap_GWh]
+        # so the cost coefficient becomes [cost of 100% startup /Installed_Cap_GWh]
+        # since the start variable is in GWh
+        coeff = cost / capvalue
+        for t in 1:T
+            setobjcoeff!(p, startvarid, t, coeff)
+        end
+    end
+
+    return
+end
+
+# Set objective coeff if its not constant
+function update!(p::Prob, trait::StartUpCost, start::ProbTime)
+    startvarid = getstartvarid(trait)
+    cap = getub(trait.flow)
+    if !isconstant(cap)
+        cost = trait.startcost * trait.starthours
+        h = gethorizon(trait.flow)
+        
+        for t in 1:getnumperiods(h)
+            querystart = getstarttime(h, t, start)
+            querydelta = gettimedelta(h, t)
+            capvalue = getparamvalue(cap, querystart, querydelta)
+            if capvalue > 0.0
+                coeff = cost / capvalue
+            else
+                coeff = 0.0
+            end
+            setobjcoeff!(p, startvarid, t, coeff)
+        end
+    end
+    return
+end
+
+# BaseStartUpCost types are toplevel objects in dataset_compiler, som we must implement assemble!
 function assemble!(trait::BaseStartUpCost)
 
     # return if flow not assembled yet
