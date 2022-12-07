@@ -359,4 +359,5 @@ end
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "FossilMCParam")] = includeFossilMCParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "M3SToMM3SeriesParam")] = includeM3SToMM3SeriesParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MWToGWhSeriesParam")] = includeMWToGWhSeriesParam!
+INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "CostPerMWToGWhParam")] = includeCostPerMWToGWhParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MeanSeriesParam")] = includeMeanSeriesParam!
