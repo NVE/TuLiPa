@@ -1,18 +1,27 @@
 
 """
+State variables are the ingoing and outgoing variables. These can be inside the
+horizon periods 1:T or outside (i.e. x[0]).
+
+Ingoing and outgoing state variables are paired together  (i.e. x[0] with x[T] 
+and x[-1] with x[T-1]). This is convenient if start should equal stop
+
 All state variables must be fixable in this system
 to ease the job of adding boundary conditions
 """
 
+# ------- State variable type -------------
 struct StateVariableInfo
     var_in::Tuple{Id, Int}
     var_out::Tuple{Id, Int}
 end
 
+# -------- General fallback -----------------
+getstatevariables(::Any) = StateVariableInfo[]
+
+# -------- Function interface ---------------
 getvarin(x::StateVariableInfo) = x.var_in
 getvarout(x::StateVariableInfo) = x.var_out
-
-getstatevariables(::Any) = StateVariableInfo[]
 
 function getoutgoingstates!(states::Dict{StateVariableInfo, Float64}, p::Prob)
     for var in keys(states)

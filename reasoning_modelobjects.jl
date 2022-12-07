@@ -187,7 +187,7 @@ function getstoragesystems(modelobjects::Dict)
     return systems
 end
 
-# TODO: Use cutoff value instead of hint and getemptyduration(storage) -> Time to empty in ms starting with full storage
+# TODO: Replace inputted hint with getemptyduration(storage) -> Time to empty in ms starting with full storage
 function getshorttermstoragesystems(storagesystems::Dict, durationcutoff::Period)
     ret = Dict()
     

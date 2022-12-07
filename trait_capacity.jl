@@ -8,10 +8,6 @@ LowerZeroCapacity is a lower bound set to 0 for a variable
 TODO: Support variables that can be positve and negative
 """
 
-# ----- Generic fallbacks --------------
-
-
-
 # ---- Concrete types ----
 struct PositiveCapacity <: Capacity
     id::Id

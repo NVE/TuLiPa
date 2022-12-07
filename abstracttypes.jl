@@ -367,7 +367,7 @@ abstract type AggSupplyCurve  end
 # Interface: 
 # getid(trait)
 # getflow(trait)
-# getparerent(trait)
+# getparent(trait)
 # getstatevariables(trait)
 # build!(trait)
 # setconstants!(trait)

@@ -1,7 +1,5 @@
 """
 We implement BaseSoftBound (see abstracttypes.jl)
-
-# TODO: Also constrain the state variables of the parent object
 """
 
 # ----------- Concrete types -------------
