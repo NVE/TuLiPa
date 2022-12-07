@@ -1,40 +1,38 @@
 """
-We implement BaseStartUpCost (also see abstracttypes.jl)
-This is a linear cost of increasing a Flow 
+We implement SimpleStartUpCost (also see abstracttypes.jl)
+This is a linearized cost of increasing a Flow 
 from 0 up to minimal stable load.
-- startupcost is the hourly startup cost per unit (GW for thermal) increase
-- starthours is the amount of hours the startup takes
+- startupcost is cost per unit (GW for thermal) increase of online capacity
 - msl is the minimal stable load as a percentage of capacity
 
 Internal non-negative variables: online and startvar
 Equations restricting the Flow:
 flow[t] >= online[t] * msl
 flow[t] <= online[t]
-startvar[t] >= (d/dt) online[t] * msl (therefore online has statevariables)
+startvar[t] >= (d/dt) online[t] (therefore online has statevariables)
 Objective function contribution:
-startupcost * starthours * startvar[t] / ub(flow)[t] 
+startupcost * startvar[t] / ub(flow)[t] 
 
-# TODO: Restrict ramping based on starthours
+# TODO: Implement RampingStartUpCost where startup ramping is restricted based on starthours
 """
 
 # ------- Concrete type --------------------
-mutable struct BaseStartUpCost <: StartUpCost
+mutable struct SimpleStartUpCost <: StartUpCost
     id::Id
     flow::Flow
     startcost::Float64
-    starthours::Float64
     msl::Float64
 end
 
 # ------- Interface functions ----------------
-getid(trait::BaseStartUpCost) = trait.id
-getflow(trait::BaseStartUpCost) = trait.flow
+getid(trait::SimpleStartUpCost) = trait.id
+getflow(trait::SimpleStartUpCost) = trait.flow
 
-getparent(trait::BaseStartUpCost) = getflow(trait)
+getparent(trait::SimpleStartUpCost) = getflow(trait)
 
-# BaseStartUpCost needs internal statevariables for online
+# SimpleStartUpCost needs internal statevariables for online
 # x[T] (var_out) is part of the online variable while x[0] (var_in) has to be named and built seperately
-function getstatevariables(trait::BaseStartUpCost)
+function getstatevariables(trait::SimpleStartUpCost)
     var_in_id = getstartonlinevarid(trait)
     var_out_id = getonlinevarid(trait)
     var_out_ix = getnumperiods(gethorizon(getflow(trait)))
@@ -42,28 +40,28 @@ function getstatevariables(trait::BaseStartUpCost)
     return [info]
 end
 
-# BaseStartUpCost creates variables and equations that needs ids/names
-function getonlinevarid(trait::BaseStartUpCost)
+# SimpleStartUpCost creates variables and equations that needs ids/names
+function getonlinevarid(trait::SimpleStartUpCost)
     Id(getconceptname(trait.id), "OnlineCap" * getinstancename(trait.id))
 end
 
-function getstartonlinevarid(trait::BaseStartUpCost)
+function getstartonlinevarid(trait::SimpleStartUpCost)
     Id(getconceptname(trait.id), "StartOnlineCap" * getinstancename(trait.id))
 end
 
-function getstartconid(trait::BaseStartUpCost)
+function getstartconid(trait::SimpleStartUpCost)
     Id(getconceptname(trait.id), "StartCon" * getinstancename(trait.id))
 end
 
-function getstartvarid(trait::BaseStartUpCost)
+function getstartvarid(trait::SimpleStartUpCost)
     Id(getconceptname(trait.id), "StartVar" * getinstancename(trait.id))
 end
 
-function getubconid(trait::BaseStartUpCost)
+function getubconid(trait::SimpleStartUpCost)
     Id(getconceptname(trait.id), "UB" * getinstancename(trait.id))
 end
 
-function getlbconid(trait::BaseStartUpCost)
+function getlbconid(trait::SimpleStartUpCost)
     Id(getconceptname(trait.id), "LB" * getinstancename(trait.id))
 end
 
@@ -128,16 +126,15 @@ function setconstants!(p::Prob, trait::StartUpCost)
     if isconstant(cap)
         capvalue = getparamvalue(cap, ConstantTime(), MsTimeDelta(Hour(1)))
         @assert capvalue > 0.0
-        cost = trait.startcost * trait.starthours # cost of full startup
+        c = trait.startcost / capvalue # cost of full startup
 
         # We want in objective [cost of 100% startup] * [share of capacity started]
         # Which is the same as
         # [cost of 100% startup] * [cap_started_GWh/Installed_Cap_GWh]
         # so the cost coefficient becomes [cost of 100% startup /Installed_Cap_GWh]
         # since the start variable is in GWh
-        coeff = cost / capvalue
         for t in 1:T
-            setobjcoeff!(p, startvarid, t, coeff)
+            setobjcoeff!(p, startvarid, t, c)
         end
     end
 
@@ -167,8 +164,8 @@ function update!(p::Prob, trait::StartUpCost, start::ProbTime)
     return
 end
 
-# BaseStartUpCost types are toplevel objects in dataset_compiler, som we must implement assemble!
-function assemble!(trait::BaseStartUpCost)
+# SimpleStartUpCost types are toplevel objects in dataset_compiler, som we must implement assemble!
+function assemble!(trait::SimpleStartUpCost)
 
     # return if flow not assembled yet
     isnothing(gethorizon(trait.flow)) && return false
@@ -180,7 +177,7 @@ function assemble!(trait::BaseStartUpCost)
 end
 
 # ------ Include dataelements -------
-function includeBaseStartUpCost!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeSimpleStartUpCost!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(toplevel, elkey)
     
     flowname = getdictvalue(value, FLOW_CONCEPT, String, elkey)
@@ -188,14 +185,13 @@ function includeBaseStartUpCost!(toplevel::Dict, ::Dict, elkey::ElementKey, valu
     haskey(toplevel, flowkey) || return false
 
     msl = getdictvalue(value, "MinStableLoad", Real, elkey)
-    starthours = getdictvalue(value, "StartHours", Real, elkey)
     startcost = getdictvalue(value, "StartCost", Real, elkey)
     
     objkey = getobjkey(elkey)
 
-    toplevel[objkey] = BaseStartUpCost(objkey, toplevel[flowkey], startcost, starthours, msl)
+    toplevel[objkey] = SimpleStartUpCost(objkey, toplevel[flowkey], startcost, msl)
     
     return true
  end
 
-INCLUDEELEMENT[TypeKey(STARTUPCOST_CONCEPT, "BaseStartUpCost")] = includeBaseStartUpCost!
+INCLUDEELEMENT[TypeKey(STARTUPCOST_CONCEPT, "SimpleStartUpCost")] = includeSimpleStartUpCost!
