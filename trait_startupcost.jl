@@ -20,7 +20,7 @@ startupcost * startvar[t] / ub(flow)[t]
 mutable struct SimpleStartUpCost <: StartUpCost
     id::Id
     flow::Flow
-    startcost::Float64
+    startcost::Param
     msl::Float64
 end
 
@@ -86,7 +86,8 @@ function build!(p::Prob, trait::StartUpCost)
 end
 
 function setconstants!(p::Prob, trait::StartUpCost)
-    T = getnumperiods(gethorizon(trait.flow))
+    h = gethorizon(trait.flow)
+    T = getnumperiods(h)
 
     flowid = getid(trait.flow)
     startvarid = getstartvarid(trait)
@@ -122,11 +123,8 @@ function setconstants!(p::Prob, trait::StartUpCost)
     setconcoeff!(p, startconid, start_id, 1, 1, trait.msl)
 
     # Set objective coeff if it is constant
-    cap = getub(trait.flow)
-    ############# if isconstant(cap) # replace with _must_dynamic_update
-        capvalue = getparamvalue(cap, ConstantTime(), MsTimeDelta(Hour(1)))
-        @assert capvalue > 0.0
-        c = trait.startcost * 1000 / (getduration(timedelta) / 3600000) # cost of full startup
+    if !_must_dynamic_update(trait.startcost, h)
+        value = getparamvalue(trait.startcost, ConstantTime(), MsTimeDelta(Hour(1))) # cost of full startup
 
         # We want in objective [cost of 100% startup] * [share of capacity started]
         # Which is the same as
@@ -134,7 +132,7 @@ function setconstants!(p::Prob, trait::StartUpCost)
         # so the cost coefficient becomes [cost of 100% startup /Installed_Cap_GWh]
         # since the start variable is in GWh
         for t in 1:T
-            setobjcoeff!(p, startvarid, t, c)
+            setobjcoeff!(p, startvarid, t, value)
         end
     end
 
@@ -144,21 +142,14 @@ end
 # Set objective coeff if its not constant
 function update!(p::Prob, trait::StartUpCost, start::ProbTime)
     startvarid = getstartvarid(trait)
-    cap = getub(trait.flow)
-    ############# if !isconstant(cap)
-        cost = trait.startcost * trait.starthours
-        h = gethorizon(trait.flow)
-        
+    h = gethorizon(trait.flow)
+
+    if !_must_dynamic_update(trait.startcost, h)   
         for t in 1:getnumperiods(h)
             querystart = getstarttime(h, t, start)
             querydelta = gettimedelta(h, t)
-            capvalue = getparamvalue(cap, querystart, querydelta)
-            if capvalue > 0.0
-                coeff = cost / capvalue
-            else
-                coeff = 0.0
-            end
-            setobjcoeff!(p, startvarid, t, coeff)
+            value = getparamvalue(trait.startcost, querystart, querydelta)
+            setobjcoeff!(p, startvarid, t, value)
         end
     end
     return
@@ -179,14 +170,16 @@ end
 # ------ Include dataelements -------
 function includeSimpleStartUpCost!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(toplevel, elkey)
+
+    (startcost, ok) = getdictparamvalue(lowlevel, elkey, value, STARTCOSTKEY)
+    ok || return false
     
     flowname = getdictvalue(value, FLOW_CONCEPT, String, elkey)
     flowkey = Id(FLOW_CONCEPT, flowname)
     haskey(toplevel, flowkey) || return false
 
     msl = getdictvalue(value, "MinStableLoad", Real, elkey)
-    startcost = getdictvalue(value, "StartCost", Real, elkey)
-    
+
     objkey = getobjkey(elkey)
 
     toplevel[objkey] = SimpleStartUpCost(objkey, toplevel[flowkey], startcost, msl)

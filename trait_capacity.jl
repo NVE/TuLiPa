@@ -17,7 +17,7 @@ end
 
 struct LowerZeroCapacity <: Capacity end
 
-# --------- Interface functions ------------
+# --------- Interface functions ------------ ()
 isconstant(capacity::PositiveCapacity) = isconstant(capacity.param)
 isconstant(::LowerZeroCapacity) = true
 

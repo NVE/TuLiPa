@@ -69,6 +69,10 @@ struct MWToGWhSeriesParam{L <: TimeVector, P <: TimeVector} <: Param
     profile::P
 end
 
+struct CostPerMWToGWhParam{P <: Param} <: Param
+    param::P
+end
+
 # These concrete types uses Price, Conversion, Loss and Capacity types
 struct ExogenCostParam{P <: Price, C <: Conversion, L <: Loss} <: Param
     price::P
@@ -112,6 +116,7 @@ iszero(param::TwoProductParam) = iszero(param.param1) && iszero(param.param2)
 iszero(param::FossilMCParam) = false
 iszero(param::M3SToMM3SeriesParam) = false
 iszero(param::MWToGWhSeriesParam) = false
+iszero(param::CostPerMWToGWhParam) = false
 iszero(param::MeanSeriesParam) = false
 iszero(param::ExogenCostParam) = iszero(param.price) && iszero(param.conversion)
 iszero(param::ExogenIncomeParam) = iszero(param.price) && iszero(param.conversion)
@@ -128,6 +133,7 @@ isone(param::TwoProductParam) = iszero(param.param1) && iszero(param.param2)
 isone(param::FossilMCParam) = false
 isone(param::M3SToMM3SeriesParam) = false
 isone(param::MWToGWhSeriesParam) = false
+isone(param::CostPerMWToGWhParam) = false
 isone(param::MeanSeriesParam) = false
 isone(param::ExogenCostParam) = false
 isone(param::ExogenIncomeParam) = false
@@ -153,6 +159,7 @@ isdurational(param::TwoProductParam) = isdurational(param.param1) && isdurationa
 isdurational(param::FossilMCParam) = false
 isdurational(param::M3SToMM3SeriesParam) = true
 isdurational(param::MWToGWhSeriesParam) = true
+isdurational(param::CostPerMWToGWhParam) = isdurational(param.param)
 isdurational(param::MeanSeriesParam) = false
 isdurational(param::ExogenCostParam) = isdurational(param.price) && isdurational(param.conversion) && isdurational(param.loss)
 isdurational(param::ExogenIncomeParam) = isdurational(param.price) && isdurational(param.conversion) && isdurational(param.loss)
@@ -207,6 +214,12 @@ function getparamvalue(param::MWToGWhSeriesParam, start::ProbTime, d::TimeDelta)
     mw = level_mw * profile
     hours = float(getduration(d).value / 3600000)
     return mw * hours / 1e3
+end
+
+function getparamvalue(param::CostPerMWToGWhParam, start::ProbTime, d::TimeDelta)
+    cost = getparamvalue(param.param, start, d)
+    hours = float(getduration(d).value / 3600000)
+    return cost / hours * 1e3
 end
 
 function getparamvalue(param::MeanSeriesParam, start::ProbTime, d::TimeDelta)
@@ -291,6 +304,37 @@ function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, v
     level = ConstantTimeVector(value)
     profile = ConstantTimeVector(one(typeof(value)))
     lowlevel[getobjkey(elkey)] = MWToGWhSeriesParam(level, profile)
+    return true
+end
+
+function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    checkkey(lowlevel, elkey)
+
+    if haskey(value, STARTCOSTKEY)
+        (startcost, ok) = getdictparamvalue(lowlevel, elkey, value, STARTCOSTKEY)   ;  ok || return false
+        lowlevel[getobjkey(elkey)] = CostPerMWToGWhParam(startcost)
+    elseif haskey(value, "Level") && haskey(value, "Profile")
+        level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
+        profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
+        
+        (level,   ok) = getdicttimevectorvalue(lowlevel, level)    ;  ok || return false
+        (profile, ok) = getdicttimevectorvalue(lowlevel, profile)  ;  ok || return false
+        
+        lowlevel[getobjkey(elkey)] = CostPerMWToGWhParam(MeanSeriesParam(level, profile))
+    else
+        return false
+    end
+
+    return true
+end
+
+function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::CostPerMWToGWhParam)::Bool
+    lowlevel[getobjkey(elkey)] = value
+    return true
+end
+
+function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)::Bool
+    lowlevel[getobjkey(elkey)] = ConstantParam(value)
     return true
 end
 

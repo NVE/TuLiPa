@@ -26,6 +26,7 @@ const LOSSFACTORKEY = "LossFactor"
 const UTILIZATIONKEY = "Utilization"
 const PENALTYKEY = "Penalty"
 const SOFTCAPKEY = "SoftCap"
+const STARTCOSTKEY = "StartCost"
 
 # Metadata
 const STORAGEHINTKEY   = "Storagehint"
