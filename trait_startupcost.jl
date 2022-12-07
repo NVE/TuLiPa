@@ -123,10 +123,10 @@ function setconstants!(p::Prob, trait::StartUpCost)
 
     # Set objective coeff if it is constant
     cap = getub(trait.flow)
-    if isconstant(cap)
+    ############# if isconstant(cap) # replace with _must_dynamic_update
         capvalue = getparamvalue(cap, ConstantTime(), MsTimeDelta(Hour(1)))
         @assert capvalue > 0.0
-        c = trait.startcost / capvalue # cost of full startup
+        c = trait.startcost * 1000 / (getduration(timedelta) / 3600000) # cost of full startup
 
         # We want in objective [cost of 100% startup] * [share of capacity started]
         # Which is the same as
@@ -145,7 +145,7 @@ end
 function update!(p::Prob, trait::StartUpCost, start::ProbTime)
     startvarid = getstartvarid(trait)
     cap = getub(trait.flow)
-    if !isconstant(cap)
+    ############# if !isconstant(cap)
         cost = trait.startcost * trait.starthours
         h = gethorizon(trait.flow)
         

@@ -1,5 +1,5 @@
 """
-Implementation of JuMP_Prob <: Prob
+Implementation of JuMP_Prob <: Prob (see also problem_interface.jl)
 Here we use the JuMP modelling framework
 https://github.com/jump-dev/JuMP.jl
 """
@@ -45,6 +45,15 @@ mutable struct JuMP_Prob <: Prob
         end
 
         return p
+    end
+end
+
+function update!(p::Prob, start::ProbTime)
+    for horizon in gethorizons(p)
+        update!(horizon, start)
+    end
+    for obj in getobjects(p)
+        update!(p, obj, start)
     end
 end
 
