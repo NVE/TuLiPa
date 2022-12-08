@@ -114,7 +114,7 @@ end
 update!(::Prob, ::StartEqualStop, ::ProbTime) = nothing
 
 # TODO: Replace with getobjects 
-getmainmodelobject(x::StartEqualStop) = x.object
+getparent(x::StartEqualStop) = x.object
 
 
 # TODO: Decleare interface for cut-style boundary conditions?
