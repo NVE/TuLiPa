@@ -365,7 +365,7 @@ end
 replacebalance!(x::Any, coupling, modelobjects) = error("Function replacebalance! not implemented for $(typeof(x))")
 replacebalance!(x::BaseBalance, coupling, modelobjects) = nothing
 replacebalance!(x::ExogenBalance, coupling, modelobjects) = nothing
-replacebalance!(x::BaseStartUpCost, coupling, modelobjects) = nothing
+replacebalance!(x::SimpleStartUpCost, coupling, modelobjects) = nothing
 replacebalance!(x::StartEqualStop, coupling, modelobjects) = nothing
 replacebalance!(x::BaseSoftBound, coupling, modelobjects) = nothing
 
