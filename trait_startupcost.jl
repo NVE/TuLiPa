@@ -2,17 +2,18 @@
 We implement SimpleStartUpCost (also see abstracttypes.jl)
 This is a linearized cost of increasing a Flow 
 from 0 up to minimal stable load.
-- startupcost is cost per unit (GW for thermal) increase of online capacity
+- startupcost is cost per unit (GWh for thermal) increase of online capacity
 - msl is the minimal stable load as a percentage of capacity
 
 Internal non-negative variables: online and startvar
 Equations restricting the Flow:
 flow[t] >= online[t] * msl
 flow[t] <= online[t]
-startvar[t] >= (d/dt) online[t] (therefore online has statevariables)
+startvar[t] >= (d/dt) online[t] (therefore online has state variables)
 Objective function contribution:
-startupcost * startvar[t] / ub(flow)[t] 
+startupcost * startvar[t]
 
+# TODO: Not only support Flow. Also Storage and other possible variable types
 # TODO: Implement RampingStartUpCost where startup ramping is restricted based on starthours
 """
 
@@ -118,11 +119,11 @@ function setconstants!(p::Prob, trait::StartUpCost)
         end
     end
 
-    # set state variable
+    # set state variable in startvar[t] >= (d/dt) online[t] * msl
     start_id = getstartonlinevarid(trait)
     setconcoeff!(p, startconid, start_id, 1, 1, trait.msl)
 
-    # Set objective coeff if it is constant
+    # Set objective coeff if it does not have to update dynamically
     if !_must_dynamic_update(trait.startcost, h)
         value = getparamvalue(trait.startcost, ConstantTime(), MsTimeDelta(Hour(1))) # cost of full startup
 
@@ -139,7 +140,7 @@ function setconstants!(p::Prob, trait::StartUpCost)
     return
 end
 
-# Set objective coeff if its not constant
+# Set objective coeff if it must update dynamically
 function update!(p::Prob, trait::StartUpCost, start::ProbTime)
     startvarid = getstartvarid(trait)
     h = gethorizon(trait.flow)
@@ -168,7 +169,7 @@ function assemble!(trait::SimpleStartUpCost)
 end
 
 # ------ Include dataelements -------
-function includeSimpleStartUpCost!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeSimpleStartUpCost!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(toplevel, elkey)
 
     (startcost, ok) = getdictparamvalue(lowlevel, elkey, value, STARTCOSTKEY)
