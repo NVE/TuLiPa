@@ -84,7 +84,7 @@ function setconstants!(p::Prob, var::Any, ::LowerZeroCapacity)
     varid = getid(var)
 
     for t in 1:T
-        setlb!(p, varid, t, 0)
+        setlb!(p, varid, t, 0.0)
     end
     return
 end
