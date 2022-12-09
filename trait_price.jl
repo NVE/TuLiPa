@@ -1,4 +1,6 @@
-
+"""
+We implement BasePrice (see abstracttypes.jl)
+"""
 
 # ---- Concrete types ----
 mutable struct BasePrice <: Price
@@ -10,17 +12,18 @@ mutable struct BasePrice <: Price
     end
 end
 
-# ---- General functions ----
+# --------- Interface functions ------------
 isconstant(price::BasePrice) = isconstant(price.param)
 iszero(price::BasePrice) = iszero(price.param)
 isdurational(price::BasePrice) = false
 getparamvalue(price::BasePrice, t::ProbTime, d::TimeDelta) = getparamvalue(price.param, t, d)
 
+# Only does something for more complex Prices
 build!(::Prob, ::BasePrice) = nothing
 setconstants!(::Prob, ::BasePrice) = nothing
 update!(::Prob, ::BasePrice, ::ProbTime) = nothing
 
-# ------ Includefunctions ----------------
+# ------ Include dataelements -------
 function includeBasePrice!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
     

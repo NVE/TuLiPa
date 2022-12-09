@@ -1,13 +1,12 @@
-# ----- Generic fallbacks --------------
-function _must_dynamic_update(capacity::Capacity, horizon::Horizon) 
-    isconstant(capacity) || return true
+"""
+We implement PositiveCapacity and LowerZeroCapacity.
 
-    if isdurational(capacity) && !hasconstantdurations(horizon)
-        return true
-    end
+PositiveCapacity is a postive upper or lower bound to a variable.
 
-    return false
-end
+LowerZeroCapacity is a lower bound set to 0 for a variable
+
+TODO: Support variables that can be positve and negative
+"""
 
 # ---- Concrete types ----
 struct PositiveCapacity <: Capacity
@@ -18,7 +17,7 @@ end
 
 struct LowerZeroCapacity <: Capacity end
 
-# ---- General functions ----
+# --------- Interface functions ------------ ()
 isconstant(capacity::PositiveCapacity) = isconstant(capacity.param)
 isconstant(::LowerZeroCapacity) = true
 
@@ -37,8 +36,13 @@ isnonnegative(::LowerZeroCapacity) = true
 getparamvalue(capacity::PositiveCapacity, t::ProbTime, d::TimeDelta) = getparamvalue(capacity.param, t, d)
 getparamvalue(capacity::LowerZeroCapacity, t::ProbTime, d::TimeDelta) = 0.0
 
+# -------- build! ---------------
+# Only does something for more complex Capacities (e.g. InvestmentProjectCapacity)
 build!(::Prob, ::Any, ::PositiveCapacity) = nothing
 build!(::Prob, ::Any, ::LowerZeroCapacity) = nothing
+
+# ------- setconstant! and update! ---------------------
+# Set LB and UB depending on if the value must be dynamically updated or not
 
 function setconstants!(p::Prob, var::Any, capacity::PositiveCapacity)
     horizon = gethorizon(var)
@@ -74,14 +78,13 @@ function setconstants!(p::Prob, var::Any, capacity::PositiveCapacity)
     return
 end
 
-function setconstants!(p::Prob, var::Any, capacity::LowerZeroCapacity)
+function setconstants!(p::Prob, var::Any, ::LowerZeroCapacity)
     T = getnumperiods(gethorizon(var))
 
     varid = getid(var)
 
-    value = getparamvalue(capacity, ConstantTime(), MsTimeDelta(Hour(1)))
     for t in 1:T
-        setlb!(p, varid, t, value)
+        setlb!(p, varid, t, 0.0)
     end
     return
 end
@@ -109,7 +112,7 @@ end
 
 update!(::Prob, ::Any, ::LowerZeroCapacity, ::ProbTime) = nothing
 
-# ------ Includefunctions ----------------
+# ------ Include dataelements -------
 function includePositiveCapacity!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     (param, ok) = getdictparamvalue(lowlevel, elkey, value)
     ok || return false

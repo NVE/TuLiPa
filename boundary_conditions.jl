@@ -23,7 +23,7 @@
 #   We always use variables for incoming states, even though we sometimes could have used constant rhs terms.
 #   We always represent problems as minimization problems. 
 #
-# Possible challanges:
+# Possible challenges:
 #   What to do if time delay and hourly master problem and 2-hourly subproblem? 
 #   Then time indexes for state variables does not have the same meaning in the two problems. 
 #   Similar issue if subproblem use non-sequential horizon.
@@ -114,7 +114,7 @@ end
 update!(::Prob, ::StartEqualStop, ::ProbTime) = nothing
 
 # TODO: Replace with getobjects 
-getmainmodelobject(x::StartEqualStop) = x.object
+getparent(x::StartEqualStop) = x.object
 
 
 # TODO: Decleare interface for cut-style boundary conditions?

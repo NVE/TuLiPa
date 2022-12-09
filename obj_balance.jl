@@ -19,6 +19,7 @@ switched from being connected to a power market (endogenous) to a price (exogeno
 and only the Balance object will have to be changed.
 """
 
+# ---------- Concrete types -----------------
 mutable struct BaseBalance <: Balance
     id::Id
     commodity::Commodity
@@ -45,6 +46,8 @@ mutable struct ExogenBalance <: Balance
         new(id, commodity, nothing, price, Dict())
     end
 end
+
+# --- Interface functions ---
 
 # Implementation of Balance interface for our Balance types
 const OurBalanceTypes = Union{BaseBalance, ExogenBalance}
@@ -126,7 +129,7 @@ function assemble!(balance::OurBalanceTypes)::Bool
     return true
 end
 
-# Includefunctions
+# ------ Include dataelements -------
 function includeBaseBalance!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(toplevel, elkey)
     

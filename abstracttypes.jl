@@ -194,8 +194,10 @@ abstract type Balance end
 
 # ---- Commodity ----
 #
-# Property of Balance
+# Gives information about a commodity
 # Has Horizon
+# Property of Balance. Balances assigned a Commodity inherits its traits (i.e. its Horizon)
+# Makes it easy to differentiate which modelobjects that are in the same system
 #
 # Interface:
 #    getid(commodity)
@@ -345,14 +347,31 @@ abstract type Capacity end
 # getid(var)
 # getbalance(var)
 # getflows(var)
-# getmainmodelobject(var)
+# getparent(var)
 # build!(var)
 # setconstants!(var)
 # update!(var)
 
 abstract type AggSupplyCurve  end
 
-
+# ---- StartUpCost ----
+#
+# Optional trait object that affects a Flow
+# Represents the cost of increasing a Flow from 0 up to a value (could be max or minimal viable value)
+# Builds and updates internal variables and equations for each period in an Horizon.
+# Has internal statevariables
+# Has cost, and can have information about how long the startup is and what is the 
+# minimal viable value (i.e. minimal stable load)
+# Linear modelling, so simplification of wanted behaviour
+#
+# Interface: 
+# getid(trait)
+# getflow(trait)
+# getparent(trait)
+# getstatevariables(trait)
+# build!(trait)
+# setconstants!(trait)
+# update!(trait)
 
 abstract type StartUpCost end
 
@@ -367,7 +386,7 @@ abstract type StartUpCost end
 # getid(trait)
 # getvar(trait)
 # isupper(trait)
-# getmainmodelobject(trait)
+# getparent(trait)
 # assemble(trait)
 # build!(trait)
 # setconstants!(trait)

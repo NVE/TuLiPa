@@ -217,6 +217,21 @@ function accumulate_duration(x::SequentialPeriods, acc::Millisecond, target::Mil
     end
 end
 
+# --------- Generic fallback Horizon interface -----------------
+# We want to update the problem efficiently, so we check if 
+# problem values must be updated dynamically
+# If the value is the same for all scenarios and time periods, 
+# it should only be updated once using setconstants! instead of update!
+function _must_dynamic_update(paramlike::Any, horizon::Horizon) 
+    isconstant(paramlike) || return true
+
+    if isdurational(paramlike) && !hasconstantdurations(horizon)
+        return true
+    end
+
+    return false
+end
+
 # -- SequentialHorizon --
 
 struct SequentialHorizon <: Horizon
@@ -601,6 +616,7 @@ function assign_blocks!(method::KMeansAHMethod, X::Matrix{Float64})
     return result.assignments
 end
 
+# ------ Include dataelements -------
 function includeBaseHorizon!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
     

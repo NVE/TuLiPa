@@ -8,7 +8,7 @@ UnitsTimeDelta is a more complex TimeDelta used in AdaptiveHorizon
 It is used when we want to group hours (or time units) in
 an horizon based on their characteristics (e.g. hours 
 with similar residual load). Here we don't necessarily care if the
-horizon periods are sequential in time.
+hours are sequential in time.
 The units are a list of UnitRanges.
 Heres an example if we split the hours in every week 
 by high load (day), and low load (night):
@@ -38,7 +38,7 @@ mutable struct UnitsTimeDelta <: TimeDelta
     unit_duration::Millisecond
 end
 
-# ------ General functions ------------
+# --------- Interface functions ------------
 
 # Get the total duration of the TimeDelta
 getduration(x::MsTimeDelta) = x.ms
@@ -53,7 +53,7 @@ function getlength(x::UnitsTimeDelta)
     return sum(length(r) for r in x.units)
 end
 
-# ---- Includefunction -----
+# ------ Include dataelements -------
 function includeMsTimeDelta!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
     

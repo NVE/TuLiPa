@@ -1,5 +1,5 @@
 """
-Implementation of HiGHS_Prob <: Prob
+Implementation of HiGHS_Prob <: Prob (see also problem_interface.jl)
 Here we build or problem on the package HiGHS, and the HiGHS solver
 
 Inspiration and also some code from 
@@ -128,6 +128,16 @@ mutable struct HiGHS_Prob <: Prob
         
         return p
     end    
+end
+
+# ----- Update problem ----------
+function update!(p::HiGHS_Prob, start::ProbTime)
+    for horizon in gethorizons(p)
+        update!(horizon, start)
+    end
+    for obj in getobjects(p)
+        update!(p, obj, start)
+    end
 end
 
 # ---- Utility functions ---

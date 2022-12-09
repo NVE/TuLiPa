@@ -2,6 +2,7 @@
 We implement BaseFlow (see general description in abstracttypes.jl)
 """
 
+# ---------- Concrete types ---------------
 mutable struct BaseFlow <: Flow
     id::Id
 
@@ -22,7 +23,8 @@ mutable struct BaseFlow <: Flow
     end
 end
 
-# Object functions
+# --- Interface functions ---
+
 getid(var::BaseFlow) = var.id
 gethorizon(var::BaseFlow) = var.horizon
 getub(var::BaseFlow) = var.ub
@@ -151,7 +153,7 @@ function assemble!(var::BaseFlow)::Bool
     return true
 end
 
-# Includefunction
+# ------ Include dataelements -------
 function includeBaseFlow!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(toplevel, elkey)
     

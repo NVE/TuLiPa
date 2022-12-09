@@ -3,7 +3,7 @@ Metadata is an extra field in the main objects (Flow, Storage, Balance)
 that can store extra information about the objects in a dictionary
 This extra information can be used in the object manipulation before
 running the model or in the result handling
-This was added to give the user a possiblity to include external
+This was added to give the user a possibility to include external
 information into the modelobjects
 
 We include StorageHint, which holds information about how long it
@@ -14,7 +14,7 @@ run for a coarse horizon
 TODO: Add metadata for all objects?
 """
 
-# Includefunction
+# ------ Include dataelements -------
 function includeStoragehint!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(toplevel, elkey)
     

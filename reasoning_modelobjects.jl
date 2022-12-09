@@ -1,7 +1,11 @@
 """
+Here we store functions that manipulate the model objects after they are fully put together
+
 Assumptions: 
  - Main model objects are Storage, Flow or Balance
- - Other model objects belong to a main model object i.e. supporting getmainmodelobject(obj) -> object of type Storage, or Flow or Balance
+ - Other model objects belong to a main model object i.e. supporting getparent(obj) -> object of type Storage, or Flow or Balance
+
+ TODO: Clean up this file
 """
 
 # kan ikke ha hvilke som helst modellobjekter
@@ -16,7 +20,7 @@ function getmainmodelobjects(modelobjects::Dict)
                 d[obj] = Set()
             end
         else
-            mainobj = getmainmodelobject(obj)
+            mainobj = getparent(obj)
 
             if !(mainobj isa MAINTYPES)
                 error("Main model object for $id is not $MAINTYPES. Got $(typeof(mainobj))")
@@ -187,7 +191,7 @@ function getstoragesystems(modelobjects::Dict)
     return systems
 end
 
-# TODO: Use cutoff value instead of hint and getemptyduration(storage) -> Time to empty in ms starting with full storage
+# TODO: Replace inputted hint with getemptyduration(storage) -> Time to empty in ms starting with full storage
 function getshorttermstoragesystems(storagesystems::Dict, durationcutoff::Period)
     ret = Dict()
     
@@ -361,7 +365,7 @@ end
 replacebalance!(x::Any, coupling, modelobjects) = error("Function replacebalance! not implemented for $(typeof(x))")
 replacebalance!(x::BaseBalance, coupling, modelobjects) = nothing
 replacebalance!(x::ExogenBalance, coupling, modelobjects) = nothing
-replacebalance!(x::BaseStartUpCost, coupling, modelobjects) = nothing
+replacebalance!(x::SimpleStartUpCost, coupling, modelobjects) = nothing
 replacebalance!(x::StartEqualStop, coupling, modelobjects) = nothing
 replacebalance!(x::BaseSoftBound, coupling, modelobjects) = nothing
 

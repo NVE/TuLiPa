@@ -2,10 +2,10 @@
 We implement BaseStorage (see abstracttypes.jl)
 """
 
-# Generic fallbacks
+# --------- Generic fallbacks -----------
 gethorizon(storage::Storage) = gethorizon(getbalance(storage))
 
-# Object and interface for BaseStorage
+# --------- Concrete types -----------
 mutable struct BaseStorage <: Storage
     id::Id
     balance::Balance
@@ -23,7 +23,7 @@ mutable struct BaseStorage <: Storage
     end
 end
 
-# Object functions
+# --- Interface functions ---
 getid(var::BaseStorage) = var.id
 
 getloss(var::BaseStorage) = var.loss
@@ -157,7 +157,7 @@ function assemble!(var::BaseStorage)::Bool
     return true
 end
 
-# Include functions
+# ------ Include dataelements -------
 function includeBaseStorage!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(toplevel, elkey)
     

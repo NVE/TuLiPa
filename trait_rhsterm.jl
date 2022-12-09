@@ -1,19 +1,32 @@
+"""
+We implement BaseRHSTerm (see abstracttypes.jl)
 
-# TODO: Implement RoRRHSTerm
+# TODO: Implement RoRRHSTerm. A simplification of the run-of-river 
+hydropower could be to include the inflow (with cutoff at max production)
+as a parameter rather than modelling it as a variable. 
+Motivation is simplification of the problem or to include the unregulated
+inflow when we make an AdaptiveHorizon based on the residual load
+"""
 
+# -------- Generic fallback function ---------------
 isdurational(rhsterm::RHSTerm) = true
 
+# -------- Concrete types --------------
 struct BaseRHSTerm <: RHSTerm
     id::Id
     param::Param
     isingoing::Bool
 end
 
+# --------- Interface functions ------------
+getid(rhsterm::BaseRHSTerm) = rhsterm.id
 isconstant(rhsterm::BaseRHSTerm) = isconstant(rhsterm.param)
 getparamvalue(rhsterm::BaseRHSTerm, t::ProbTime, d::TimeDelta) = getparamvalue(rhsterm.param, t, d)
-isingoing(rhsterm::BaseRHSTerm) = rhsterm.isingoing
-getid(rhsterm::BaseRHSTerm) = rhsterm.id
 
+# Represents positive or negative contribution to the Balance
+isingoing(rhsterm::BaseRHSTerm) = rhsterm.isingoing
+
+# ------ Include dataelements -------
 function includeBaseRHSTerm!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     (param, ok) = getdictparamvalue(lowlevel, elkey, value)
     ok || return false

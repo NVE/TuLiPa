@@ -20,6 +20,7 @@ If the Balance is exogenous the "simple" Flows are excessive
 SegmentedArrow (production represented by efficiency segments) not supported
 """
 
+# ---- Concrete types ----------------
 struct BaseAggSupplyCurve <: AggSupplyCurve
     id::Id
     balance::Balance
@@ -27,12 +28,13 @@ struct BaseAggSupplyCurve <: AggSupplyCurve
     numclusters::Int
 end
 
+# --- Interface functions ---
 getid(var::BaseAggSupplyCurve) = var.id
 getbalance(var::BaseAggSupplyCurve) = var.balance
 getflows(var::BaseAggSupplyCurve) = var.flows
 getnumclusters(var::BaseAggSupplyCurve) = var.numclusters
 
-getmainmodelobject(var::AggSupplyCurve) = var.balance
+getparent(var::AggSupplyCurve) = var.balance
 
 # Build the equivalent variables
 function build!(p::Prob, var::AggSupplyCurve)
