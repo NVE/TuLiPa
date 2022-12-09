@@ -1,9 +1,22 @@
 """
-Implementation of HiGHS_Prob <: Prob (see also problem_interface.jl)
-Here we build or problem on the package HiGHS, and the HiGHS solver
+Implementation of HiGHS_Prob <: Prob
 
-Inspiration and also some code from 
+Inspiration and also some code snippets gotten from 
 https://github.com/jump-dev/HiGHS.jl/blob/master/src/MOI_wrapper.jl
+
+We would like to mainly use JuMP_Prob, but we experienced that 
+build and update time did not scale well with the version of JuMP with HiGHS 
+that we used while testing. This may be fixed soon due to 
+https://github.com/ERGO-Code/HiGHS/issues/917, but we needed a workaround right away. 
+We therefore implemented HiGHS_Prob, which uses the HiGHS API function Highs_passLp 
+whenever constrait coefficients are updated. In our use case, updating coefficients 
+usually only occur once in in the setconstants! function. 
+We also experimented with different HiGHS API functions for updating other LP parameters,
+and found that the class of change-by-mask-functions worked well for our use case.
+
+While implementing HiGHS_Prob, it was very useful to already have JuMP_Prob, 
+because then we could use JuMP_Prob to test that HiGHS_Prob 
+got the same results as JuMP_Prob.
 """
 
 using HiGHS

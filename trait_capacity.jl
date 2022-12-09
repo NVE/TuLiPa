@@ -5,7 +5,8 @@ PositiveCapacity is a postive upper or lower bound to a variable.
 
 LowerZeroCapacity is a lower bound set to 0 for a variable
 
-TODO: Support variables that can be positve and negative
+TODO: Support variables that can be positve and negative. 
+      Can be useful for net flow on transmission line with no losses.
 """
 
 # ---- Concrete types ----

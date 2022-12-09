@@ -48,7 +48,7 @@ mutable struct JuMP_Prob <: Prob
     end
 end
 
-function update!(p::Prob, start::ProbTime)
+function update!(p::JuMP_Prob, start::ProbTime)
     for horizon in gethorizons(p)
         update!(horizon, start)
     end
