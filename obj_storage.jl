@@ -84,9 +84,17 @@ function setconstants!(p::Prob, var::BaseStorage)
     setconstants!(p, var, var.ub)
 
     if !isnothing(var.sumcost)
-        setconstants!(p, var.sumcost)
-    end
-    
+        if isconstant(var.sumcost)
+            dummytime = ConstantTime()
+            for t in 1:getnumperiods(var.horizon)
+                querystart = getstarttime(var.horizon, t, dummytime)
+                querydelta = gettimedelta(var.horizon, t)
+                value = getparamvalue(var.sumcost, querystart, querydelta)
+                setobjcoeff!(p, var.id, t, value)
+            end   
+        end
+    end 
+
     T = getnumperiods(gethorizon(var))
     for t in 1:T
         setconcoeff!(p, getid(getbalance(var)), getid(var), t, t, -1.0)
@@ -115,9 +123,16 @@ function update!(p::Prob, var::BaseStorage, start::ProbTime)
     update!(p, var, var.ub, start)
 
     if !isnothing(var.sumcost)
-        update!(p, var.sumcost, start)
+        if !isconstant(var.sumcost)
+            for t in 1:getnumperiods(var.horizon)
+                querystart = getstarttime(var.horizon, t, start)
+                querydelta = gettimedelta(var.horizon, t)
+                value = getparamvalue(var.sumcost, querystart, querydelta)
+                setobjcoeff!(p, var.id, t,  value)
+            end   
+        end
     end
-
+    
     if !isnothing(var.loss) && !isconstant(var.loss)
         horizon = gethorizon(var)
 
