@@ -63,7 +63,10 @@ getstartvarid(var::BaseStorage) = Id(getconceptname(var.id), string("Start", get
 # Set upper and lower bounds (capacities)
 # Include costs in the objective function (sumcost)
 # Include variables in the balances
-function build!(p::Prob, var::BaseStorage)
+function build!(p::Prob, var::BaseStorage)    
+    build!(p, var, var.lb)
+    build!(p, var, var.ub)
+
     T = getnumperiods(gethorizon(var))
     addvar!(p, var.id, T)
 
@@ -77,6 +80,13 @@ function build!(p::Prob, var::BaseStorage)
 end
 
 function setconstants!(p::Prob, var::BaseStorage)
+    setconstants!(p, var, var.lb)
+    setconstants!(p, var, var.ub)
+
+    if !isnothing(var.sumcost)
+        setconstants!(p, var.sumcost)
+    end
+    
     T = getnumperiods(gethorizon(var))
     for t in 1:T
         setconcoeff!(p, getid(getbalance(var)), getid(var), t, t, -1.0)
@@ -96,13 +106,6 @@ function setconstants!(p::Prob, var::BaseStorage)
 
     # set start storage variable in first balance equation
     setconcoeff!(p, getid(getbalance(var)), getstartvarid(var), 1, 1, coeff)
-
-    setconstants!(p, var, var.lb)
-    setconstants!(p, var, var.ub)
-
-    if !isnothing(var.sumcost)
-        setconstants!(p, var.sumcost)
-    end
 
     return
 end
