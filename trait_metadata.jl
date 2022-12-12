@@ -20,8 +20,6 @@ TODO: Add metadata for all objects?
 
 # ------ Include dataelements -------
 function includeStoragehint!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
-    checkkey(toplevel, elkey)
-    
     storagename = getdictvalue(value, STORAGE_CONCEPT, String, elkey)
     storagekey = Id(STORAGE_CONCEPT, storagename)
     haskey(toplevel, storagekey) || return false
@@ -39,14 +37,12 @@ function includeStoragehint!(toplevel::Dict, ::Dict, elkey::ElementKey, value::D
     return true    
 end
 
-function includeResidualhint!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
-    checkkey(toplevel, elkey)
-    
+function includeResidualhint!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool    
     rhsname = getdictvalue(value, RHSTERM_CONCEPT, String, elkey)
     rhskey = Id(RHSTERM_CONCEPT, rhsname)
-    haskey(toplevel, rhskey) || return false
+    haskey(lowlevel, rhskey) || return false
 
-    rhsterm = toplevel[rhskey]
+    rhsterm = lowlevel[rhskey]
 
     residual = getdictisresidual(value, elkey)
 

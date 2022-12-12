@@ -59,6 +59,7 @@ function includeBaseRHSTerm!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, 
     
     rhsterm = BaseRHSTerm(id, param, isingoing)
         
+    lowlevel[id] = rhsterm # add to lowlevel so that other dataelements can find and update it (for example residualhint)
     addrhsterm!(balance, rhsterm)
     
     return true    
