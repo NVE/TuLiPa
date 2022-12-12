@@ -87,9 +87,8 @@ function setconstants!(p::Prob, var::BaseStorage)
         if isconstant(var.sumcost)
             dummytime = ConstantTime()
             for t in 1:getnumperiods(var.balance.horizon)
-                querystart = getstarttime(var.balance.horizon, t, dummytime)
                 querydelta = gettimedelta(var.balance.horizon, t)
-                value = getparamvalue(var.sumcost, querystart, querydelta)
+                value = getparamvalue(var.sumcost, dummytime, querydelta)
                 setobjcoeff!(p, var.id, t, value)
             end   
         end
