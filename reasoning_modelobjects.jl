@@ -390,7 +390,8 @@ function replacebalance!(x::BaseFlow, coupling, modelobjects)
                 rhsname = string("TransmLoss", getinstancename(getid(arrow)))
                 id = Id(RHSTERM_CONCEPT, rhsname)
                 param = TransmissionLossRHSParam(getub(x), getloss(arrow)) # assumes conversion = 1
-                rhsterm = BaseRHSTerm(id, param, false)
+                rhsterm = BaseRHSTerm(id, param, false) 
+                setmetadata!(rhsterm, RESIDUALHINTKEY, false) # don't include in residual load
                 addrhsterm!(getbalance(arrow), rhsterm)
             end
         end

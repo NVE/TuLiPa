@@ -437,7 +437,7 @@ function _get_rhs_terms_from_prob(prob::Prob, commodity::String)
         commodity == getinstancename(getid(getcommodity(obj))) || continue
         for rhs_term in getrhsterms(obj)
             isconstant(rhs_term) && continue
-            getresidualhint(rhs_term) == true || continue
+            getresidualhint(rhs_term) == false && continue
             push!(rhs_terms, rhs_term)
         end
     end
