@@ -16,6 +16,11 @@ struct BaseRHSTerm <: RHSTerm
     id::Id
     param::Param
     isingoing::Bool
+    metadata::Dict
+
+    function BaseRHSTerm(id, param, isingoing)
+        return new(id, param, isingoing, Dict())
+    end
 end
 
 # --------- Interface functions ------------
@@ -25,6 +30,16 @@ getparamvalue(rhsterm::BaseRHSTerm, t::ProbTime, d::TimeDelta) = getparamvalue(r
 
 # Represents positive or negative contribution to the Balance
 isingoing(rhsterm::BaseRHSTerm) = rhsterm.isingoing
+
+# We store ResidualHint in the metadata element
+setmetadata!(var::BaseRHSTerm, k::String, v::Any) = var.metadata[k] = v
+function getresidualhint(var::BaseRHSTerm)
+    if haskey(var.metadata, RESIDUALHINTKEY)
+        return var.metadata[RESIDUALHINTKEY]
+    else
+        return nothing
+    end
+end
 
 # ------ Include dataelements -------
 function includeBaseRHSTerm!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
@@ -44,6 +59,7 @@ function includeBaseRHSTerm!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, 
     
     rhsterm = BaseRHSTerm(id, param, isingoing)
         
+    lowlevel[id] = rhsterm # add to lowlevel so that other dataelements can find and update it (for example residualhint)
     addrhsterm!(balance, rhsterm)
     
     return true    

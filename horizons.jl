@@ -433,9 +433,11 @@ function _get_rhs_terms_from_prob(prob::Prob, commodity::String)
     rhs_terms = []
     for obj in getobjects(prob)
         obj isa Balance || continue
+        isexogen(obj) && continue
         commodity == getinstancename(getid(getcommodity(obj))) || continue
         for rhs_term in getrhsterms(obj)
             isconstant(rhs_term) && continue
+            getresidualhint(rhs_term) == true || continue
             push!(rhs_terms, rhs_term)
         end
     end

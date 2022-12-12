@@ -6,18 +6,20 @@ running the model or in the result handling
 This was added to give the user a possibility to include external
 information into the modelobjects
 
-We include StorageHint, which holds information about how long it
+We include Storagehint, which holds information about how long it
 takes to empty the reservoir with full production. This can be used
 to remove short-term storagesystems from the model, if the model is
 run for a coarse horizon
+
+We include Residualhint, which says if the RHSTerm should be included
+when calculating the residual load. See AdaptiveHorizon for how the 
+residual load is used to make an Horizon.
 
 TODO: Add metadata for all objects?
 """
 
 # ------ Include dataelements -------
 function includeStoragehint!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
-    checkkey(toplevel, elkey)
-    
     storagename = getdictvalue(value, STORAGE_CONCEPT, String, elkey)
     storagekey = Id(STORAGE_CONCEPT, storagename)
     haskey(toplevel, storagekey) || return false
@@ -35,4 +37,19 @@ function includeStoragehint!(toplevel::Dict, ::Dict, elkey::ElementKey, value::D
     return true    
 end
 
+function includeResidualhint!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool    
+    rhsname = getdictvalue(value, RHSTERM_CONCEPT, String, elkey)
+    rhskey = Id(RHSTERM_CONCEPT, rhsname)
+    haskey(lowlevel, rhskey) || return false
+
+    rhsterm = lowlevel[rhskey]
+
+    residual = getdictisresidual(value, elkey)
+
+    setmetadata!(rhsterm, RESIDUALHINTKEY, residual)
+    
+    return true    
+end
+
+INCLUDEELEMENT[TypeKey(METADATA_CONCEPT, RESIDUALHINTKEY)] = includeResidualhint!
 INCLUDEELEMENT[TypeKey(METADATA_CONCEPT, STORAGEHINTKEY)] = includeStoragehint!
