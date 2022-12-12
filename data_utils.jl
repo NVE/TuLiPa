@@ -29,9 +29,9 @@ function getdictisupper(value::Dict, elkey::ElementKey)
 end
 
 function getdictisresidual(value::Dict, elkey::ElementKey)
-    bound = getdictvalue(value, RESIDUALHINTKEY, String, elkey)
-    bound == "True" && return true
-    bound == "False" && return false
+    residual = getdictvalue(value, RESIDUALHINTKEY, String, elkey)
+    residual == "True" && return true
+    residual == "False" && return false
     error("$RESIDUALHINTKEY must be True or False for $elkey")
 end
 
@@ -104,7 +104,7 @@ function getdictpricevalue(lowlevel::Dict, elkey::ElementKey, value::String)
     objkey = Id(PRICE_CONCEPT, value)
     haskey(lowlevel, objkey) && return (lowlevel[objkey], true)
     objkey = Id(PARAM_CONCEPT, value)
-    haskey(lowlevel, objkey) && return getdictpricevalue(lowlevel, elkey, lowlevel[objkey])
+    haskey(lowlevel, objkey) && return (BasePrice(lowlevel[objkey]), true)
     return (value, false)
 end
 
