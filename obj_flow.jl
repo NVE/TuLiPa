@@ -85,9 +85,8 @@ function setconstants!(p::Prob, var::BaseFlow)
         if isconstant(var.sumcost)
             dummytime = ConstantTime()
             for t in 1:getnumperiods(var.horizon)
-                querystart = getstarttime(var.horizon, t, dummytime)
                 querydelta = gettimedelta(var.horizon, t)
-                value = getparamvalue(var.sumcost, querystart, querydelta)
+                value = getparamvalue(var.sumcost, dummytime, querydelta)
                 setobjcoeff!(p, var.id, t, value)
             end   
         end
