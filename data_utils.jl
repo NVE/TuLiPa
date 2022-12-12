@@ -14,17 +14,6 @@ function checkkey(leveldict::Dict, elkey::ElementKey)
     return
 end
 
-function getdictupdateperiodsstyle(value::Dict, elkey::ElementKey)
-    updateperiodsstyle = getdictvalue(value, UPDATEPERIODSKEY, String, elkey)
-    updateperiodsstyle == UPDATEPERIODSALL   && return UPS_All()
-    updateperiodsstyle == UPDATEPERIODSFIRST && return UPS_First()
-    updateperiodsstyle == UPDATEPERIODSLAST  && return UPS_Last()
-    msg = "$UPDATEPERIODSKEY must be $UPDATEPERIODSALL or "
-    msg = msg * "$UPDATEPERIODSFIRST or $UPDATEPERIODSLAST for $elkey. "
-    msg = msg * "Got $updateperiodsstyle"
-    error(msg)
-end
-
 function getdictisingoing(value::Dict, elkey::ElementKey)
     direction = getdictvalue(value, DIRECTIONKEY, String, elkey)
     direction == DIRECTIONIN && return true
@@ -37,6 +26,13 @@ function getdictisupper(value::Dict, elkey::ElementKey)
     bound == BOUNDUPPER && return true
     bound == BOUNDLOWER && return false
     error("$BOUNDKEY must be $BOUNDUPPER or $BOUNDLOWER for $elkey")
+end
+
+function getdictisresidual(value::Dict, elkey::ElementKey)
+    bound = getdictvalue(value, RESIDUALHINTKEY, String, elkey)
+    bound == "True" && return true
+    bound == "False" && return false
+    error("$RESIDUALHINTKEY must be True or False for $elkey")
 end
 
 

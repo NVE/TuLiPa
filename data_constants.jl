@@ -9,11 +9,6 @@ const WHICHCONCEPT  = "WhichConcept"
 const WHICHINSTANCE = "WhichInstance"
 
 # Data world properties
-const UPDATEPERIODSKEY   = "UpdatePeriods"
-const UPDATEPERIODSALL   = "All"
-const UPDATEPERIODSFIRST = "First"
-const UPDATEPERIODSLAST  = "Last"
-
 const DIRECTIONKEY = "Direction"
 const DIRECTIONIN  = "In"
 const DIRECTIONOUT = "Out"
@@ -30,6 +25,7 @@ const STARTCOSTKEY = "StartCost"
 
 # Metadata
 const STORAGEHINTKEY   = "Storagehint"
+const RESIDUALHINTKEY = "Residualhint"
 
 # Data world concepts
 
