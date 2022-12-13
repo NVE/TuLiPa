@@ -319,6 +319,22 @@ function getpowerobjects(modelobjects, arealist)
     return collect(objects)
 end
 
+# -------------- remove other areas from residualload ---------------
+function residualloadareas!(modelobjects, arealist)
+    areaobjects = getpowerobjects(modelobjects, arealist)
+
+    for obj in values(modelobjects)
+        obj isa Balance || continue
+        isexogen(obj) && continue
+        getinstancename(getid(getcommodity(obj))) == "Power" || continue
+        obj in areaobjects && continue # what order should the check be in?
+        for rhs_term in getrhsterms(obj)
+            isconstant(rhs_term) && continue
+            setmetadata!(rhs_term, RESIDUALHINTKEY, false)
+        end
+    end
+end
+
 # -------------------------------------
 function mapbalancesupply(modelobjects) # replace with is simple mc
     mapping_balance_supply = Dict()
