@@ -1,5 +1,5 @@
 """
-We implement BaseArrow and SegmentedArrow. Since they
+We implement BaseArrow and SegmentedArrow (see abstracttypes.jl)
 """
 
 # ------- Generic fallbacks -------------
@@ -125,26 +125,14 @@ end
 
 # ------ setconstants! and update! -----------------------
 
-# BaseArrow 
+# BaseArrow ------------------
 function setconstants!(p::Prob, var::Any, arrow::BaseArrow)
     # Update the conversion if this is needed
     setconstants!(p, arrow.conversion)
 
     # If the balance is exogen, the contribution of the variabe is added to the Balance
     if !isexogen(arrow.balance)
-        if isnothing(arrow.loss)
-            # If there is no loss the parameter only consist of the conversion
-            param = arrow.conversion
-        else
-            # Depending on the direction of the arrow, the conversion is multiplied 
-            # or divided by (1-loss)
-            # See getparamvalue() of InConversionLossParam and OutConversionLossParam
-            if arrow.isingoing
-                param = InConversionLossParam(arrow.conversion, arrow.loss)
-            else
-                param = OutConversionLossParam(arrow.conversion, arrow.loss)
-            end
-        end
+        param = _getcontributionparam(arrow)
 
         if isconstant(param)            
             varhorizon = gethorizon(var)
@@ -175,15 +163,7 @@ function update!(p::Prob, var::Any, arrow::BaseArrow, start::ProbTime)
     update!(p, arrow.conversion, start)
 
     if !isexogen(arrow.balance)
-        if isnothing(arrow.loss)
-            param = arrow.conversion
-        else
-            if arrow.isingoing
-                param = InConversionLossParam(arrow.conversion, arrow.loss)
-            else
-                param = OutConversionLossParam(arrow.conversion, arrow.loss)
-            end
-        end
+        param = getcontributionparam(arrow)
 
         if !isconstant(param)
 
@@ -207,7 +187,25 @@ function update!(p::Prob, var::Any, arrow::BaseArrow, start::ProbTime)
     end  
 end
 
-# SegmentedArrow
+# Internal function
+function _getcontributionparam(arrow::BaseArrow)
+    if isnothing(arrow.loss)
+        # If there is no loss the parameter only consist of the conversion
+        param = arrow.conversion
+    else
+        # If there is loss the contribution to the balance will depend
+        # on the direction of the arrow (in our out of the balance). 
+        # Either the conversion is multiplied or divided by (1-loss)
+        # See getparamvalue() of InConversionLossParam and OutConversionLossParam
+        if arrow.isingoing
+            param = InConversionLossParam(arrow.conversion, arrow.loss)
+        else
+            param = OutConversionLossParam(arrow.conversion, arrow.loss)
+        end
+    end
+end
+
+# SegmentedArrow ---------------------------
 function setconstants!(p::Prob, var::Any, arrow::SegmentedArrow)
     varhorizon = gethorizon(var)
     T = getnumperiods(gethorizon(var))
