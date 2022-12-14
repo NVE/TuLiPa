@@ -99,20 +99,22 @@ function setconstants!(p::Prob, var::BaseStorage)
         setconcoeff!(p, getid(getbalance(var)), getid(var), t, t, -1.0)
     end
 
-    if !isnothing(var.loss) && isconstant(var.loss)
-        dummytime = ConstantTime()
-        dummydelta = MsTimeDelta(Hour(1))
-        coeff = 1.0 - getparamvalue(var.loss, dummytime, dummydelta)
-    else
-        coeff = 1.0
-    end
+    if (!isnothing(var.loss) && isconstant(var.loss)) || isnothing(var.loss)
+        if !isnothing(var.loss)
+            dummytime = ConstantTime()
+            dummydelta = MsTimeDelta(Hour(1))
+            coeff = 1.0 - getparamvalue(var.loss, dummytime, dummydelta)
+        else
+            coeff = 1.0
+        end
 
-    for t in 2:T
-        setconcoeff!(p, getid(getbalance(var)), getid(var), t, t-1, coeff)
-    end
+        for t in 2:T
+            setconcoeff!(p, getid(getbalance(var)), getid(var), t, t-1, coeff)
+        end
 
-    # set start storage variable in first balance equation
-    setconcoeff!(p, getid(getbalance(var)), getstartvarid(var), 1, 1, coeff)
+        # set start storage variable in first balance equation
+        setconcoeff!(p, getid(getbalance(var)), getstartvarid(var), 1, 1, coeff)
+    end
 
     return
 end
