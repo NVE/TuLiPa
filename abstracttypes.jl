@@ -28,7 +28,7 @@ works for different concrete types and methods/functions. It also makes it
 easy to add new concrete types or methods without having to change much 
 of the existing code.
 
-TODO: Add abstract type Group? Have AggSupplyC
+TODO: Add abstract type Group? Have AggSupplyCurve as undertype?
 """
 
 

@@ -78,7 +78,6 @@ mutable struct HiGHS_Prob <: Prob
     col_values::Vector{Float64}
     row_duals::Vector{Float64}
     
-    ismin::Bool
     isoptimal::Bool
     
     col_cost_mask::Vector{HighsInt}
@@ -95,7 +94,7 @@ mutable struct HiGHS_Prob <: Prob
     # TODO: add flag isbuilt and only allow makefixable while building
     fixable_vars::Dict{Tuple{Id, Int}, Id}
     
-    function HiGHS_Prob(modelobjects, ismin::Bool)
+    function HiGHS_Prob(modelobjects)
         if modelobjects isa Dict
             modelobjects = [o for o in values(modelobjects)]
         end
@@ -108,7 +107,7 @@ mutable struct HiGHS_Prob <: Prob
             [], [], [], [], [],
             Dict{Int, Dict{Int, Float64}}(),
             [], [],
-            ismin, false,
+            false,
             [], [], [],
             false, false, false,
             [],
@@ -187,8 +186,6 @@ end
 
 getobjects(p::HiGHS_Prob) = p.objects
 gethorizons(p::HiGHS_Prob) = p.horizons
-
-ismin(p::HiGHS_Prob) = p.ismin
 
 function addvar!(p::HiGHS_Prob, id::Id, N::Int)
     haskey(p.vars, id) && error("Variable $id already exist")
@@ -309,7 +306,7 @@ function _update_row_bounds(p::HiGHS_Prob)
 end
 
 function _passLP!(p::HiGHS_Prob)
-    sense    = p.ismin ? kHighsObjSenseMinimize : kHighsObjSenseMaximize
+    sense    = kHighsObjSenseMinimize
     offset   = 0.0
     
     # setup A in expected format

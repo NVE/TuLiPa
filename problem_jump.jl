@@ -26,7 +26,6 @@ using JuMP
 
 # ------- Concrete type and constructor ----------------
 mutable struct JuMP_Prob <: Prob
-    ismin::Bool
     model::JuMP.Model
     objects::Vector
     horizons::Vector{Horizon}
@@ -34,20 +33,16 @@ mutable struct JuMP_Prob <: Prob
     isrhsupdated::Bool
 
     # Initialize JuMP_Prob
-    function JuMP_Prob(objects, isminprob::Bool, model)
+    function JuMP_Prob(objects, model)
         if objects isa Dict
             objects = [o for o in values(objects)]
         end
 
-        p = new(isminprob, objects, model, Dict(), false)
+        p = new(objects, model, Dict(), false)
 
         setsilent!(p)
 
-        if ismin(p)
-            @objective(p.model, Min, 0)
-        else
-            @objective(p.model, Max, 0)
-        end
+        @objective(p.model, Min, 0)
 
         # Initialize/build all horizons and model objects
         # (mostly creating variables and constraints)
@@ -75,7 +70,6 @@ end
 
 getobjects(p::JuMP_Prob) = p.objects
 gethorizons(p::JuMP_Prob) = p.horizons
-ismin(p::JuMP_Prob) = p.ismin
 
 # -------- Update problem for given problem time --------------
 function update!(p::JuMP_Prob, start::ProbTime)
@@ -84,13 +78,14 @@ function update!(p::JuMP_Prob, start::ProbTime)
         update!(horizon, start)
     end
     
-    # Set parameters and coefficients that depend on the problem time and period
-    # in the horizon.
+    # Loop through all model objects. Set parameters and coefficients that
+    # depend on the problem time and period in the horizon.
     for obj in getobjects(p)
         update!(p, obj, start)
     end
 end
 
+# Functions used by objects to update the problem -------------
 function addvar!(p::JuMP_Prob, id::Id, N::Int)
     name = getname(id)
     p.model[Symbol(name)] = @variable(p.model, [1:N], base_name=name)    
