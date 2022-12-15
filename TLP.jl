@@ -6,11 +6,11 @@ include("data_types.jl")
 include("data_elements_to_objects.jl")
 include("data_constants.jl")
 include("data_utils.jl")
-include("data_periods.jl")
 
 include("times.jl")
 include("timedeltas.jl")
 include("timevectors.jl")
+include("timeperiods.jl")
 include("horizons.jl")
 
 include("problem_jump.jl")
