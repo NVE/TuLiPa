@@ -129,6 +129,7 @@ end
 function assemble!(var::BaseFlow)::Bool
     isempty(var.arrows) && error("No arrows for $(var.id)")
 
+    # Put costs from ExogenBalance into list of cost terms
     for a in var.arrows
         isnothing(gethorizon(a)) && return false
         excost = getexogencost(a)
@@ -137,6 +138,8 @@ function assemble!(var::BaseFlow)::Bool
         end
     end
 
+    # Collect the finest Balance Horizon that the Flow is connected too through arrows. 
+    # TODO: Add checks that the finest Horizon is compatible with the others
     var.horizon = gethorizon(first(var.arrows))
     for i in 2:lastindex(var.arrows)
         h = gethorizon(var.arrows[i])
@@ -145,6 +148,7 @@ function assemble!(var::BaseFlow)::Bool
         end
     end
 
+    # Make sumcost from all costterms
     if length(var.costs) > 0
         var.sumcost = SimpleSumCost(var.costs)
     end
