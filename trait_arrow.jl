@@ -163,7 +163,7 @@ function update!(p::Prob, var::Any, arrow::BaseArrow, start::ProbTime)
     update!(p, arrow.conversion, start)
 
     if !isexogen(arrow.balance)
-        param = getcontributionparam(arrow)
+        param = _getcontributionparam(arrow)
 
         if !isconstant(param)
 
