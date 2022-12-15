@@ -1,34 +1,32 @@
-# ------- Boundary conditions -----------------------------------------------------------------------------------------------
-#
-# We want to have a modular system for boundary conditions that work 
-# with different types of model objects that have one or more state variables. 
-# 
-# Different objects could be 
-#    Storage       - One state variable representing storage content at end of period
-#    RampUp        - One state variable representing flow in previous period
-#    TimeDelayFlow - Many state variables representing flow in previous periods
-#
-# We assume that if an object that have state variables support a few functions,
-# which can give sufficient information about variables and constraints related to its states, 
-# then we should be able to use this interface to define general boundary conditions.
-#
-# We want to implement different types of boundary conditions
-#    StartEqualStop - Ingoing state equal to outgoing state for each state variable
-#    SingleCuts     - Future cost variable constrained by optimality cuts 
-#    MultiCuts      - Future cost variables for scenarios with probability weights constrained by optimality cuts
-#    ValueTerms     - sum vi * xi where xi are segments of state space of outgoing state variable x, 
-#                     and vi is marginal value at each segment
-#
-# Simplifying assumptions:
-#   We always use variables for incoming states, even though we sometimes could have used constant rhs terms.
-#   We always represent problems as minimization problems. 
-#
-# Possible challenges:
-#   What to do if time delay and hourly master problem and 2-hourly subproblem? 
-#   Then time indexes for state variables does not have the same meaning in the two problems. 
-#   Similar issue if subproblem use non-sequential horizon.
-#
-# ----------------------------------------------------------------------------------------------------------------------------
+"""
+We want to have a modular system for boundary conditions that work 
+with different types of model objects that have one or more state variables. 
+ 
+Different objects could be 
+   Storage       - One state variable representing storage content at end of period
+   RampUp        - One state variable representing flow in previous period
+   TimeDelayFlow - Many state variables representing flow in previous periods
+
+We assume that if an object that have state variables support a few functions,
+which can give sufficient information about variables and constraints related to its states, 
+then we should be able to use this interface to define general boundary conditions.
+
+We want to implement different types of boundary conditions
+   StartEqualStop - Ingoing state equal to outgoing state for each state variable
+   SingleCuts     - Future cost variable constrained by optimality cuts 
+   MultiCuts      - Future cost variables for scenarios with probability weights constrained by optimality cuts
+   ValueTerms     - sum vi * xi where xi are segments of state space of outgoing state variable x, 
+                     and vi is marginal value at each segment
+
+Simplifying assumptions:
+   We always use variables for incoming states, even though we sometimes could have used constant rhs terms.
+   We always represent problems as minimization problems. 
+
+Possible challenges:
+   What to do if time delay and hourly master problem and 2-hourly subproblem? 
+   Then time indexes for state variables does not have the same meaning in the two problems. 
+   Similar issue if subproblem use non-sequential horizon.
+"""
 
 # Interface for objects that are boundary condition types
 isboundarycondition(obj) = isinitialcondition(obj) || isterminalcondition(obj)

@@ -1,4 +1,3 @@
-
 # Data world id fields
 const CONCEPTNAME  = "Concept"
 const TYPENAME     = "Type"

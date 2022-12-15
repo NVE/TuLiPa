@@ -1,15 +1,44 @@
-# Here we define the getmodelobjects function, which compiles data elements into model objects
+"""
+Here we define the getmodelobjects() function, which compiles data elements into model objects.
+The parts and steps are describe below:
 
-# Function registers
-#   Naming convention: All functions named include + OBJECTNAME + !
-#
-#   Function signature: 
-#     f(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value)::Bool
-#
-#   Intended behavior: 
-#     1) Should include some element by modifying either toplevel or lowlevel
-#     2) Should return as early as possible
-#     3) Should validate inputs and give good error messages 
+DataElements: see data_types.jl
+
+INCLUDEELEMENT:
+Each data element has an INCLUDEELEMENT function that will include it into lowlevel or toplevel,
+or another object in toplevel/lowlevel. Toplevel is a list of objects that will end up in the final 
+model object list (i.e. Flow, Balance, SoftBound etc...), while lowlevel is a temporary storage 
+of objects that will be put into the toplevel objects (i.e. RHSTerms, Capacity, TimeVector etc...). 
+When including an element, first we check if all the dependencies of the data element have been
+created (in toplevel or lowlevel). If that is the case, the object will be built (also important to 
+validate that all the inputs behave as expected) and put into toplevel, lowlevel or other objects 
+inside one of toplevel/lowlevel.
+Naming convention: All functions named include + OBJECTNAME + !
+    (see for example includePositiveCapacity! in trait_capacity.jl) 
+Function signature: f(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value)::Bool
+
+getmodelobjects() consist of 3 elements:
+
+    check_duplicates(elements)
+    There should be no duplicates in the data elements. Throw error if duplicates.
+
+    include_all_elements(elements)
+    This function loops through all the data elements and runs their INCLUDEELEMENT function. This is
+    an iterative process where data elements are converted to objects when all their dependencies have
+    been created. This iteration stops when no more objects are included in the list of completed 
+    data elements. If some data elements failed to be included there is an error message with the list
+    of these, else return toplevel.
+
+    assemble!(modelobjects)
+    When all the information has been included in the model objects they can be assembled. This could be
+    for example finding the horizon of a Flow (variable) based on all the Balances it is connected to.
+    This is also an iterative process similar to the one in include_all_elements(elements), because some
+    model objects depend on others being assembled before they can be assembled themselves.
+
+TODO: Better error messages
+TODO: This description is messy?
+"""
+
 INCLUDEELEMENT = Dict()
 
 # TODO: Complete

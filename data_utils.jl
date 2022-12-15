@@ -1,4 +1,3 @@
-
 # --- Helper functions used to include data elements -----
 
 function getdictvalue(dict::Dict, dictkey::String, @nospecialize(TYPES), elkey::ElementKey)
