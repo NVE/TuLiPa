@@ -1,5 +1,6 @@
 """
-Implementation of HiGHS_Prob <: Prob
+Implementation of HiGHS_Prob <: Prob 
+- see abstracttypes.jl and problem_jump.jl for a description of the framework
 
 Inspiration and also some code snippets gotten from 
 https://github.com/jump-dev/HiGHS.jl/blob/master/src/MOI_wrapper.jl
@@ -17,6 +18,8 @@ and found that the class of change-by-mask-functions worked well for our use cas
 While implementing HiGHS_Prob, it was very useful to already have JuMP_Prob, 
 because then we could use JuMP_Prob to test that HiGHS_Prob 
 got the same results as JuMP_Prob.
+
+TODO: Add interface for selecting options like Highs_setStringOptionValue(p, "solver", "ipm")
 """
 
 using HiGHS
@@ -89,7 +92,7 @@ mutable struct HiGHS_Prob <: Prob
     
     horizons::Vector{Horizon}
 
-    # TODO: add flag isbuildt and only allow makefixable while building
+    # TODO: add flag isbuilt and only allow makefixable while building
     fixable_vars::Dict{Tuple{Id, Int}, Id}
     
     function HiGHS_Prob(modelobjects, ismin::Bool)
