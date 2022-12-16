@@ -341,7 +341,8 @@ abstract type Conversion end
 #
 # The utilization rate is used for aggregation of Balances,
 # where we represent loss on power flow on internal transmission lines
-# as demand in the aggregated Balance
+# as demand in the aggregated Balance (i.e. power markets of NO2 and NO1
+# is aggregated, then the line NO2-NO1 becomes a demand (loss))
 #
 # Interface:
 #     getutilisation(loss)
