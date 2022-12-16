@@ -187,7 +187,6 @@ abstract type Flow end
 # Represents a Storage variable for each period in an Horizon (i.e. hydro/battery/gas storage)
 # Connected to a Balance
 # For each period the time differential (x[t-1]-x[t]) of the Storage is added to the Balance
-# The time differential of the Storage variable is ingoing to the Balance
 # Must have boundary condition for start and/or end variable
 # Have upper and lower Capacity. May have Cost terms. May have Loss
 # May be affected by other traits indirectly
@@ -250,7 +249,8 @@ abstract type Balance end
 # Gives information about a commodity (i.e. Power, Hydro, Gas)
 # Has Horizon
 # Property of Balance. Balances assigned a Commodity inherits its traits (i.e. its Horizon)
-# Makes it easy to differentiate which modelobjects that are in the same system
+# Makes it easy to assing horizons to modelobjects in the same system, and differentiate 
+# which modelobjects that are in the same system and
 #
 # Interface:
 #    getid(commodity)
@@ -279,7 +279,6 @@ abstract type RHSTerm end
 # Property of Balance
 # Holds data that represents the dual solution of a Balance
 # Exogen Balances must hold a Price
-# Has Direction to represent positive or negative contribution
 #
 # Interface:
 #    getparamvalue(price, probtime, timedelta)
