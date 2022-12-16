@@ -5,7 +5,7 @@ Supports isconstant() and getweightedaverage()
 from a starting time and over a timedelta
 - getweightedaverage() is implemented for different TimeDeltas
 
-ConstantTimeVector constains a single value
+ConstantTimeVector contains a single value
 
 RotatingTimeVector contains a time-series. When we get to the end of the
 time-series we reuse it (therefore rotating)
@@ -17,6 +17,9 @@ Used for profile i.e wind profile from 1981-2010
 InfiniteTimeVector contains a time-series that represents the
 value at a given problem time (infinite because it does not rotate)
 Used for level i.e. installed wind capacity in 2021, 2030, 2040 and 2050
+
+Building blocks of the TimeVectors above are also included from the DataElements.
+These are commented at the end. These are also stored in lowlevel.
 """
 
 # ----- Concrete types -----------
