@@ -83,7 +83,7 @@ function setconstants!(p::Prob, trait::BaseSoftBound)
     
     # Set RHS in softbound if it is the same for all scenarios and horizon periods
     if !_must_dynamic_update(trait.softcap, horizon)
-        if isdurational(trait.softcap)
+        if isdurational(trait.softcap) # SequentialHorizon can have two or more sets of (nperiods, duration) pairs
             for t in 1:T
                 querydelta = gettimedelta(horizon, t)
                 value = getparamvalue(trait.softcap, ConstantTime(), querydelta)

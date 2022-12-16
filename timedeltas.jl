@@ -5,19 +5,8 @@ MsTimeDelta is a simple TimeDelta that contains a timedelta in Millisecond.
 Used to represent the TimeDelta of a period in a Horizon
 
 UnitsTimeDelta is a more complex TimeDelta used in AdaptiveHorizon
-It is used when we want to group hours (or time units) in
-an horizon based on their characteristics (e.g. hours 
-with similar residual load). Here we don't necessarily care if the
-hours are sequential in time.
-The units are a list of UnitRanges.
-Heres an example if we split the hours in every week 
-by high load (day), and low load (night):
-UnitsTimeDelta 1: [7:20, 32:40, 56:68, 80:92, 104:116, 128:140, 152:164] - first week high load
-UnitsTimeDelta 2: [1:6, 20:31, 41:55 etc...] - first week low load
-UnitsTimeDelta 3: [175:188, etc...] - second week high load
-UnitsTimeDelta 4: [169:174, etc...] - second week low load
-UnitsTimeDelta 5: [...] - third week high load
-UnitsTimeDelta 6: [...] - third week low load
+The units are a list of UnitRanges with unit_duration
+See AdaptiveHorizon in horizons.jl
 """
 
 # ----- Concrete types ----------

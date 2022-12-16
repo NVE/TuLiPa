@@ -55,6 +55,8 @@ function setconstants!(p::Prob, var::Any, capacity::PositiveCapacity)
 
     if isdurational(capacity)
         dummytime = ConstantTime()
+        # Q: Why not calculate value only once here?
+        # A: Because SequentialHorizon can have two or more sets of (nperiod, duration) pairs
         for t in 1:T
             querydelta = gettimedelta(horizon, t)
             value = getparamvalue(capacity, dummytime, querydelta)

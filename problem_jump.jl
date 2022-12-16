@@ -220,7 +220,7 @@ getfixvardual(p::JuMP_Prob, varid::Id, varix::Int)  = dual(FixRef(p.model[Symbol
 
 # ------- Fix state variables for boundary conditions ------------
 
-function makefixable!(p::JuMP_Prob, varid::Id, varix::Int)
+function makefixable!(::JuMP_Prob, ::Id, ::Int)
     return
 end
 

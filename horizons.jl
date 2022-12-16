@@ -1,47 +1,90 @@
 ﻿"""
-Horizon is a ProbTime aware sequence of time periods t = 1, 2, .., T, where each time period has a TimeDelta
+We implement SequentialHorizon and AdaptiveHorizon (see abstracttypes.jl for general description)
 
-Horizon interface functions
+SequentialHorizon --------------------------
+Consist of two main elements:
+- SequentialPeriods: A list of (N, timedelta) pairs, so a simple SequentialPeriods
+could have N periods of duration timedelta. A more complex SequentialPeriods could 
+have first N1 periods of duration timedelta1 and then N2 periods of duration 
+timedelta2. One usecase for this is if the desired total problem time cant be 
+divided by the desired timedelta1. Then we could have N1 periods of timedelta1 
+and 1 period of timedelta2 = total time - timedelta1*N1.
+- Offset: An optional timedelta that shifts where the Horizon starts. Can be 
+used to combine datasets in time (e.g. adding future scenarios)
+
+AdaptiveHorizon ----------------------------
+Horizon with two dimensions. The overlying dimension is a SequentialHorizon 
+consisting of SequentialPeriods and Offset. In the second dimension we want 
+to group hours (or time units) in every macro period into blocks based on their 
+characteristics (e.g. hours with similar residual load). Every block is
+a period of AdaptiveHorizon consisting of a UnitsTimeDelta.
+
+AdaptiveHorizon is built based on a dataset. We implement StaticRHSAHData and 
+DynamicRHSAHData.
+AdaptiveHorizon can be built with different methods. We implement PercentilesAHMethod
+and KMeansAHMethod
+
+Heres an example if we split the hours in every week, into 2 blocks by high load (day), 
+and low load (night):
+macro_periods: weekly periods
+num_block: 2 blocks per macro period
+unit_duration: 1 hour
+
+Macro period 1:
+Period/UnitsTimeDelta 1: [7:20, 32:40, 56:68, 80:92, 104:116, 128:140, 152:164] - first week high load
+Period/UnitsTimeDelta 2: [1:6, 20:31, 41:55 etc...] - first week low load
+Macro period 2:
+Period/UnitsTimeDelta 3: [175:188, etc...] - second week high load
+Period/UnitsTimeDelta 4: [169:174, etc...] - second week low load
+Macro period 3:
+Period/UnitsTimeDelta 5: [...] - third week high load
+Period/UnitsTimeDelta 6: [...] - third week low load
+
+Horizon interface functions ---------------------
     getnumperiods(::Horizon) -> Int
 
-    # To compose with TimeVector data
+    # To relate the Horizon and starting time to TimeVector data
     getstarttime(h::Horizon, t::Int, start::ProbTime) -> ProbTime
-
     getduration(h::Horizon) -> Millisecond
-
     getstartduration(::Horizon, ::Int) -> Millisecond
-
     gettimedelta(::Horizon, ::Int) -> TimeDelta
     
-    # To support different time resolution
+    # To support different Horizons between variables (Flow and Storage) and Balances
     getsubperiods(coarse::Horizon, fine::Horizon, s::Int) -> UnitRange{Int}
 
-    # To support AdaptiveHorizon
+    # To support AdaptiveHorizon which has to be built and possibly updated dynamically 
     build!(horizon::Horizon, prob::Prob)
     update!(horizon::Horizon, t::ProbTime)
 
-    # To update constant parameters in Prob only once
+    # To check if constant parameters in Prob can be updated only once
     isadaptive(horizon::Horizon) -> Bool
     hasconstantdurations(horizon::Horizon) -> Bool
 
     # To combine datasets in time (e.g. adding future scenarios)
     hasoffset(horizon::Horizon) -> Bool
     getoffset(horizon::Horizon) -> TimeDelta
-
-
-We implement SequentialHorizon and AdaptiveHorizon
-
-AdaptiveHorizon can have different types of data. We implement two different types here.
-
-AdaptiveHorizon can have different types of methods. We implement two different types here.
+    TODO: Test combining boundary variables in two datasets 
 """
 
 using Clustering
 
-# --- SequentialPeriods ---
+# --------- Generic fallback Horizon interface -----------------
+# We want to update the problem efficiently, so we check if 
+# problem values must be updated dynamically
+# If the value is the same for all scenarios and time periods, 
+# it should only be updated once using setconstants! instead of update!
+function _must_dynamic_update(paramlike::Any, horizon::Horizon) 
+    isconstant(paramlike) || return true
 
-# This type is used as a component in SequentialHorizon and AdaptiveHorizon
+    if isdurational(paramlike) && !hasconstantdurations(horizon)
+        return true
+    end
 
+    return false
+end
+
+# ------ SequentialPeriods -----------
+# Component in SequentialHorizon and AdaptiveHorizon
 struct SequentialPeriods
     data::Vector{Tuple{Int, Millisecond}}
 
@@ -217,23 +260,7 @@ function accumulate_duration(x::SequentialPeriods, acc::Millisecond, target::Mil
     end
 end
 
-# --------- Generic fallback Horizon interface -----------------
-# We want to update the problem efficiently, so we check if 
-# problem values must be updated dynamically
-# If the value is the same for all scenarios and time periods, 
-# it should only be updated once using setconstants! instead of update!
-function _must_dynamic_update(paramlike::Any, horizon::Horizon) 
-    isconstant(paramlike) || return true
-
-    if isdurational(paramlike) && !hasconstantdurations(horizon)
-        return true
-    end
-
-    return false
-end
-
-# -- SequentialHorizon --
-
+# --------- SequentialHorizon ------------------
 struct SequentialHorizon <: Horizon
     periods::SequentialPeriods
     offset::Union{TimeDelta, Nothing}
@@ -274,7 +301,7 @@ function getsubperiods(coarse::SequentialHorizon, fine::SequentialHorizon, coars
 end
 
 
-# -- AdaptiveHorizon -- 
+# ------------- AdaptiveHorizon ---------------- 
 
 abstract type AdaptiveHorizonData end
 abstract type AdaptiveHorizonMethod end
@@ -425,10 +452,9 @@ function getsubperiods(coarse::AdaptiveHorizon, fine::SequentialHorizon, coarse_
     return getsubperiods(coarse.macro_periods, fine.periods, coarse_t)
 end
 
-# --- AdaptiveHorizonData types ---
+# ------ AdaptiveHorizonData types --------
 
 # internal utility functions
-
 function _get_rhs_terms_from_prob(prob::Prob, commodity::String)
     rhs_terms = []
     for obj in getobjects(prob)
@@ -463,8 +489,7 @@ function _get_residual_load(rhs_terms::Vector, datatime::DateTime, start::DateTi
     return residual_load
 end
 
-# StaticRHSData
-
+# StaticRHSData -------------
 mutable struct StaticRHSAHData <: AdaptiveHorizonData
     commodity::String
     datatime::DateTime
@@ -509,8 +534,7 @@ function update_X!(X::Matrix{Float64}, data::StaticRHSAHData, start::ProbTime,
     return
 end
 
-# DynamicRHSData
-
+# DynamicRHSData ----------------
 mutable struct DynamicRHSAHData <: AdaptiveHorizonData
     commodity::String
     rhs_terms::Vector{Any}
@@ -537,10 +561,9 @@ function update_X!(X::Matrix{Float64}, data::DynamicRHSAHData, start::ProbTime,
     return
 end
 
-# --- AdaptiveHorizonMethod types ---
+# ------- AdaptiveHorizonMethod types -------
 
-# PercentilesAHMethod
-
+# PercentilesAHMethod -----------------
 mutable struct PercentilesAHMethod <: AdaptiveHorizonMethod
     percentiles::Vector{Float64}
 
@@ -599,7 +622,7 @@ function assign_blocks!(method::PercentilesAHMethod, X::Matrix{Float64})
     return assignments
 end
 
-# ---- KMeansAHMethod ----
+# ---------- KMeansAHMethod ---------------
 mutable struct KMeansAHMethod <: AdaptiveHorizonMethod
     num_cluster::Int
     KMeansAHMethod() = new(-1)
@@ -613,7 +636,7 @@ function init!(method::KMeansAHMethod, ::SequentialPeriods, num_block::Int, ::Mi
 end
 
 function assign_blocks!(method::KMeansAHMethod, X::Matrix{Float64})
-    Random.seed!(1000) # NB!!!----------------------------------------------------------
+    Random.seed!(1000) # NB!!! for consistent results in testing-------------------------------
     result = kmeans(X, method.num_cluster)
     return result.assignments
 end

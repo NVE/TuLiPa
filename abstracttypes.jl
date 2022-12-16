@@ -1,7 +1,7 @@
 ﻿"""
 Below follows general descriptions of abstract types in our modelling framework
 and the interfaces each abstract type supports.
-Each abstract type represents a concept that can have subtypes in the form of 
+Each abstract type represents a model concept that can have subtypes in the form of 
 other abstract types or concrete types. The concrete types at the bottom of the
 hierarchy are structs. 
 
@@ -28,7 +28,7 @@ works for different concrete types and methods/functions. It also makes it
 easy to add new concrete types or methods without having to change much 
 of the existing code.
 
-TODO: Add abstract type Group? Have AggSupplyCurve as undertype?
+TODO: Add abstract type Group? Have AggSupplyCurve as subtype?
 """
 
 
@@ -53,7 +53,6 @@ TODO: Add abstract type Group? Have AggSupplyCurve as undertype?
 #      prob = HiGHS_Prob(objects)
 #      prob = JuMP_Prob(objects, jump_model)
 #
-#   solve!(prob)
 #   update!(prob, probtime)
 #
 #   addvar!(prob, varid, N)
@@ -61,15 +60,15 @@ TODO: Add abstract type Group? Have AggSupplyCurve as undertype?
 #   addge!(prob, conid, N)
 #   addle!(prob, conid, N)
 #
-#   makefixable!(prob, varid, varix)
-#   fix!(prob, varid, varix)
-#   unfix!(prob, varid, varix)
-#
 #   setub!(prob, varid, varix, value)
 #   setlb!(prob, varid, varix, value)
 #   setobjcoeff!(prob, varid, varix, value)
 #   setconcoeff!(prob, conid, varid, conix, varix, value)
 #   setrhsterm!(prob, conid, termid, conix, value)
+#
+#   solve!(prob)
+#   setsilent!(prob)
+#   setunsilent!(prob)
 #
 #   getobjectivevalue(prob)
 #   getvarvalue(prob, varid, varix)
@@ -81,8 +80,9 @@ TODO: Add abstract type Group? Have AggSupplyCurve as undertype?
 #   getconcoeff(prob, conid, varid, conix, varix)
 #   getrhsterm(prob, conid, termid, conix)
 #
-#   setsilent!(prob)
-#   setunsilent!(prob)
+#   makefixable!(prob, varid, varix)
+#   fix!(prob, varid, varix)
+#   unfix!(prob, varid, varix)
 #
 abstract type Prob end
 
@@ -103,12 +103,12 @@ abstract type TimeDelta end
 #
 # Horizon is a ProbTime aware sequence of time periods t = 1, 2, .., T
 # Each time period has a TimeDelta
-# With the starting point of the horizon, and the TimeDeltas of each period, we can 
-# find the starting point of each period in the horizon, and look up the
+# With the starting time of the horizon, and the TimeDeltas of each period, we can 
+# find the starting time of each period in the horizon, and look up the
 # corresponding parameter values in data series
 # Can have offset, to allow modelling of future scenarios in a Prob
 # Can be adaptive (e.g. hours in each week of horizon are grouped in 5 blocks per week, 
-#                  and hours to block mapping depends on data seen from probtime t,
+#                  and hours-to-block mapping depends on data seen from probtime t,
 #                  for example mapping done by residual load)
 #
 # Interface:
@@ -119,6 +119,7 @@ abstract type TimeDelta end
 #   gettimedelta(horizon, periodindex)
 #   getsubperiods(coarsehorizon, finehorizon, coarseperiodindex)
 #   getoffset(horizon)
+#   hasoffset(horizon)
 #   isadaptive(horizon)
 #   hasconstantdurations(horizon)
 #   build!(horizon, prob)

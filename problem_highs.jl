@@ -6,7 +6,7 @@ Inspiration and also some code snippets gotten from
 https://github.com/jump-dev/HiGHS.jl/blob/master/src/MOI_wrapper.jl
 
 We would like to mainly use JuMP_Prob, but we experienced that 
-build and update time did not scale well with the version of JuMP with HiGHS 
+build! and update! time did not scale well with the version of JuMP with HiGHS 
 that we used while testing. This may be fixed soon due to 
 https://github.com/ERGO-Code/HiGHS/issues/917, but we needed a workaround right away. 
 We therefore implemented HiGHS_Prob, which uses the HiGHS API function Highs_passLp 
@@ -463,8 +463,6 @@ function setrhsterm!(p::HiGHS_Prob, con::Id, trait::Id, i::Int, value::Float64)
     return
 end
 
-getobjectivevalue(p::HiGHS_Prob) = Highs_getObjectiveValue(p)
-
 function _setvarvalues!(p::HiGHS_Prob)
     p.isoptimal || error("No optimal solution available")
     ret = Highs_getSolution(p, p.col_values, C_NULL, C_NULL, C_NULL)
@@ -476,6 +474,8 @@ function _setconduals!(p::HiGHS_Prob)
     ret = Highs_getSolution(p, C_NULL, C_NULL, C_NULL, p.row_duals)
     checkret(ret)
 end
+
+getobjectivevalue(p::HiGHS_Prob) = Highs_getObjectiveValue(p)
 
 function getvarvalue(p::HiGHS_Prob, key::Id, t::Int)
     if !p.isvarvaluesupdated
@@ -535,7 +535,7 @@ function getfixvardual(p::HiGHS_Prob, varid::Id, varix::Int)
     return getcondual(p, conid, 1)
 end
 
-# --- Added to fix state variables ---
+# --- Fix state variables for boundary conditions ---
 
 _getfixeqid(varid::Id, varix::Int) = Id(getconceptname(varid), string("FixEq", getinstancename(varid), varix))
 
