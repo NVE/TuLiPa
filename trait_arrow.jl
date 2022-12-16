@@ -1,9 +1,15 @@
 """
 We implement BaseArrow and SegmentedArrow (see abstracttypes.jl)
-"""
 
-# ------- Generic fallbacks -------------
-gethorizon(arrow::Arrow) = gethorizon(getbalance(arrow))
+BaseArrow is a simple Arrow like the one described in abstracttypes.jl
+
+SegmentedArrow is used when the variable should be split into segments.
+Each segment has its own conversion factor and capacity (and therefore
+also possibly cost). Used for hydropower PQ-curves or efficiency segments 
+of thermal power production.
+
+TODO: Implement an Arrow type with time delay.
+"""
 
 # ------- Concrete types ----------------
 mutable struct BaseArrow <: Arrow
@@ -38,6 +44,8 @@ getstatevariables(::OurArrowTypes) = StateVariableInfo[]
 
 getbalance(arrow::OurArrowTypes) = arrow.balance
 setbalance!(arrow::OurArrowTypes, balance::Balance) = arrow.balance = balance
+
+gethorizon(arrow::OurArrowTypes) = gethorizon(getbalance(arrow))
 
 isingoing(arrow::OurArrowTypes) = arrow.isingoing
 

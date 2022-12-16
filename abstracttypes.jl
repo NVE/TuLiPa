@@ -292,7 +292,7 @@ abstract type Price end
 # ---- Arrow ----
 #
 # Represents edge with direction that connects Flow to Balance
-# When Balance is endogeneous, the arrow connects 
+# When Balance is endogeneous, the arrow puts 
 # the Flow variable in the Balance equation
 # When Balance is exogenous, the arrow model the connection
 # using terms in the objective function
@@ -300,9 +300,6 @@ abstract type Price end
 # of the Flow in the Balance (e.g. Conversion or Loss)
 #
 # Some Arrow types create variables and equations (see SegmentedArrow)
-#
-# In the future, we want to implement an Arrow type with time delay, 
-# e.g. to model which would have state variables
 #
 # Interface:
 #    getid(arrow)
