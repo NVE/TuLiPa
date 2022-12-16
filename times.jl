@@ -1,10 +1,17 @@
 """
-A ProbTime have at least two dimensions. 
-The first dimention is datatime, the second is scenariotime.
-We use datatime to look up capacities and such.
-We use scenariotime to look up profile values.
+We implement ConstantTime, TwoTime and FixedDataTwoTime (see abstracttypes.jl)
 
-# TODO: Should all ProbTime types implement getdatatime and getscenariotime?
+ConstantTime is used when getting the value from a constant parameter, then 
+the time does not matter (our framework is built around getting values 
+from time series data)
+
+TwoTime has datatime and scenariotime where both of them are iterated through
+the horizon. Used when the power system and weather scenarios change throughout
+the horizon.
+
+FixedDataTwoTime has datatime and scenariotime but only scenariotime is
+iterated through the horizon. Datatime is fixed thorughout the Horizon.
+Used when the power system stays the same thrughout the horizon.
 """
 
 using Dates
@@ -46,7 +53,6 @@ getscenariotime(x::ConstantTime) = x.value
 
 
 # --- TwoTime ---
-
 struct TwoTime <: ProbTime
     datatime::DateTime
     scenariotime::DateTime
@@ -57,9 +63,6 @@ getscenariotime(x::TwoTime) = x.scenariotime
 
 
 # --- FixedDataTwoTime ---
-#   Datatime is constant
-#   Only change scenariotime part
-
 struct FixedDataTwoTime <: ProbTime
     datatime::DateTime
     scenariotime::DateTime

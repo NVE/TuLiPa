@@ -1,3 +1,12 @@
+"""
+TimePeriods between two times
+
+ScenarioTimePeriod is used to limit how much data is read into the problem.
+The dataset can contain 60 weather years while we only need 30.
+For example used in includeRotatingTimeVector!()
+
+TODO: SimulationTimePeriod
+"""
 
 # --- ScenarioTimePeriod ---
 

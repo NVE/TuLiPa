@@ -135,7 +135,7 @@ abstract type Horizon end
 # The first is datatime
 # The second is scenariotime
 # This is because most of our data sets are a combination of a level (i.e. installed 
-# capacity in datatime 2030, 2040 and 2050) and a profile (i.e. profilevalue at scenariotime
+# capacity in datatime 2030, 2040 and 2050) and a profile (i.e. profile value at scenariotime
 # inside the weather scenario 1981-2010). This gives flexibility to run many different scenarios
 #
 # Interface:
