@@ -52,7 +52,7 @@ end
 # These parameters are a combination of a level and profile TimeVector
 # The level is often an InfiniteTimeVector (e.g. installed wind power in 2021, 2025, 2030)
 # The profile is often a RotatingTimeVector (e.g. a wind profile ranging from 0-1)
-# MeanSeriesParam multiplies the two values together, while the two
+# MeanSeriesParam multiplies the two values together, while the
 # others also take into account the temporal aspect (e.g. MW to GWh or m3/s to Mm3)
 struct MeanSeriesParam{L <: TimeVector, P <: TimeVector} <: Param
     level::L
@@ -106,7 +106,7 @@ function TransmissionLossRHSParam(capacity::Capacity, L::SimpleLoss)
     return TransmissionLossRHSParam(capacity, L.value, L.utilisation)
 end
 
-# --- Interface functions ---
+# ------ Interface functions ---------
 iszero(param::FlipSignParam) = iszero(param.param)
 iszero(param::ZeroParam) = true
 iszero(param::PlusOneParam) = false
