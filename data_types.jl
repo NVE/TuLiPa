@@ -2,13 +2,15 @@
 The DataElement type we use has:
 - Conceptname which is the abstract type of the element
 - Typename which is the concrete type of the element
-- Instancename which is the name of the element
+- Instancename which is the unique name of the element
 - Value which is the information the element holds. A dictionary in our datasets
 
-The data elements are stored in a flat structure where each data element holds its information
-and possibly references to other dataelements they are linked to (for example can an upper 
-capacity hold references to its parameter (stored in another data element), and references to 
-the variable this upper capacity should be included in (see data_elements_to_objects.jl)).
+The data elements are stored in a flat structure where each data element
+holds its information and possibly references to other dataelements 
+they are linked to (for example can an upper capacity hold references 
+to its parameter (stored in another data element), and references to 
+the variable this upper capacity should be included in 
+(see data_elements_to_objects.jl)).
 """
 
 struct DataElement
@@ -59,7 +61,7 @@ function getelement(elements::Vector{DataElement},instancename::String)
 end
 
 # Functions to read dataset stored in JSON as a list of tuples (after JSON.parsefile())
-# TODO: Probably not the best format 
+# TODO: Make more robust
 function getelements(tupleelements::Vector{Any}, path="")
     elements = DataElement[]
     for element in tupleelements

@@ -3,10 +3,10 @@ We implement BaseArrow and SegmentedArrow (see abstracttypes.jl)
 
 BaseArrow is a simple Arrow like the one described in abstracttypes.jl
 
-SegmentedArrow is used when the variable should be split into segments.
-Each segment has its own conversion factor and capacity (and therefore
-also possibly cost). Used for hydropower PQ-curves or efficiency segments 
-of thermal power production.
+SegmentedArrow is used when the variable (Flow) should be split into 
+segments. Each segment has its own conversion factor and capacity (and 
+therefore also possibly cost). Used for hydropower PQ-curves or 
+efficiency segments of thermal power production.
 
 TODO: Implement an Arrow type with time delay.
 """
@@ -150,7 +150,7 @@ function setconstants!(p::Prob, var::Any, arrow::BaseArrow)
             # and can be calculated once
             value = getparamvalue(param, ConstantTime(), MsTimeDelta(Hour(1)))
 
-            # The direction also decides if the contribution is positive or negative
+            # The direction decides if the contribution is positive or negative
             if !arrow.isingoing 
                 value = -value
             end
@@ -202,7 +202,7 @@ function _getcontributionparam(arrow::BaseArrow)
         param = arrow.conversion
     else
         # If there is loss the contribution to the balance will depend
-        # on the direction of the arrow (in our out of the balance). 
+        # on the direction of the arrow (in or out of the balance). 
         # Either the conversion is multiplied or divided by (1-loss)
         # See getparamvalue() of InConversionLossParam and OutConversionLossParam
         if arrow.isingoing
@@ -234,7 +234,7 @@ function setconstants!(p::Prob, var::Any, arrow::SegmentedArrow)
         for t in 1:T
             setconcoeff!(p, eqid, getsegmentid(arrow,i), t, t, -1.0)
 
-            # LB of segmented variables are set to 0
+            # Non-negative segmented variables
             setlb!(p, getsegmentid(arrow, i), t, 0.0)
         end
     

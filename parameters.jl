@@ -49,7 +49,7 @@ struct FossilMCParam{FL <: TimeVector, FP <: TimeVector, CF <: TimeVector,
     voc::V
 end
 
-# These parameters are a combination of a level and profile TimeVector
+# These parameters are a combination of a level and profile TimeVectors
 # The level is often an InfiniteTimeVector (e.g. installed wind power in 2021, 2025, 2030)
 # The profile is often a RotatingTimeVector (e.g. a wind profile ranging from 0-1)
 # MeanSeriesParam multiplies the two values together, while the

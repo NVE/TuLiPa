@@ -4,22 +4,22 @@ Here we use the JuMP modelling framework
 https://github.com/jump-dev/JuMP.jl
 
 JuMP_Prob consist of:
-- JuMP Model object with solver, solver settings and problem formulation built
-incrementally from model objects
+- JuMP Model object with solver, solver settings and problem 
+formulation built incrementally from model objects
 - Model objects that represent concepts 
-(i.e. power plants, power markets, water balances etc...)
+(e.g. power plants, power markets, water balances etc...)
 They know how they are connected to other model objects
 and how to interact with the optimization model
-(i.e. add variables and constraints, and update parameters wrt. time input)
-- An interface to build, update and solve the problem, add solver settings 
-and query results from from the solution 
-- Horizons can similar to model objects be built and updated (needed for more 
-complex horizons). They are therefore collected from the model objects 
-and stored in a list to make the updating more efficient. 
-- The right hand side (rhs) of constraints can consist of multiple parameters.
-When these parameters are updated they are first put into JuMP_Prob. 
-Right before the problem is solved, if any parameters have been updated,
-the rhs (sum of the parameters) is added to the JuMP Model. 
+(e.g. add variables and constraints, and update parameters wrt. time input)
+- An interface to build, update and solve the problem, add solver 
+settings and query results from from the solution 
+- Horizons can similar to model objects be built and updated 
+(needed for more complex horizons). They are therefore collected from 
+the model objects and stored in a list to make the updating more efficient. 
+- The right hand side (rhs) of constraints can consist of multiple 
+parameters. When these parameters are updated they are first put into 
+JuMP_Prob. Right before the problem is solved, if any parameters have 
+been updated, the rhs (sum of the parameters) is added to the JuMP Model. 
 """
 
 using JuMP
@@ -57,9 +57,9 @@ mutable struct JuMP_Prob <: Prob
             build!(p, obj)
         end
 
-        # Set all parameters and coefficients that will be the same regardless 
-        # of the problem time and period in the horizon. These only need to be 
-        # updated once
+        # Set all parameters and coefficients that will be the same 
+        # regardless of the problem time and period in the horizon. 
+        # These only need to be updated once
         for obj in getobjects(p)
             setconstants!(p, obj)
         end
@@ -151,6 +151,7 @@ end
 
 # ---------- Solve problem and solver settings -------
 function solve!(p::JuMP_Prob)
+    # Update RHS of equations
     if p.isrhsupdated
         for id in keys(p.rhs)
             for i in eachindex(p.rhs[id])

@@ -2,20 +2,23 @@
 We implement two types of Balance: BaseBalance and ExogenBalance
 Both are defined for a commodity, horizon and they both have metadata
 
-BaseBalance is a conventional balance defined for each period in the horizon
-It can take contributions from variables (e.g. Flow or Storage) or parameters (from RHSTerm)
-The contribution from each variable is decided by arrows (it converts the variable into
-the Commodity of the Balance, and may take into account losses and lag)
+BaseBalance is a conventional balance defined for each period in the 
+horizon. It can take contributions from variables (e.g. Flow or Storage) 
+or parameters (from RHSTerm). The contribution from each variable is 
+decided by arrows (it converts the variable into the Commodity of the 
+Balance, and may take into account losses and lag)
 
-ExogenBalance represent an exogen system, and holds the Price of the Commodity in this system.
-Flows (with Arrow) that contribute to this Balance will have an income or cost,
-which is included in the objective function.
-The contribution to the objective function is decided by the price of the commodity
-multiplied with the contribution from the variable into the Balance.
+ExogenBalance represent an exogen system, and holds the Price of the 
+Commodity in this system. Flows (with Arrow) that contribute to this 
+Balance will have an income or cost, which is included in the objective 
+function. The contribution to the objective function is decided by 
+the price of the commodity multiplied with the contribution from the 
+variable into the Balance.
 
-This framework make us able to use the same dataset regardless of if a Flow (with Arrow)
-is connected to an Endogenous or Exogenous system. For example can a hydropower system be
-switched from being connected to a power market (endogenous) to a price (exogenous),
+This framework make us able to use the same dataset regardless of if 
+a Flow (with Arrow) is connected to an Endogenous or Exogenous system. 
+For example can a hydropower system be switched from being connected
+to a power market (endogenous) to a price (exogenous),
 and only the Balance object will have to be changed.
 """
 
@@ -49,7 +52,7 @@ end
 
 # --- Interface functions ---
 
-# Implementation of Balance interface for our Balance types
+# Implementation of interface for our Balance types
 const OurBalanceTypes = Union{BaseBalance, ExogenBalance}
 
 getid(balance::OurBalanceTypes) = balance.id
@@ -67,12 +70,12 @@ addrhsterm!(balance::BaseBalance, rhsterm::RHSTerm) = push!(balance.rhsterms, rh
 isexogen(::ExogenBalance) = true
 getprice(balance::ExogenBalance) = balance.price
 
-# ExogenBalance does not add equations but can update the priceelement
-build!(p::Prob, balance::ExogenBalance) = build!(p, balance.price)
-setconstants!(p::Prob, balance::ExogenBalance) = setconstants!(p, balance.price)
-update!(p::Prob, balance::ExogenBalance, start::ProbTime) = update!(p, balance.price, start)
+# ExogenBalance does not have equations to build and update
+build!(p::Prob, balance::ExogenBalance) = nothing
+setconstants!(p::Prob, balance::ExogenBalance) = nothing
+update!(p::Prob, balance::ExogenBalance, start::ProbTime) = nothing
 
-# Build empty balance equation
+# Build empty balance equation for BaseBalance
 function build!(p::Prob, balance::BaseBalance)
     addeq!(p, balance.id, getnumperiods(balance.horizon))
     return
@@ -118,7 +121,8 @@ function update!(p::Prob, balance::BaseBalance, start::ProbTime)
     return
 end
 
-# Balance types are toplevel objects in dataset_compiler, som we must implement assemble!
+# Balance types are toplevel objects in dataset_compiler, so we must 
+# implement assemble!
 # If horizon is nothing it is initialized from the commodity
 function assemble!(balance::OurBalanceTypes)::Bool 
     if isnothing(balance.horizon)

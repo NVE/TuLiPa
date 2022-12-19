@@ -136,7 +136,7 @@ function update!(p::Prob, trait::BaseSoftBound, start::ProbTime)
     return
 end
 
-# BaseSoftBound types are toplevel objects in dataset_compiler, som we must implement assemble!
+# BaseSoftBound types are toplevel objects in dataset_compiler, so we must implement assemble!
 function assemble!(trait::BaseSoftBound)
     # return if var not assembled yet
     isnothing(gethorizon(trait.var)) && return false

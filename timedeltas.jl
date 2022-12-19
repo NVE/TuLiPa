@@ -1,11 +1,11 @@
 """
 We implement MsTimeDelta and UnitsTimeDelta
 
-MsTimeDelta is a simple TimeDelta that contains a timedelta in Millisecond.
-Used to represent the TimeDelta of a period in a Horizon
+MsTimeDelta is a simple TimeDelta that contains a single timedelta in 
+Millisecond. Used to represent the TimeDelta of a period in a Horizon
 
-UnitsTimeDelta is a more complex TimeDelta used in AdaptiveHorizon
-The units are a list of UnitRanges with unit_duration
+UnitsTimeDelta is a more complex TimeDelta used in AdaptiveHorizon.
+The units are a list of time periods with unit_duration
 See AdaptiveHorizon in horizons.jl
 """
 
@@ -38,7 +38,7 @@ end
 
 # How many units are in the UnitsTimeDelta
 function getlength(x::UnitsTimeDelta)
-    length(x.units) == 0 && return Millisecond(0)
+    length(x.units) == 0 && return 0
     return sum(length(r) for r in x.units)
 end
 

@@ -1,16 +1,16 @@
 """
 We implement ConstantTime, TwoTime and FixedDataTwoTime (see abstracttypes.jl)
 
-ConstantTime is used when getting the value from a constant parameter, then 
-the time does not matter (our framework is built around getting values 
-from time series data)
+ConstantTime is used when getting the value from a constant parameter
+Then the time does not matter (our framework is built around getting 
+values from time series data)
 
-TwoTime has datatime and scenariotime where both of them are iterated through
-the horizon. Used when the power system and weather scenarios change throughout
-the horizon.
+TwoTime has datatime and scenariotime where both of them are iterated 
+through the horizon. Used when the power system and weather scenarios 
+change throughout the horizon.
 
 FixedDataTwoTime has datatime and scenariotime but only scenariotime is
-iterated through the horizon. Datatime is fixed thorughout the Horizon.
+iterated through the horizon. Datatime is fixed throughout the Horizon.
 Used when the power system stays the same thrughout the horizon.
 """
 

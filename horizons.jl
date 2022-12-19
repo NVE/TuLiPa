@@ -1,32 +1,35 @@
 ﻿"""
-We implement SequentialHorizon and AdaptiveHorizon (see abstracttypes.jl for general description)
+We implement SequentialHorizon and AdaptiveHorizon 
+(see abstracttypes.jl for general description)
 
 SequentialHorizon --------------------------
 Consist of two main elements:
-- SequentialPeriods: A list of (N, timedelta) pairs, so a simple SequentialPeriods
-could have N periods of duration timedelta. A more complex SequentialPeriods could 
-have first N1 periods of duration timedelta1 and then N2 periods of duration 
-timedelta2. One usecase for this is if the desired total problem time cant be 
-divided by the desired timedelta1. Then we could have N1 periods of timedelta1 
+- SequentialPeriods: A list of (N, timedelta) pairs, so a simple 
+SequentialPeriods could have N periods of duration timedelta. A more 
+complex SequentialPeriods could have first N1 periods of duration 
+timedelta1 and then N2 periods of duration timedelta2. One usecase 
+for this is if the desired total problem time cant be divided by 
+the desired timedelta1. Then we could have N1 periods of timedelta1 
 and 1 period of timedelta2 = total time - timedelta1*N1.
-- Offset: An optional timedelta that shifts where the Horizon starts. Can be 
-used to combine datasets in time (e.g. adding future scenarios)
+- Offset: An optional timedelta that shifts where the Horizon starts. 
+Can be used to combine datasets in time (e.g. adding future scenarios)
 
 AdaptiveHorizon ----------------------------
-Horizon with two dimensions. The overlying dimension is a SequentialHorizon 
-consisting of SequentialPeriods and Offset. In the second dimension we want 
-to group hours (or time units) in every macro period into blocks based on their 
-characteristics (e.g. hours with similar residual load). Every block is
-a period of AdaptiveHorizon consisting of a UnitsTimeDelta.
+Horizon with two dimensions. The overlying dimension is a 
+SequentialHorizon consisting of SequentialPeriods and Offset. In the 
+second dimension we want to group hours (or time periods) in every 
+macro period into blocks based on their characteristics (e.g. hours 
+with similar residual load). Every block is a period of 
+AdaptiveHorizon consisting of a UnitsTimeDelta.
 
-AdaptiveHorizon is built based on a dataset. We implement StaticRHSAHData and 
-DynamicRHSAHData.
-AdaptiveHorizon can be built with different methods. We implement PercentilesAHMethod
-and KMeansAHMethod
+AdaptiveHorizon is built based on a dataset. We implement 
+StaticRHSAHData and DynamicRHSAHData.
+AdaptiveHorizon can be built with different methods. We implement 
+PercentilesAHMethod and KMeansAHMethod
 
-Heres an example if we split the hours in every week, into 2 blocks by high load (day), 
-and low load (night):
-macro_periods: weekly periods
+Heres an example if we split the hours in every week, into 2 blocks 
+by high load (day), and low load (night):
+macro_periods: weekly resolution
 num_block: 2 blocks per macro period
 unit_duration: 1 hour
 

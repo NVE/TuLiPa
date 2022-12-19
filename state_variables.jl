@@ -1,9 +1,9 @@
 
 """
-State variables are the ingoing and outgoing variables. These can be inside the
-horizon periods 1:T or outside (i.e. x[0]).
+State variables are the ingoing and outgoing variables. These can be 
+inside the horizon periods 1:T or outside (e.g. x[0]).
 
-Ingoing and outgoing state variables are paired together  (i.e. x[0] with x[T] 
+Ingoing and outgoing state variables are paired together (e.g. x[0] with x[T] 
 and x[-1] with x[T-1]). This is convenient if start should equal stop
 
 All state variables must be fixable in this system

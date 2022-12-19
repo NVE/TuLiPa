@@ -1,10 +1,10 @@
 """
 We implement BaseAggSupplyCurve
 
-This type takes a list of "simple" Flows that are connected to the same balance 
-("simple" as they are only connected to one balance).
-The parameter numclusters is the number of equivalent flows (or variables) that
-should represent the list of Flows
+This type takes a list of "simple" Flows that are connected to the 
+same balance ("simple" as they are only connected to one balance).
+The parameter numclusters is the number of equivalent flows 
+(or variables) that should represent the list of Flows
 This object only considers the cost, upper capacity and lower capacity
 when aggregating the flows to equivalent flows
 The aggregation is done with kmeans clustering of the costs
@@ -17,7 +17,7 @@ in the clustering and should be deleted if this type is used
 This method assumes that the Flows are connected to an endogenous Balance.
 If the Balance is exogenous the "simple" Flows are excessive
 
-SegmentedArrow (production represented by efficiency segments) not supported
+SegmentedArrow (production represented by efficiency segments) not supported. TODO?
 """
 
 # ---- Concrete types ----------------
@@ -103,7 +103,7 @@ function update!(p::Prob, var::AggSupplyCurve, start::ProbTime)
 
         # Lower bound
         lb = getlb(flow)
-        if isconstant(lb) && !isdurational(lb) # assumes Horizon hasconstantdurations
+        if isconstant(lb) && !isdurational(lb) # assumes Horizon hasconstantdurations. TODO: add check
             # Why? SequentialHorizon can have two or more sets of (nperiods, duration) pairs
             paramvalue = getparamvalue(lb, dummytime, dummydelta)
             for t in 1:T

@@ -8,12 +8,12 @@ information into the modelobjects
 
 We include Storagehint, which holds information about how long it
 takes to empty the reservoir with full production. This can be used
-to remove short-term storagesystems from the model, if the model is
+to remove short-term storage systems from the model, if the model is
 run for a coarse horizon
 
 We include Residualhint, which says if the RHSTerm should be included
 when calculating the residual load. See AdaptiveHorizon for how the 
-residual load is used to make an Horizon.
+residual load is used to make a Horizon.
 
 TODO: Add metadata for all objects?
 """

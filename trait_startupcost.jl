@@ -31,7 +31,7 @@ getflow(trait::SimpleStartUpCost) = trait.flow
 
 getparent(trait::SimpleStartUpCost) = getflow(trait)
 
-# SimpleStartUpCost needs internal statevariables for online
+# SimpleStartUpCost needs internal state variables for online
 # x[T] (var_out) is part of the online variable while x[0] (var_in) has to be named and built seperately
 function getstatevariables(trait::SimpleStartUpCost)
     var_in_id = getstartonlinevarid(trait)
@@ -127,11 +127,6 @@ function setconstants!(p::Prob, trait::StartUpCost)
     if !_must_dynamic_update(trait.startcost, h)
         value = getparamvalue(trait.startcost, ConstantTime(), MsTimeDelta(Hour(1))) # cost of full startup
 
-        # We want in objective [cost of 100% startup] * [share of capacity started]
-        # Which is the same as
-        # [cost of 100% startup] * [cap_started_GWh/Installed_Cap_GWh]
-        # so the cost coefficient becomes [cost of 100% startup /Installed_Cap_GWh]
-        # since the start variable is in GWh
         for t in 1:T
             setobjcoeff!(p, startvarid, t, value)
         end
@@ -156,7 +151,7 @@ function update!(p::Prob, trait::StartUpCost, start::ProbTime)
     return
 end
 
-# SimpleStartUpCost types are toplevel objects in dataset_compiler, som we must implement assemble!
+# SimpleStartUpCost types are toplevel objects in dataset_compiler, so we must implement assemble!
 function assemble!(trait::SimpleStartUpCost)
 
     # return if flow not assembled yet

@@ -31,7 +31,7 @@ getparamvalue(rhsterm::BaseRHSTerm, t::ProbTime, d::TimeDelta) = getparamvalue(r
 # Represents positive or negative contribution to the Balance
 isingoing(rhsterm::BaseRHSTerm) = rhsterm.isingoing
 
-# We store ResidualHint in the metadata element
+# We store ResidualHint in the metadata element (see trait_metadata.jl)
 setmetadata!(var::BaseRHSTerm, k::String, v::Any) = var.metadata[k] = v
 function getresidualhint(var::BaseRHSTerm)
     if haskey(var.metadata, RESIDUALHINTKEY)

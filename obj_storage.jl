@@ -37,7 +37,7 @@ setlb!(var::BaseStorage, lb::Capacity) = var.lb = lb
 setloss!(var::BaseStorage, loss::Loss) = var.loss = loss
 addcost!(var::BaseStorage, cost::Cost) = push!(var.costs, cost)
 
-# We store StorageHint in the metadata element
+# We store StorageHint in the metadata element (see trait_metadata.jl)
 setmetadata!(var::BaseStorage, k::String, v::Any) = var.metadata[k] = v
 function getstoragehint(var::BaseStorage)
     if haskey(var.metadata, STORAGEHINTKEY)

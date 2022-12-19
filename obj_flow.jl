@@ -125,7 +125,7 @@ function update!(p::Prob, var::BaseFlow, start::ProbTime)
     return
 end
 
-# Flow types are toplevel objects in dataset_compiler, som we must implement assemble!
+# Flow types are toplevel objects in dataset_compiler, so we must implement assemble!
 function assemble!(var::BaseFlow)::Bool
     isempty(var.arrows) && error("No arrows for $(var.id)")
 
@@ -138,7 +138,7 @@ function assemble!(var::BaseFlow)::Bool
         end
     end
 
-    # Collect the finest Balance Horizon that the Flow is connected too through arrows. 
+    # Collect the finest Balance Horizon that the Flow is connected to through arrows. 
     # TODO: Add checks that the finest Horizon is compatible with the others
     var.horizon = gethorizon(first(var.arrows))
     for i in 2:lastindex(var.arrows)

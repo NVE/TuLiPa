@@ -30,10 +30,10 @@ getmodelobjects() consist of 3 elements:
     of these, else return toplevel.
 
     assemble!(modelobjects)
-    When all the information has been included in the model objects they can be assembled. This could be
-    for example finding the horizon of a Flow (variable) based on all the Balances it is connected to.
-    This is also an iterative process similar to the one in include_all_elements(elements), because some
-    model objects depend on others being assembled before they can be assembled themselves.
+    When all the information has been included in the model objects in toplevel, they can be assembled. 
+    This could be for example finding the horizon of a Flow (variable) based on all the Balances it is 
+    connected to. This is also an iterative process similar to the one in include_all_elements(elements), 
+    because some model objects depend on others being assembled before they can be assembled themselves.
 
 TODO: Better error messages
 TODO: This description is messy?

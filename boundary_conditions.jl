@@ -7,9 +7,10 @@ Different objects could be
    RampUp        - One state variable representing flow in previous period
    TimeDelayFlow - Many state variables representing flow in previous periods
 
-We assume that if an object that have state variables support a few functions,
-which can give sufficient information about variables and constraints related to its states, 
-then we should be able to use this interface to define general boundary conditions.
+We assume that if an object that have state variables support a 
+few functions, which can give sufficient information about variables 
+and constraints related to its states, then we should be able to 
+use this interface to define general boundary conditions.
 
 We want to implement different types of boundary conditions
    StartEqualStop - Ingoing state equal to outgoing state for each state variable

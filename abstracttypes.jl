@@ -1,9 +1,9 @@
 ﻿"""
-Below follows general descriptions of abstract types in our modelling framework
-and the interfaces each abstract type supports.
-Each abstract type represents a model concept that can have subtypes in the form of 
-other abstract types or concrete types. The concrete types at the bottom of the
-hierarchy are structs. 
+Below follows general descriptions of abstract types in our modelling
+framework and the interfaces each abstract type supports.
+Each abstract type represents a model concept that can have subtypes
+in the form of other abstract types or concrete types. The concrete 
+types at the bottom of the hierarchy are structs. 
 
 Example where JuMP_Prob is a struct with supertype Prob:
 mutable struct JuMP_Prob <: Prob
@@ -12,21 +12,22 @@ mutable struct JuMP_Prob <: Prob
     horizons::Vector{Horizon}
     rhs::Dict
     isrhsupdated::Bool
+end
 
-In our framework we take advantage of Julia having the possibility to write 
-functions that work for different types. We can make a generic function
-that work for all or some of the undertypes:
+In our framework we take advantage of Julia having the possibility to 
+write functions that work for different types. We can make a generic 
+function that work for all or some of the undertypes:
     function solve!(p::Prob)
-And if some undertypes are more complex and need a different method, we can 
-make functions for these concrete type:
+And if some undertypes are more complex and need a different method, 
+we can make functions for these concrete type:
     function solve!(p::JuMP_Prob) 
     function solve!(p::HiGHs_Prob)
-When the function solve!(p) is called, the dispatcher will choose the most 
-specific method/function that matches the given inputs. This is called 
-multiple dispatch, and makes it possible to make a general framework that 
-works for different concrete types and methods/functions. It also makes it 
-easy to add new concrete types or methods without having to change much 
-of the existing code.
+When the function solve!(p) is called, the dispatcher will choose the 
+most specific method/function that matches the given inputs. This is 
+called multiple dispatch, and makes it possible to make a general 
+framework that works for different concrete types and 
+methods/functions. It also makes it easy to add new concrete types 
+or methods without having to change much of the existing code.
 
 TODO: Add abstract type Group? Have AggSupplyCurve as subtype?
 """
@@ -37,16 +38,17 @@ TODO: Add abstract type Group? Have AggSupplyCurve as subtype?
 # Represents a Linear Programming (LP) minimization problem where the
 # formulation of the problem is defined by a list of model objects.
 # The model objects know how they are connected to other model objects
-# and how to interact with an optimization model (i.e. add variables 
+# and how to interact with an optimization model (e.g. add variables 
 # and constraints and update parameters wrt. time input). 
-# Intended use for problem types is component in energy system simulation models,
-# where a problem is created once, and then updated and solved many times for 
-# different states and start times.
-# This type is built to work with different optimization frameworks and solvers,
-# see problem_jump.jl and problem_highs.jl
-# We only support minimization because it simplified the implementation of state
-# variables and boundary conditions. Maximization must therefore be done by changing
-# the sign of objective function coefficients 
+# Intended use for problem types is component in energy system 
+# simulation models, where a problem is created once, and then updated 
+# and solved many times for different states and start times.
+# This type is built to work with different optimization frameworks 
+# and solvers, see problem_jump.jl and problem_highs.jl
+# We only support minimization because it simplified the 
+# implementation of state variables and boundary conditions. 
+# Maximization must therefore be done by changing the sign of 
+# objective function coefficients.
 #
 # Interface:
 #   Constructor prob = f(objects, args...): 
@@ -103,13 +105,13 @@ abstract type TimeDelta end
 #
 # Horizon is a ProbTime aware sequence of time periods t = 1, 2, .., T
 # Each time period has a TimeDelta
-# With the starting time of the horizon, and the TimeDeltas of each period, we can 
-# find the starting time of each period in the horizon, and look up the
-# corresponding parameter values in data series
+# With the starting time of the horizon, and the TimeDeltas of each 
+# period, we can find the starting time of each period in the horizon, 
+# and look up the corresponding parameter values in data series
 # Can have offset, to allow modelling of future scenarios in a Prob
-# Can be adaptive (e.g. hours in each week of horizon are grouped in 5 blocks per week, 
-#                  and hours-to-block mapping depends on data seen from probtime t,
-#                  for example mapping done by residual load)
+# Can be adaptive (e.g. hours in each week of horizon are grouped in 
+#       5 blocks per week, and hours-to-block mapping depends on data 
+#       seen from probtime t, for example mapping done by residual load)
 #
 # Interface:
 #   getnumperiods(horizon)
@@ -134,9 +136,10 @@ abstract type Horizon end
 # Must have at least two dimensions
 # The first is datatime
 # The second is scenariotime
-# This is because most of our data sets are a combination of a level (i.e. installed 
-# capacity in datatime 2030, 2040 and 2050) and a profile (i.e. profile value at scenariotime
-# inside the weather scenario 1981-2010). This gives flexibility to run many different scenarios
+# This is because most of our data sets are a combination of a 
+# level (e.g. installed capacity in datatime 2030, 2040 and 2050) and 
+# a profile (e.g. profile value at scenariotime inside the weather 
+# scenario 1981-2010). This gives flexibility to run many different scenarios
 #
 # Interface:
 #    getdatatime(probtime)
@@ -149,7 +152,8 @@ abstract type ProbTime end
 
 # ---- Flow ----
 # 
-# Represents variable for each period in an Horizon (i.e. production, transmission, hydro release etc...)
+# Represents variable for each period in an Horizon (e.g. production, 
+# transmission, hydro release etc...)
 # Have upper and lower Capacity. May have Cost terms.
 # Connected to Balances through Arrows. Must have at least one Arrow.
 # Horizon for a Flow is the Balance Horizon with finest time 
@@ -184,9 +188,11 @@ abstract type Flow end
 
 # ---- Storage ----
 #
-# Represents a Storage variable for each period in an Horizon (i.e. hydro/battery/gas storage)
+# Represents a Storage variable for each period in an Horizon 
+# (e.g. hydro/battery/gas storage)
 # Connected to a Balance
-# For each period the time differential (x[t-1]-x[t]) of the Storage is added to the Balance
+# For each period the time differential (x[t-1]-x[t]) of the Storage is 
+# added to the Balance
 # Must have boundary condition for start and/or end variable
 # Have upper and lower Capacity. May have Cost terms. May have Loss
 # May be affected by other traits indirectly
@@ -221,10 +227,10 @@ abstract type Storage end
 # ---- Balance ----
 #
 # Represents balance equation with variables and RHSTerms (see BaseBalance)
-# (i.e. power market (Balance) with variable thermal production (Flow)
+# (e.g. power market (Balance) with variable thermal production (Flow)
 # and fixed wind production or demand (RHSTerm))
 # or external price for each period in an Horizon (see ExogenBalance)
-# (i.e. power market with fixed price that Flows can exchange with)
+# (e.g. power market with fixed price that Flows can exchange with)
 # Has Commodity
 #
 # Interface:
@@ -246,11 +252,11 @@ abstract type Balance end
 
 # ---- Commodity ----
 #
-# Gives information about a commodity (i.e. Power, Hydro, Gas)
+# Gives information about a commodity (e.g. Power, Hydro, Gas)
 # Has Horizon
-# Property of Balance. Balances assigned a Commodity inherits its traits (i.e. its Horizon)
-# Makes it easy to assing horizons to modelobjects in the same system, and differentiate 
-# which modelobjects that are in the same system and
+# Property of Balance. Balances assigned a Commodity inherits its traits (e.g. its Horizon)
+# Makes it easy to assign horizons to modelobjects in the same system, 
+# and differentiate which modelobjects are in the same system
 #
 # Interface:
 #    getid(commodity)
@@ -278,7 +284,8 @@ abstract type RHSTerm end
 #
 # Property of Balance
 # Holds data that represents the dual solution of a Balance
-# Exogen Balances must hold a Price
+# Exogen Balances must hold a Price since connected variables will 
+# contribute to the Balance based on the Price
 #
 # Interface:
 #    getparamvalue(price, probtime, timedelta)
@@ -292,7 +299,7 @@ abstract type Price end
 # ---- Arrow ----
 #
 # Represents edge with direction that connects Flow to Balance
-# When Balance is endogeneous, the arrow puts 
+# When Balance is endogenous, the arrow puts 
 # the Flow variable in the Balance equation
 # When Balance is exogenous, the arrow model the connection
 # using terms in the objective function
@@ -339,13 +346,13 @@ abstract type Conversion end
 # Property of some Arrow types (e.g. loss on transmission line) 
 # or Storage (e.g. loss in heat over time in heat storage)
 #
-# The utilization rate is used for aggregation of Balances,
+# The utilization rate in SimpleLoss is used for aggregation of Balances,
 # where we represent loss on power flow on internal transmission lines
-# as demand in the aggregated Balance (i.e. power markets of NO2 and NO1
+# as demand in the aggregated Balance (e.g. power markets of NO2 and NO1
 # is aggregated, then the line NO2-NO1 becomes a demand (loss))
 #
 # Interface:
-#     getutilisation(loss)
+#     getutilisation(loss) # TODO: Should all losses have this?
 #     isdurational(loss)
 #     getparamvalue(loss, probtime, timedelta)
 #     isconstant(loss)
@@ -356,7 +363,7 @@ abstract type Loss end
 #
 # Many objects may have this property, including Flow and Storage
 # Represents objective function cost parameter for a variable with Horizon
-# Has direction to indicate positive or negative contribution (cost or income)
+# Has direction to indicate positive or negative contribution (cost or revenue)
 #
 # Interface:
 #   getparamvalue(cost, probtime, timedelta)
@@ -408,11 +415,12 @@ abstract type AggSupplyCurve  end
 # ---- StartUpCost ----
 #
 # Optional trait object that affects a Flow
-# Represents the cost of increasing a Flow from 0 up to a value (could be max or minimal viable value)
-# Builds and updates internal variables and equations for each period in an Horizon.
-# Has internal statevariables
+# Represents the cost of increasing a Flow from 0 up to a 
+# value (could be max or minimal viable value)
+# Builds and updates internal variables and equations for each period in a Horizon.
+# Has internal state variables
 # Has cost, and can have information about how long the startup is and what is the 
-# minimal viable value (i.e. minimal stable load)
+# minimal viable value (e.g. minimal stable load)
 # Linear modelling, so simplification of wanted behaviour
 #
 # Interface: 
@@ -431,7 +439,7 @@ abstract type StartUpCost end
 # Optional trait object that affects a variable object (e.g. Flow or Storage)
 # Represents soft upper or lower bounds to variables 
 # Exceeding the soft bound will lead to a penalty (usually a cost)
-# Makes necessary variables and balances for each period in an Horizon.
+# Makes necessary variables and balances for each period in a Horizon.
 #
 # Interface: 
 # getid(trait)
@@ -448,10 +456,10 @@ abstract type SoftBound end
 # ---- Boundary condition ----
 #
 # Boundary condition for one or more objects that have state variables
-# We want to have several types of BoundaryCondition, and we want them to work
-# with different types of objects. We want to be able to check that all objects
-# that have state variables have a terminal condition and initial condition for 
-# all its state variables
+# We want to have several types of BoundaryCondition, and we want them 
+# to work with different types of objects. We want to be able to check 
+# that all objects that have state variables have a terminal condition 
+# and initial condition for all its state variables
 #
 # Interface:
 #    isterminalcondition(boundary_condition)
@@ -483,7 +491,8 @@ abstract type Param end
 
 # ---- TimeVector -------------------
 # 
-# Objects that store time series data 
+# Objects that store time series data
+# timevectors.jl also includes data elements used to read in TimeVectors
 # 
 # Interface:
 # isconstant(timevector)
