@@ -14,9 +14,9 @@ include("problem_highs.jl")
 # Time, time-series and horizons
 include("utils_datetime.jl") # functions for datetime
 include("times.jl") # problem times
+include("timedeltas.jl") # time-periods in horizons
 include("timevectors.jl") # time-series data
-include("timeperiods.jl") # describe simulation/scenario start and stop
-include("timedeltas.jl")
+include("timeperiods.jl") # start and stop of simulation/scenario 
 include("horizons.jl")
 
 # Lowlevel model objects
