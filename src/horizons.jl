@@ -46,13 +46,15 @@ Period/UnitsTimeDelta 6: [...] - third week low load
 Horizon interface functions ---------------------
     getnumperiods(::Horizon) -> Int
 
-    # To relate the Horizon and starting time to TimeVector data
+    # To relate the Horizon and problem starting time to TimeVector data
     getstarttime(h::Horizon, t::Int, start::ProbTime) -> ProbTime
     getduration(h::Horizon) -> Millisecond
     getstartduration(::Horizon, ::Int) -> Millisecond
     gettimedelta(::Horizon, ::Int) -> TimeDelta
     
     # To support different Horizons between variables (Flow and Storage) and Balances
+    # Return subperiods from the fine Horizon that are inside period s in the coarse Horizon.
+    # The two Horizons must be compatible
     getsubperiods(coarse::Horizon, fine::Horizon, s::Int) -> UnitRange{Int}
 
     # To support AdaptiveHorizon which has to be built and possibly updated dynamically 

@@ -19,7 +19,7 @@ While implementing HiGHS_Prob, it was very useful to already have JuMP_Prob,
 because then we could use JuMP_Prob to test that HiGHS_Prob 
 got the same results as JuMP_Prob.
 
-TODO: Add interface for selecting options like Highs_setStringOptionValue(p, "solver", "ipm")
+TODO: Add interface for selecting solver options like Highs_setStringOptionValue(p, "solver", "ipm")
 """
 
 using HiGHS

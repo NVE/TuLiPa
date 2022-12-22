@@ -20,6 +20,14 @@ Used for level i.e. installed wind capacity in 2021, 2030, 2040 and 2050
 
 Building blocks of the TimeVectors above are also included from the DataElements.
 These are commented at the end. These are also stored in lowlevel.
+
+TODO: We can use the time-series more efficiently
+- If data points have constant distance between them, we can make a more 
+efficient getweightedaverage that takes advantage of this
+- Many objects can get data from the same time-series. Instead of the same calculations
+being done several times, we could store the results in a intermediate storage
+- We could store the index of the previous time-series query, to quicker look up
+the next value
 """
 
 # ----- Concrete types -----------

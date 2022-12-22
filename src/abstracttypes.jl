@@ -1,9 +1,10 @@
 ﻿"""
-Below follows general descriptions of abstract types in our modelling
-framework and the interfaces each abstract type supports.
-Each abstract type represents a model concept that can have subtypes
-in the form of other abstract types or concrete types. The concrete 
-types at the bottom of the hierarchy are structs. 
+Below follows general descriptions of abstract types in our 
+object-oriented modelling framework, and the interfaces each 
+abstract type supports. Each abstract type represents a model 
+concept that can have subtypes in the form of other abstract 
+types or concrete types. The concrete types at the bottom of 
+the hierarchy are structs.
 
 Example where JuMP_Prob is a struct with supertype Prob:
 mutable struct JuMP_Prob <: Prob
@@ -29,6 +30,7 @@ framework that works for different concrete types and
 methods/functions. It also makes it easy to add new concrete types 
 or methods without having to change much of the existing code.
 
+TODO: Add resultsystem that collects different data depending on the problem solved
 TODO: Add abstract type Group? Have AggSupplyCurve as subtype?
 """
 

@@ -12,7 +12,7 @@ They know how they are connected to other model objects
 and how to interact with the optimization model
 (e.g. add variables and constraints, and update parameters wrt. time input)
 - An interface to build, update and solve the problem, add solver 
-settings and query results from from the solution 
+settings and query results from the solution 
 - Horizons can similar to model objects be built and updated 
 (needed for more complex horizons). They are therefore collected from 
 the model objects and stored in a list to make the updating more efficient. 
@@ -45,7 +45,9 @@ mutable struct JuMP_Prob <: Prob
         @objective(p.model, Min, 0)
 
         # Initialize/build all horizons and model objects
-        # (mostly creating variables and constraints)
+        # (mostly creating variables, constraints and objective function)
+        # The generic function build! has different methods depending on the inputed object
+        # Some objects will again call build! on its internal traits
         horizons = Set(gethorizon(x) for x in getobjects(p) if x isa Balance)
         for horizon in horizons
             build!(horizon, p)
@@ -60,6 +62,8 @@ mutable struct JuMP_Prob <: Prob
         # Set all parameters and coefficients that will be the same 
         # regardless of the problem time and period in the horizon. 
         # These only need to be updated once
+        # The generic function setconstants! has different methods depending on the inputed object
+        # Some objects will again call setconstants! on its internal traits
         for obj in getobjects(p)
             setconstants!(p, obj)
         end
@@ -80,12 +84,14 @@ function update!(p::JuMP_Prob, start::ProbTime)
     
     # Loop through all model objects. Set parameters and coefficients that
     # depend on the problem time and period in the horizon.
+    # The generic function update! has different methods depending on the inputed object
+    # Some objects will again call update! on its internal traits
     for obj in getobjects(p)
         update!(p, obj, start)
     end
 end
 
-# Functions used by objects to update the problem -------------
+# Functions used by objects or traits to update the problem -------------
 function addvar!(p::JuMP_Prob, id::Id, N::Int)
     name = getname(id)
     p.model[Symbol(name)] = @variable(p.model, [1:N], base_name=name)    
