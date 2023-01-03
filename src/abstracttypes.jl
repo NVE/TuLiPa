@@ -1,9 +1,9 @@
 ﻿"""
 Below follows general descriptions of abstract types in our 
-object-oriented modelling framework, and the interfaces each 
-abstract type supports. Each abstract type represents a model 
-concept that can have subtypes in the form of other abstract 
-types or concrete types. The concrete types at the bottom of 
+modelling framework, and the interfaces each abstract type 
+supports. Each abstract type represents a model concept that 
+can have subtypes in the form of other abstract types or 
+concrete types. The concrete types at the bottom of 
 the hierarchy are structs.
 
 Example where JuMP_Prob is a struct with supertype Prob:
