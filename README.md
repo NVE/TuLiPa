@@ -33,7 +33,7 @@ Real world concepts like transmission lines, power plants, hydropower storages a
 - list
 
 #### Possible improvements to TLP:
-See 
+See file "Possible improvements to TLP"
 
 #### Next steps for the simulation model we want to build with TLP:
 We have the modular TLP that can be used to make the underlying models, and we have our dataset for Europe and detailed Nordic hydropower.
