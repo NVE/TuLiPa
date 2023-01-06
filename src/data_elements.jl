@@ -17,7 +17,7 @@ struct DataElement
     conceptname::String
     typename::String
     instancename::String
-    value::Any
+    value::Any # TODO: Change to data
 end
 
 # Different keys
@@ -62,6 +62,7 @@ end
 
 # Functions to read dataset stored in JSON as a list of tuples (after JSON.parsefile())
 # TODO: Make more robust
+# TODO: Assumes datetime format...
 function getelements(tupleelements::Vector{Any}, path="")
     elements = DataElement[]
     for element in tupleelements
@@ -70,7 +71,7 @@ function getelements(tupleelements::Vector{Any}, path="")
     return elements
 end
 
-function getelement(concept, concrete, instance, pairs...; path="") 
+function getelement(concept, concrete, instance, pairs...; path="") # should be adapted to dataset
     d = Dict()
     for (k, v) in pairs
         if concrete == "VectorTimeIndex"
