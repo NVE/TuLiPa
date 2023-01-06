@@ -35,10 +35,10 @@ mutable struct JuMP_Prob <: Prob
     # Initialize JuMP_Prob
     function JuMP_Prob(objects, model)
         if objects isa Dict
-            objects = [o for o in values(objects)]
+            objects = [o for o in collect(values(objects))]
         end
 
-        p = new(objects, model, Dict(), false)
+        p = new(model, objects, [], Dict(), false)
 
         setsilent!(p)
 
