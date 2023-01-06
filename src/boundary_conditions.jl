@@ -79,9 +79,12 @@ isterminalcondition(::NoBoundaryCondition) = true
 struct StartEqualStop <: BoundaryCondition
     id::Id
     object::Any
-    function StartEqualStop(object)
+    function StartEqualStop(object) # after assemble of all objects
         @assert length(getstatevariables(object)) > 0
         id = Id(STARTEQUALSTOP_CONCEPT, getinstancename(getid(object)))
+        return new(id, object)
+    end
+    function StartEqualStop(id, object) # before assemble so no checks
         return new(id, object)
     end
 end
@@ -112,9 +115,32 @@ end
 
 update!(::Prob, ::StartEqualStop, ::ProbTime) = nothing
 
-# TODO: Replace with getobjects 
+# TODO: Replace with getobjects?
 getparent(x::StartEqualStop) = x.object
 
+# Assemble - dependent on storage balance to be assembled (wont work if no state-variables, but not really necessary for assembling)
+function assemble!(x::StartEqualStop)::Bool
+    isnothing(gethorizon(getbalance(getparent(x)))) && return false
+    return true
+end
+
+# Include dataelement
+function includeStartEqualStop!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
+    varname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
+    varconcept = getdictvalue(value, WHICHCONCEPT,  String, elkey)
+    varkey = Id(varconcept, varname)
+    haskey(toplevel, varkey) || return false
+
+    var = toplevel[varkey]
+
+    id = getobjkey(elkey)
+
+    toplevel[id] = StartEqualStop(id, var)
+    
+    return true    
+end
+
+INCLUDEELEMENT[TypeKey(STARTEQUALSTOP_CONCEPT, "BaseStartEqualStop")] = includeStartEqualStop! # naming?
 
 # TODO: Decleare interface for cut-style boundary conditions?
 
