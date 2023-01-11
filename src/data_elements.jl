@@ -9,7 +9,7 @@ The data elements are stored in a flat structure where each data element
 holds its information and possibly references to other dataelements 
 they are linked to (for example can an upper capacity hold references 
 to its parameter (stored in another data element), and references to 
-the variable this upper capacity should be included in 
+the variable this upper capacity should apply to 
 (see data_elements_to_objects.jl)).
 """
 
@@ -40,7 +40,7 @@ end
 # ID interface
 getinstancename(x::Id) = x.instancename
 getconceptname(x::Id) = x.conceptname
-getname(x::Id) = "$(x.conceptname)$(x.instancename)" 
+getname(x::Id) = "$(x.conceptname)$(x.instancename)"
 
 # ElementKey interface
 getobjkey(x::ElementKey) = Id(x.conceptname, x.instancename)
