@@ -5,6 +5,7 @@ This work is part of NVE's research project called "Power market model in Julia"
 1.	Price prognosis models with different degrees of details (e.g. long-term deterministic aggregated power market model)
 2.	Models for valuating storage capacity (e.g. medium- or short-term stochastic hydropower scheduling of individual watercourses based on prices from 1)
 3.	Market clearing model (e.g. deterministic bid optimization, with part of the bids from 2)
+
 This is just one example of an algorithm we can build with TLP as building blocks.
 
 ### Modular TLP:
@@ -42,3 +43,6 @@ We need to build the underlying models and run them on different processor cores
 ### Why Julia:
 Julia is a modern and growing language made for scientific computing. It has a flexible type-hierarchy which is perfect for our modular framework. Together with “multiple dispatch” it is easy to make a general framework that works for different concrete types and methods/functions. It also makes it easy to add new concrete types or methods without having to change much of the existing code. 
 Keywords to Google are “multiple dispatch”, “dynamically typed” and “just-in-time compilation”
+
+### Contact:
+Julien Cabrol: jgrc@nve.no
