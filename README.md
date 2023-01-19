@@ -1,6 +1,6 @@
 ## TLP
 
-Modular framework for Time parameterized Linear Programming problems for use in energy market modelling. Written in the Julia programming language.
+Modular framework for Time parameterized Linear Programming problems for use in energy market modelling.
 
 ### Motivation:
 This work is part of NVE's research project called "Power market model in Julia". The goal of this project is to make an algorithm for simulating the Northern European power market with high temporal resolution, detailed hydropower, uncertainty in weather, and using only open-source software. We want to find out if breaking up the problem into many smaller LP-problems, solving many of them deterministically and with open-source solvers, can give fast and good results. The algorithm we have in mind is a simulation model that clears the power market with some of the bids generated from price prognosis and storage valuation models. The simulation model uses a rolling horizon approach where the underlying models are solved for each step:
