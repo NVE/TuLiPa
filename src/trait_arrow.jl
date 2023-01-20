@@ -266,7 +266,7 @@ function setconstants!(p::Prob, var::Any, arrow::SegmentedArrow)
             end
             if isconstant(param)
                 value = getparamvalue(param, ConstantTime(), MsTimeDelta(Hour(1)))
-                if !arrow.isingoing
+                if arrow.isingoing
                     value = -value
                 end
                 for t in 1:T
@@ -330,10 +330,9 @@ function update!(p::Prob, var::Any, arrow::SegmentedArrow, start::ProbTime)
                     querystart = getstarttime(varhorizon, t, start)
                     querydelta = gettimedelta(varhorizon, t)
                     value = getparamvalue(param, querystart, querydelta)
-                    if !arrow.isingoing
+                    if arrow.isingoing
                         value = -value
                     end
-
                     setobjcoeff!(p, getsegmentid(arrow, i), t, value)
                 end
             end
