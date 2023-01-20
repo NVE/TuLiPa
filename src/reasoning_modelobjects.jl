@@ -1,5 +1,5 @@
 """
-Here we store functions that manipulate the model objects after they are fully put together
+Here we store functions that classify or manipulate the model objects after they are fully put together
 
 Assumptions: 
  - Main model objects are Storage, Flow or Balance
