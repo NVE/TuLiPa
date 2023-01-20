@@ -1,4 +1,6 @@
-## Modular system for Time parameterized Linear Programming problems (TLP)
+## TULIPA
+
+TULIPA is a modular framework for time parameterized linear programming problems for use in energy market modelling. From time-series datasets, it builds, updates and solves energy market LP-problems for the chosen horizon and scenario. The framework gives the user flexibility to choose the desired degree of detail of the problem, and new model objects with more complex functionality can be added without having to alter the existing code. The LP-problems can be building blocks in more complex models.
 
 ### Motivation:
 This work is part of NVE's research project called "Power market model in Julia". The goal of this project is to make an algorithm for simulating the Northern European power market with high temporal resolution, detailed hydropower, uncertainty in weather, and using only open-source software. We want to find out if breaking up the problem into many smaller LP-problems, solving many of them deterministically and with open-source solvers, can give fast and good results. The algorithm we have in mind is a simulation model that clears the power market with some of the bids generated from price prognosis and storage valuation models. The simulation model uses a rolling horizon approach where the underlying models are solved for each step:
@@ -6,13 +8,13 @@ This work is part of NVE's research project called "Power market model in Julia"
 2.	Models for valuating storage capacity (e.g. medium- or short-term stochastic hydropower scheduling of individual watercourses based on prices from 1)
 3.	Market clearing model (e.g. deterministic bid optimization, with part of the bids from 2)
 
-This is just one example of an algorithm we can build with TLP as building blocks.
+This is just one example of an algorithm we can build with TULIPA as building blocks.
 
-### Modular TLP:
-The above-mentioned algorithm will have a lot of LP-problems, so we want a general framework for building, updating and solving the LP-problems. A modular system gives users the flexibility to add model components with new functionality, without having to adapt the existing code that builds, updates and solves the LP-problems. For the general framework we define abstract datatypes and generic functions that describe how the system works.
+### Modular TULIPA:
+The above-mentioned algorithm will have a lot of LP-problems, so we want a general framework for building, updating and solving the LP-problems. A modular system gives users the flexibility to add model objects with new functionality, without having to adapt the existing code that builds, updates and solves the LP-problems. For the general framework we define abstract datatypes and generic functions that describe how the system works.
 
 #### Time-series data:
-The framework is built around time-series data. References to the time-series data are stored in the model objects and are used to update the LP-problem wrt the chosen horizon, model year and weather scenario. This gives flexibility to run the model with the desired temporal resolution without having to adapt the dataset.
+The framework is built around time-series data. References to the time-series data are stored in the model objects and are used to update the LP-problem together with the chosen horizon, model year and weather scenario. This gives flexibility to run the model with the desired temporal resolution without having to adapt the dataset each time.
 
 #### Solvers:
 The general framework supports connecting to the desired optimization framework or solver. We have built one problem structure that connects to the JuMP framework and one that connects directly to the HiGHS package.
@@ -21,10 +23,20 @@ The general framework supports connecting to the desired optimization framework 
 The framework supports having state variables and setting them with boundary conditions. This is important for storages, certain problem restrictions, and stochastic algorithms where the master- and sub-problems needs to be connected.
 
 #### Power system representation:
-Real world concepts like transmission lines, power plants, hydropower storages and demands etc. are stored as structs in a list. The type of the struct and its data fields (and their types) decide characteristics of the model objects and how they are included into the LP-problem. This list can be manipulated based on the user’s preferences. We can for example start with a very detailed power system and simplify it (aggregate areas, aggregate power plants, remove startup costs, remove short-term storage system etc.…) before we run the model.
+Real world concepts like transmission lines, power plants, hydropower storages and demands etc. are stored as structs in a list. The type of the struct and its data fields (and their types) decide characteristics of the model objects and how they are included into the LP-problem. The model object list can be manipulated based on the user’s preferences. We can for example start with a very detailed power market representation and simplify it (aggregate areas, aggregate power plants, remove startup costs, remove short-term storage system etc.…) before we run the model. We present the five main model objects:
 
-#### Get an overview of TLP:
-- src/TLP.jl – gives an overview of the different parts of the framework
+| Model object | Description | Example |
+| :---: | --- | --- |
+| **Flow** | Variable for each period in a Horizon. Can have traits like Capacity or Cost, and is connected to Balances through Arrows. | Production, hydro release, transmission |
+| **Storage** | Variable for each period in a Horizon that represent storage level at the end of the period. Contributes to its Balance, and can have traits. | Hydro storage, battery, gas storage |
+| **Balance** | Takes inputs and outputs of a Commodity from variables for each period in a Horizon. Can be a balance equation (with contributions from variables and constants (RHSTerms)) or an exogenous system that holds the Price of the Commodity (Flows that contriutes will have an income or loss) | Power balance, water balance, gas balance |
+| **Commodity** | Commodity in Balances. Has Horizon that the Balance inherits. | Power, hydro, gas, hydrogen |
+| **Arrow** | Describes contribution of a Flow into a Balance. Has direction to determine intput or output, and parameters to convert the Flow into the Commodity of the Balance. | Energy equivalent of hydro power plant to convert m3 to kWh |
+
+![image](https://user-images.githubusercontent.com/40186418/213677992-ab96494c-42ae-42b8-bdc8-2b2b94c7673f.png)
+
+#### Get an overview of TULIPA:
+- src/TULIPA.jl – gives an overview of the different parts of the framework
 - src/abstracttypes.jl – the abstract problem types (and their general interfaces) are described here
 - src/problem_jump.jl – description of how the LP-problem is built, updated, solved and results are queried.
 - src/balance.jl - src/flow.jl - src/storage.jl - src/trait_arrow.jl – the main model objects that make up the real-world concepts and how they are connected (like power markets, power plants, demands and hydro storages)
@@ -33,11 +45,11 @@ Real world concepts like transmission lines, power plants, hydropower storages a
 #### See also presentations and demos:
 - list
 
-#### Possible improvements to TLP:
-See file "Possible improvements to TLP"
+#### Possible improvements to TULIPA:
+See file "Possible improvements to TULIPA"
 
-#### Next steps for the simulation model we want to build with TLP:
-We have the modular TLP that can be used to make the underlying models, and we have our dataset for Europe and detailed Nordic hydropower.
+#### Next steps for the simulation model we want to build with TULIPA:
+We have TULIPA that can be used to make the underlying models, and we have our dataset for Europe and detailed Nordic hydropower.
 We need to build the underlying models and run them on different processor cores (and have them communicate). This includes making a stochastic hydropower problem, making a framework for moving results between models, and deciding on settings in the algorithm and models.
 
 ### Why Julia:
