@@ -23,10 +23,22 @@ The general framework supports connecting to the desired optimization framework 
 The framework supports having state variables and setting them with boundary conditions. This is important for storages, certain problem restrictions, and stochastic algorithms where the master- and sub-problems needs to be connected.
 
 #### Power system representation:
-Real world concepts like transmission lines, power plants, hydropower storages and demands etc. are stored as structs in a list. The type of the struct and its data fields (and their types) decide characteristics of the model objects and how they are included into the LP-problem. This list can be manipulated based on the user’s preferences. We can for example start with a very detailed power market representation and simplify it (aggregate areas, aggregate power plants, remove startup costs, remove short-term storage system etc.…) before we run the model.
+Real world concepts like transmission lines, power plants, hydropower storages and demands etc. are stored as structs in a list. The type of the struct and its data fields (and their types) decide characteristics of the model objects and how they are included into the LP-problem. We present the five main model objects:
 
-#### Get an overview of TLP:
-- src/TLP.jl – gives an overview of the different parts of the framework
+| Model object | Description | Example |
+| :---: | --- | --- |
+| **Flow** | Variable for each period in a horizon. Can have traits like Capacity or Cost, and is connected to Balances through Arrows. | Production, hydro release, transmission |
+| **Storage** | Variable for each period in a horizon that represent storage level at the end of the period. Contributes to its Balance, and can have traits. | Hydro Storage, Battery, gas storage |
+| **Balance** | Takes inputs and outputs of a commodity from variables for each period in a Horizon. Can be a balance equation (with contributions from variables and constants (RHSTerms)) or an exogen system that holds the Price of the commodity (Flows that contriutes will have an income or loss) | Power balance, Water Balance, Gas balance |
+| **Commodity** | Commodity in a Balances. Has Horizon that the Balance inherits. | Power, Hydro, Gas, Hydrogen |
+| **Arrow** | Describes contribution of a Flow into a Balance. Has direction to determine intput or output, and parameters to convert the Flow into the Commodity of the Balance. | Energy equivalent of hydro power plant to convert m3 to kWh |
+
+![image](https://user-images.githubusercontent.com/40186418/213651675-da12c57c-59fd-4ef5-b146-cd955b75c42b.png)
+
+The model object list can be manipulated based on the user’s preferences. We can for example start with a very detailed power market representation and simplify it (aggregate areas, aggregate power plants, remove startup costs, remove short-term storage system etc.…) before we run the model.
+
+#### Get an overview of TULIPA:
+- src/TULIPA.jl – gives an overview of the different parts of the framework
 - src/abstracttypes.jl – the abstract problem types (and their general interfaces) are described here
 - src/problem_jump.jl – description of how the LP-problem is built, updated, solved and results are queried.
 - src/balance.jl - src/flow.jl - src/storage.jl - src/trait_arrow.jl – the main model objects that make up the real-world concepts and how they are connected (like power markets, power plants, demands and hydro storages)
@@ -35,11 +47,11 @@ Real world concepts like transmission lines, power plants, hydropower storages a
 #### See also presentations and demos:
 - list
 
-#### Possible improvements to TLP:
-See file "Possible improvements to TLP"
+#### Possible improvements to TULIPA:
+See file "Possible improvements to TULIPA"
 
-#### Next steps for the simulation model we want to build with TLP:
-We have the modular TLP that can be used to make the underlying models, and we have our dataset for Europe and detailed Nordic hydropower.
+#### Next steps for the simulation model we want to build with TULIPA:
+We have the modular TULIPA that can be used to make the underlying models, and we have our dataset for Europe and detailed Nordic hydropower.
 We need to build the underlying models and run them on different processor cores (and have them communicate). This includes making a stochastic hydropower problem, making a framework for moving results between models, and deciding on settings in the algorithm and models.
 
 ### Why Julia:
