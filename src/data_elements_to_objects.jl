@@ -34,6 +34,9 @@ getmodelobjects() consist of 3 elements:
     This could be for example finding the horizon of a Flow (variable) based on all the Balances it is 
     connected to. This is also an iterative process similar to the one in include_all_elements(elements), 
     because some model objects depend on others being assembled before they can be assembled themselves.
+    - NB! Pushing modelobjects to list in assemble! should only be done after we have checked that all 
+    associated modelobjects are assembled. Mixing this order can lead to modelobjects being partially 
+    assembled several times, and therefore duplicated elements.
 
 TODO: Better error messages
 TODO: This description is messy?
@@ -206,8 +209,10 @@ function assemble!(modelobjects::Dict)
         numbefore = length(completed)
 
         for obj in values(modelobjects)
-            ok = assemble!(obj)
-            ok && push!(completed, getid(obj))
+            if !(getid(obj) in completed)
+                ok = assemble!(obj)
+                ok && push!(completed, getid(obj))
+            end
         end
 
         numafter = length(completed)

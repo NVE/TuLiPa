@@ -129,11 +129,15 @@ end
 function assemble!(var::BaseFlow)::Bool
     isempty(var.arrows) && error("No arrows for $(var.id)")
 
-    # Put costs from ExogenBalance into list of cost terms
+    # First check if all Arrows (with Balances) are assembled
     for a in var.arrows
         isnothing(gethorizon(a)) && return false
+    end
+
+    # Put costs from ExogenBalance into list of cost terms
+    for a in var.arrows
         excost = getexogencost(a)
-        if !isnothing(excost)
+        if !isnothing(excost)        
             addcost!(var, excost)
         end
     end
