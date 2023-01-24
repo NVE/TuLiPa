@@ -1,6 +1,6 @@
-## TULIPA
+## TuLiPa
 
-TULIPA is a modular framework for time parameterized linear programming problems for use in energy market modelling. From time-series datasets, it builds, updates and solves energy market LP-problems for the chosen horizon and scenario. The framework gives the user flexibility to choose the desired degree of detail of the problem, and new model objects with more complex functionality can be added without having to alter the existing code. The LP-problems can be building blocks in more complex models.
+TuLiPa is a modular framework for time parameterized linear programming problems for use in energy market modelling. From time-series datasets, it builds, updates and solves energy market LP-problems for the chosen horizon and scenario. The framework gives the user flexibility to choose the desired degree of detail of the problem, and new model objects with more complex functionality can be added without having to alter the existing code. The LP-problems can be building blocks in more complex models.
 
 ### Motivation:
 This work is part of NVE's research project called "Power market model in Julia". The goal of this project is to make an algorithm for simulating the Northern European power market with high temporal resolution, detailed hydropower, uncertainty in weather, and using only open-source software. We want to find out if breaking up the problem into many smaller LP-problems, solving many of them deterministically and with open-source solvers, can give fast and good results. The algorithm we have in mind is a simulation model that clears the power market with some of the bids generated from price prognosis and storage valuation models. The simulation model uses a rolling horizon approach where the underlying models are solved for each step:
@@ -10,7 +10,7 @@ This work is part of NVE's research project called "Power market model in Julia"
 
 This is just one example of an algorithm we can build with TULIPA as building blocks.
 
-### Modular TULIPA:
+### Modular TuLiPa:
 The above-mentioned algorithm will have a lot of LP-problems, so we want a general framework for building, updating and solving the LP-problems. A modular system gives users the flexibility to add model objects with new functionality, without having to adapt the existing code that builds, updates and solves the LP-problems. For the general framework we define abstract datatypes and generic functions that describe how the system works.
 
 #### Time-series data:
@@ -35,8 +35,8 @@ Real world concepts like transmission lines, power plants, hydropower storages a
 
 ![image](https://user-images.githubusercontent.com/40186418/213677992-ab96494c-42ae-42b8-bdc8-2b2b94c7673f.png)
 
-#### Get an overview of TULIPA:
-- src/TULIPA.jl – gives an overview of the different parts of the framework
+#### Get an overview of TuLiPa:
+- src/TuLiPa.jl – gives an overview of the different parts of the framework
 - src/abstracttypes.jl – the abstract problem types (and their general interfaces) are described here
 - src/problem_jump.jl – description of how the LP-problem is built, updated, solved and results are queried.
 - src/balance.jl - src/flow.jl - src/storage.jl - src/trait_arrow.jl – the main model objects that make up the real-world concepts and how they are connected (like power markets, power plants, demands and hydro storages)
@@ -45,11 +45,11 @@ Real world concepts like transmission lines, power plants, hydropower storages a
 #### See also presentations and demos:
 - list
 
-#### Possible improvements to TULIPA:
-See file "Possible improvements to TULIPA"
+#### Possible improvements to TuLiPa:
+See file "Possible improvements to TuLiPa"
 
-#### Next steps for the simulation model we want to build with TULIPA:
-We have TULIPA that can be used to make the underlying models, and we have our dataset for Europe and detailed Nordic hydropower.
+#### Next steps for the simulation model we want to build with TuLiPa:
+We have TuLiPa that can be used to make the underlying models, and we have our dataset for Europe and detailed Nordic hydropower.
 We need to build the underlying models and run them on different processor cores (and have them communicate). This includes making a stochastic hydropower problem, making a framework for moving results between models, and deciding on settings in the algorithm and models.
 
 ### Why Julia:
