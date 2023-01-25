@@ -10,7 +10,7 @@ SimpleSumCost sums up several CostTerms for a Flow or Storage
 isdurational(::Cost) = false
 
 # --------- Concrete types
-struct CostTerm <: Cost
+mutable struct CostTerm <: Cost
     id::Id
     param::Union{Param, Price}
     isingoing::Bool
