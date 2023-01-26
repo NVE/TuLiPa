@@ -90,7 +90,7 @@ struct StartEqualStop <: BoundaryCondition
 end
 
 getid(x::StartEqualStop) = x.id
-geteqid(x::StartEqualStop) = Id(STARTEQUALSTOP_CONCEPT, string("Eq", getinstancename(getid(x))))
+geteqid(x::StartEqualStop) = Id(BOUNDARYCONDITION_CONCEPT, string("Eq", getinstancename(getid(x))))
 
 getobjects(x::StartEqualStop) = [x.object]
 
@@ -140,7 +140,62 @@ function includeStartEqualStop!(toplevel::Dict, ::Dict, elkey::ElementKey, value
     return true    
 end
 
-INCLUDEELEMENT[TypeKey(STARTEQUALSTOP_CONCEPT, "BaseStartEqualStop")] = includeStartEqualStop! # naming?
+INCLUDEELEMENT[TypeKey(BOUNDARYCONDITION_CONCEPT, "StartEqualStop")] = includeStartEqualStop!
+
+# ---- ConnectTwoObjects <: BoundaryCondition ---
+
+struct ConnectTwoObjects <: BoundaryCondition
+    id::Id
+    outobject::Any # object with outgoing state variable
+    inobject::Any # object with ingoing state variable
+    function ConnectTwoObjects(outobject, inobject) # after assemble of all objects
+        @assert length(getstatevariables(outobject)) > 0
+        @assert length(getstatevariables(outobject)) == length(getstatevariables(inobject))
+
+        id = Id(BOUNDARYCONDITION_CONCEPT, string("Connect_", getinstancename(getid(outobject)), "_", getinstancename(getid(inobject))))
+        return new(id, outobject, inobject)
+    end
+end
+
+getid(x::ConnectTwoObjects) = x.id
+geteqid(x::ConnectTwoObjects) = Id(BOUNDARYCONDITION_CONCEPT, string("Eq", getinstancename(getid(x))))
+
+getobjects(x::ConnectTwoObjects) = [x.inobject, x.outobject]
+
+isinitialcondition(::ConnectTwoObjects)  = true
+isterminalcondition(::ConnectTwoObjects) = true
+
+function build!(p::Prob, x::ConnectTwoObjects) # assumes same amount of state variables for both
+    N = length(getstatevariables(x.inobject)) 
+    addeq!(p, geteqid(x), N)
+    return
+end
+
+function setconstants!(p::Prob, x::ConnectTwoObjects) # assumes same amount of state variables for both
+    outstate = getstatevariables(x.outobject)
+    instate = getstatevariables(x.inobject)
+
+    for eq_ix in eachindex(outstate)
+        (id_out, ix_out) = getvarout(outstate[eq_ix])
+        (id_in, ix_in) = getvarin(instate[eq_ix])
+        setconcoeff!(p, geteqid(x), id_out, eq_ix, ix_out,  1.0)
+        setconcoeff!(p, geteqid(x),  id_in, eq_ix,  ix_in, -1.0)
+    end
+    return 
+end
+
+update!(::Prob, ::ConnectTwoObjects, ::ProbTime) = nothing
+
+# TODO: Replace with getobjects?
+getparent(x::ConnectTwoObjects) = [x.outobject, x.inobject]
+
+# Assemble - dependent on storage balance to be assembled (wont work if no state-variables, but not really necessary for assembling)
+function assemble!(x::ConnectTwoObjects)::Bool
+    for parent in getparents(x)
+        isnothing(gethorizon(getbalance(parent))) && return false
+    end
+    return true
+end
 
 # TODO: Decleare interface for cut-style boundary conditions?
 
