@@ -1,4 +1,3 @@
-
 """
 State variables are the ingoing and outgoing variables. These can be 
 inside the horizon periods 1:T or outside (e.g. x[0]).
