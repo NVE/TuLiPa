@@ -29,6 +29,8 @@ function isconstant(cost::SimpleSumCost)
     return true
 end
 
+getid(cost::CostTerm) = cost.id
+
 # Indicate positive or negative contribution to objective function
 isingoing(cost::CostTerm) = cost.isingoing
 isingoing(cost::SimpleSumCost) = true
