@@ -3,7 +3,9 @@
 --- If data points have constant distance between them, we can make a more efficient getweightedaverage that takes advantage of this
 --- Many objects can get data from the same time-series. Instead of the same calculations being done several times, we could store the results in an intermediate storage
 --- We could store the index of the previous time-series query, to quicker look up the next value
-- Support solver settings for HiGHS_Prob
+- Make the offset independent of the scenario, a possibility is to alter the offset to include two elements:
+--- Yearly offset: Find the equivalent time in another year
+--- TimeDelta offset: Offset the yearly offset with  (now offset only have this element)
 - Make structures for ramping restrictions, watercourse with time delay (arrow), hydro reservoir segmented end value, negative lower bound, 
 - Extend Prob interface to allow setrhs!(prob, conid, value) instead of setrhsterms!
 - Better error messages for including dataelements
