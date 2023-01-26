@@ -15,3 +15,4 @@
 - Startupcost that support other variables like Storage, and also ramping
 - Implement RoRRHSTerm. A simplification of the run-of-river hydropower could be to include the inflow (with cutoff at max production) as a parameter rather than modelling it as a variable. Motivation is simplification of the problem or to include the unregulated inflow when we make an AdaptiveHorizon based on the residual load
 - Account for hydropower head in production calculation and in algorithm
+- Look at default costs of breaching environmental constraints for dataset used in Demo 4 and 5.
