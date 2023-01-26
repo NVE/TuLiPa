@@ -81,7 +81,7 @@ struct StartEqualStop <: BoundaryCondition
     object::Any
     function StartEqualStop(object) # after assemble of all objects
         @assert length(getstatevariables(object)) > 0
-        id = Id(STARTEQUALSTOP_CONCEPT, getinstancename(getid(object)))
+        id = Id(BOUNDARYCONDITION_CONCEPT, getinstancename(getid(object)))
         return new(id, object)
     end
     function StartEqualStop(id, object) # before assemble so no checks
