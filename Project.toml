@@ -1,0 +1,16 @@
+name = "TuLiPa"
+uuid = "d41f5a2c-46b5-45a4-87c3-499e18e97cba"
+repo = "https://github.com/NVE/TuLiPa.jl.git"
+version = "0.1.0"
+
+[deps]
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+HiGHS = "87dc4568-4c63-4d18-b0c0-bb2238e4078b"
+JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
+
+[compat]
+julia = "1.7"
+HiGHS = "1.4.2"
+JuMP = "1.7"
