@@ -12,6 +12,7 @@ to its parameter (stored in another data element), and references to
 the variable this upper capacity should apply to 
 (see data_elements_to_objects.jl)).
 """
+using CSV
 
 struct DataElement
     conceptname::String
