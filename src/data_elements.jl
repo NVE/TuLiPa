@@ -12,7 +12,8 @@ to its parameter (stored in another data element), and references to
 the variable this upper capacity should apply to 
 (see data_elements_to_objects.jl)).
 """
-using CSV
+
+using CSV, Dates
 
 struct DataElement
     conceptname::String
@@ -62,7 +63,7 @@ function getelement(elements::Vector{DataElement},instancename::String)
 end
 
 # Functions to read dataset stored in JSON as a list of tuples (after JSON.parsefile())
-# TODO: Make more robust
+# TODO: Each user should have their own version of this based on their data
 # TODO: Assumes datetime format...
 function getelements(tupleelements::Vector{Any}, path="")
     elements = DataElement[]
