@@ -51,7 +51,7 @@ struct RotatingTimeVector{I, V} <: TimeVector
         istop  = searchsortedlast(index, stop)
         i = @view index[istart:istop]
         v = @view values[istart:istop]
-        new{I, V}(i, v, start, stop)
+        new{typeof(i), typeof(v)}(i, v, start, stop)
     end
 end
 
