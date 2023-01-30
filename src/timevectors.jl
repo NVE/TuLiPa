@@ -45,6 +45,14 @@ struct RotatingTimeVector{I, V} <: TimeVector
     values::V
     start::DateTime
     stop::DateTime
+    function RotatingTimeVector(index, values, start, stop)
+        # Only keep indexes and values inside of [start, stop]
+        istart = searchsortedfirst(index, start)
+        istop  = searchsortedlast(index, stop)
+        i = @view index[istart:istop]
+        v = @view values[istart:istop]
+        new{I, V}(i, v, start, stop)
+    end
 end
 
 # ---- General functions -----------
@@ -164,7 +172,6 @@ function getweightedaverage(x::RotatingTimeVector, t::DateTime, delta::MsTimeDel
     end
 
     # Start alg
-
     qstart = tininterval
     qstop  = tininterval + getduration(delta)
 
@@ -172,15 +179,15 @@ function getweightedaverage(x::RotatingTimeVector, t::DateTime, delta::MsTimeDel
     istop  = searchsortedlast(index, qstop)
     
     # Return early if possible
-    (istart == istop == 0)            && return x0
-    ((istart == 0) && (istop == 1))   && return values[istop]
+    (istart == istop == 0)            && return xN # use xN for [lb, t0] and [tN, ub]
+    (istart == istop)                 && return values[istop]
     
     # correct for qstart and ensure inbounds
     if istart == 0
         istart = 1
         tstart = t0
         d = T((tstart - qstart).value)
-        x = xN * d      # use xN for [ub - tN] and [t0 - lb]
+        x = xN * d # use xN for [lb, t0] and [tN, ub]   
         n = d
     else
         tstart = index[istart]
@@ -226,7 +233,7 @@ function getweightedaverage(x::RotatingTimeVector, t::DateTime, delta::MsTimeDel
             n += d
         end    
 
-        # Use xN for intervals [ub - tN] and [t0 - lb]
+        # Use xN for intervals # use xN for [lb, t0] and [tN, ub]
         d = T((ub - tstop).value + (t0 - lb).value)
         x += xN * d
         n += d    
@@ -281,7 +288,7 @@ function getweightedaverage(x::RotatingTimeVector, t::DateTime, delta::MsTimeDel
         n += d
     end    
 
-    # Use xN for intervals [ub - tN] and [t0 - lb]
+    # Use xN for intervals [lb, t0] and [tN, ub]
     d = T((ub - tstop).value + (t0 - lb).value)
     x += xN * d
     n += d   
@@ -297,7 +304,7 @@ function getweightedaverage(x::RotatingTimeVector, t::DateTime, delta::MsTimeDel
     tstart = t0
     istart = 1
 
-    tstop = qstop - (ub - qstart) + (t0 - lb) - (Int(numintervals) * (ub - lb)) 
+    tstop = qstop - (ub - qstart) - (t0 - lb) - (Int(numintervals) * (ub - lb)) 
     istop = searchsortedlast(index, tstop)
     
     # Add remainding chunk
