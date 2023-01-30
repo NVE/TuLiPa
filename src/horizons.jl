@@ -71,7 +71,7 @@ Horizon interface functions ---------------------
     TODO: Test combining boundary variables in two datasets 
 """
 
-using Clustering
+using Clustering, Random
 
 # --------- Generic fallback Horizon interface -----------------
 # We want to update the problem efficiently, so we check if 
