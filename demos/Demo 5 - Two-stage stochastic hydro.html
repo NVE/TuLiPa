@@ -14577,7 +14577,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[3]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[84]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-julia"><pre><span></span><span class="k">using</span> <span class="n">DataFrames</span><span class="p">,</span> <span class="n">Plots</span><span class="p">,</span> <span class="n">Statistics</span><span class="p">,</span> <span class="n">JSON</span><span class="p">,</span> <span class="n">Clp</span>
@@ -14645,7 +14645,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[4]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[95]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">makemodelobjects</span><span class="p">(</span><span class="n">weeks</span><span class="o">::</span><span class="kt">Int</span><span class="p">,</span><span class="n">offset</span><span class="o">::</span><span class="kt">TimeDelta</span><span class="p">)</span>
@@ -14695,7 +14695,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[5]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[96]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-julia"><pre><span></span><span class="c"># Horizons are made with a starting point in 1981</span>
@@ -14758,16 +14758,31 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[6]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[97]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-julia"><pre><span></span><span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">numscen</span>
     <span class="n">secondobjectsscen</span> <span class="o">=</span> <span class="n">collect</span><span class="p">(</span><span class="n">values</span><span class="p">(</span><span class="n">secondobjects</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+    
+    <span class="c"># Toplevel objects</span>
     <span class="k">for</span> <span class="n">obj</span> <span class="k">in</span> <span class="n">secondobjectsscen</span>
         <span class="n">id</span> <span class="o">=</span> <span class="n">getid</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
         <span class="n">concept</span> <span class="o">=</span> <span class="n">getconceptname</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
         <span class="n">instance</span> <span class="o">=</span> <span class="n">string</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="s">&quot;_&quot;</span><span class="p">,</span><span class="n">getinstancename</span><span class="p">(</span><span class="n">id</span><span class="p">))</span>
         <span class="n">obj</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">Id</span><span class="p">(</span><span class="n">concept</span><span class="p">,</span> <span class="n">instance</span><span class="p">)</span>
+        
+        <span class="c"># Lowlevel objects</span>
+        <span class="c"># (SegmentedArrows need unique names aswell, equation that connects main variable with segmentvariables is named from SegmentedArrow Id)</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="k">isa</span> <span class="n">Flow</span>
+            <span class="k">for</span> <span class="n">arrow</span> <span class="k">in</span> <span class="n">getarrows</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">arrow</span> <span class="k">isa</span> <span class="n">SegmentedArrow</span>
+                    <span class="n">id</span> <span class="o">=</span> <span class="n">getid</span><span class="p">(</span><span class="n">arrow</span><span class="p">)</span>
+                    <span class="n">concept</span> <span class="o">=</span> <span class="n">getconceptname</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+                    <span class="n">instance</span> <span class="o">=</span> <span class="n">string</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="s">&quot;_&quot;</span><span class="p">,</span><span class="n">getinstancename</span><span class="p">(</span><span class="n">id</span><span class="p">))</span>
+                    <span class="n">arrow</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">Id</span><span class="p">(</span><span class="n">concept</span><span class="p">,</span> <span class="n">instance</span><span class="p">)</span>
+                <span class="k">end</span>
+            <span class="k">end</span>
+        <span class="k">end</span>
     <span class="k">end</span>
 <span class="k">end</span>
 </pre></div>
@@ -14797,7 +14812,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[7]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[98]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-julia"><pre><span></span><span class="c"># General fallback</span>
@@ -14835,7 +14850,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[8]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[99]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-julia"><pre><span></span><span class="c"># Every scenario is weighted equally (10 %)</span>
@@ -14871,7 +14886,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[9]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[100]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-julia"><pre><span></span><span class="n">connectobjects</span> <span class="o">=</span> <span class="p">[]</span>
@@ -14908,7 +14923,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[10]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[101]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-julia"><pre><span></span><span class="n">modelobjects</span> <span class="o">=</span> <span class="n">vcat</span><span class="p">(</span><span class="n">connectobjects</span><span class="p">,</span> <span class="n">collect</span><span class="p">(</span><span class="n">values</span><span class="p">(</span><span class="n">firstobjects</span><span class="p">)))</span>
@@ -14950,7 +14965,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[11]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[102]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-julia"><pre><span></span><span class="nd">@time</span> <span class="n">prob</span> <span class="o">=</span> <span class="n">HiGHS_Prob</span><span class="p">(</span><span class="n">modelobjects</span><span class="p">)</span>
@@ -14984,9 +14999,9 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>  3.232359 seconds (5.19 M allocations: 296.062 MiB, 2.42% gc time, 91.75% compilation time)
-  3.437569 seconds (15.02 M allocations: 743.825 MiB, 9.89% gc time, 98.13% compilation time)
-  2.564434 seconds
+<pre>  0.182657 seconds (1.26 M allocations: 78.764 MiB, 12.76% compilation time)
+  0.068900 seconds (963.83 k allocations: 36.925 MiB, 7.76% compilation time)
+  2.455976 seconds
 -3.441491059429063e8
 </pre>
 </div>
@@ -15014,7 +15029,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[12]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[109]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-julia"><pre><span></span><span class="k">function</span> <span class="n">plot_var</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="n">id</span><span class="p">,</span> <span class="n">datayear</span><span class="p">)</span>
@@ -15031,7 +15046,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
         <span class="n">horizon</span> <span class="o">=</span> <span class="n">gethorizon</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
         <span class="n">x1</span> <span class="o">=</span> <span class="p">[</span><span class="n">datayear</span> <span class="o">+</span> <span class="n">Millisecond</span><span class="p">(</span><span class="n">Week</span><span class="p">(</span><span class="n">firstweeks</span><span class="p">))</span> <span class="o">+</span> <span class="n">getstartduration</span><span class="p">(</span><span class="n">horizon</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">getnumperiods</span><span class="p">(</span><span class="n">horizon</span><span class="p">)]</span>
         <span class="n">y1</span> <span class="o">=</span> <span class="p">[</span><span class="n">getvarvalue</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="n">newid</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">getnumperiods</span><span class="p">(</span><span class="n">horizon</span><span class="p">)]</span>
-        <span class="n">plot!</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span><span class="n">y1</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="n">string</span><span class="p">(</span><span class="s">&quot;Scenario &quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">))</span>
+        <span class="n">plot!</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span><span class="n">y1</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="n">string</span><span class="p">(</span><span class="s">&quot;Scenario &quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">),</span><span class="n">legend</span><span class="o">=</span><span class="ss">:outertopright</span><span class="p">)</span>
     <span class="k">end</span>
 
     <span class="n">display</span><span class="p">(</span><span class="n">plot!</span><span class="p">())</span>
@@ -15046,7 +15061,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
     <span class="n">probtimes</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="o">+</span> <span class="n">getstartduration</span><span class="p">(</span><span class="n">horizon</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">getnumperiods</span><span class="p">(</span><span class="n">horizon</span><span class="p">)]</span>
     <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">datayear</span> <span class="o">+</span> <span class="n">getstartduration</span><span class="p">(</span><span class="n">horizon</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">getnumperiods</span><span class="p">(</span><span class="n">horizon</span><span class="p">)]</span>
     <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="n">getparamvalue</span><span class="p">(</span><span class="n">price</span><span class="p">,</span> <span class="n">probtimes</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">gettimedelta</span><span class="p">(</span><span class="n">horizon</span><span class="p">,</span> <span class="n">j</span><span class="p">))</span> <span class="k">for</span> <span class="n">j</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">getnumperiods</span><span class="p">(</span><span class="n">horizon</span><span class="p">)]</span><span class="o">/</span><span class="mi">1000</span>
-    <span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;First stage&quot;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">getinstancename</span><span class="p">(</span><span class="n">id</span><span class="p">))</span>
+    <span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;First stage&quot;</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="n">getinstancename</span><span class="p">(</span><span class="n">id</span><span class="p">),</span><span class="n">legend</span><span class="o">=</span><span class="ss">:outertopright</span><span class="p">)</span>
     
     <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">numscen</span>
         <span class="n">newid</span> <span class="o">=</span> <span class="n">Id</span><span class="p">(</span><span class="n">concept</span><span class="p">,</span> <span class="n">string</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="s">&quot;_&quot;</span><span class="p">,</span> <span class="n">instance</span><span class="p">))</span>
@@ -15077,7 +15092,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-OutputArea-child">
 
     
-    <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[12]:</div>
+    <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[109]:</div>
 
 
 
@@ -15097,7 +15112,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[13]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[111]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-julia"><pre><span></span><span class="n">concept</span> <span class="o">=</span> <span class="n">BALANCE_CONCEPT</span>
@@ -15139,7 +15154,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 
 
 <div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
-    <div id="f980b441-126f-4b92-bf5f-d65822b281bf" style="width:600px;height:400px;"></div>
+    <div id="14be9bc6-0f71-477e-a070-e32fba4eee08" style="width:600px;height:400px;"></div>
     <script>
         requirejs.config({
         paths: {
@@ -15148,7 +15163,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
     });
     require(['plotly'], function (Plotly) {
 
-    Plotly.newPlot('f980b441-126f-4b92-bf5f-d65822b281bf', [
+    Plotly.newPlot('14be9bc6-0f71-477e-a070-e32fba4eee08', [
     {
         "xaxis": "x",
         "colorbar": {
@@ -29245,8 +29260,8 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
         "type": "-"
     },
     "legend": {
-        "yanchor": "auto",
-        "xanchor": "auto",
+        "yanchor": "right",
+        "xanchor": "upper",
         "bordercolor": "rgba(0, 0, 0, 1.000)",
         "bgcolor": "rgba(255, 255, 255, 1.000)",
         "borderwidth": 1,
@@ -29266,7 +29281,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
             "text": ""
         },
         "traceorder": "normal",
-        "x": 1.0
+        "x": 1.05
     },
     "width": 600
 }
@@ -29286,7 +29301,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 
 
 <div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
-    <div id="fb2fb6bf-89de-4bab-9054-e189401c1014" style="width:600px;height:400px;"></div>
+    <div id="a7f6d51d-a3c6-4f85-8f3b-0b56c1ffbdb9" style="width:600px;height:400px;"></div>
     <script>
         requirejs.config({
         paths: {
@@ -29295,7 +29310,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
     });
     require(['plotly'], function (Plotly) {
 
-    Plotly.newPlot('fb2fb6bf-89de-4bab-9054-e189401c1014', [
+    Plotly.newPlot('a7f6d51d-a3c6-4f85-8f3b-0b56c1ffbdb9', [
     {
         "xaxis": "x",
         "colorbar": {
@@ -31654,8 +31669,8 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
         "type": "-"
     },
     "legend": {
-        "yanchor": "auto",
-        "xanchor": "auto",
+        "yanchor": "right",
+        "xanchor": "upper",
         "bordercolor": "rgba(0, 0, 0, 1.000)",
         "bgcolor": "rgba(255, 255, 255, 1.000)",
         "borderwidth": 1,
@@ -31675,7 +31690,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
             "text": ""
         },
         "traceorder": "normal",
-        "x": 1.0
+        "x": 1.05
     },
     "width": 600
 }
@@ -31695,7 +31710,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 
 
 <div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
-    <div id="7db505db-2c2c-43d3-9fc8-002f2cfa1a08" style="width:600px;height:400px;"></div>
+    <div id="5d423c4a-3815-4475-b67d-c4394124817e" style="width:600px;height:400px;"></div>
     <script>
         requirejs.config({
         paths: {
@@ -31704,7 +31719,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
     });
     require(['plotly'], function (Plotly) {
 
-    Plotly.newPlot('7db505db-2c2c-43d3-9fc8-002f2cfa1a08', [
+    Plotly.newPlot('5d423c4a-3815-4475-b67d-c4394124817e', [
     {
         "xaxis": "x",
         "colorbar": {
@@ -45801,8 +45816,8 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
         "type": "-"
     },
     "legend": {
-        "yanchor": "auto",
-        "xanchor": "auto",
+        "yanchor": "right",
+        "xanchor": "upper",
         "bordercolor": "rgba(0, 0, 0, 1.000)",
         "bgcolor": "rgba(255, 255, 255, 1.000)",
         "borderwidth": 1,
@@ -45822,7 +45837,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
             "text": ""
         },
         "traceorder": "normal",
-        "x": 1.0
+        "x": 1.05
     },
     "width": 600
 }
@@ -45836,6 +45851,22 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 
 </div>
 
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[&nbsp;]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-julia"><pre><span></span>
+</pre></div>
+
+     </div>
+</div>
+</div>
 </div>
 
 </div>
