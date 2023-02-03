@@ -1,5 +1,6 @@
 """
-We implement ConstantTime, TwoTime and FixedDataTwoTime (see abstracttypes.jl)
+We implement ConstantTime, TwoTime, FixedDataTwoTime and 
+PhaseInTwoTime (see abstracttypes.jl)
 
 ConstantTime is used when getting the value from a constant parameter
 Then the time does not matter (our framework is built around getting 
@@ -12,6 +13,12 @@ change throughout the horizon.
 FixedDataTwoTime has datatime and scenariotime but only scenariotime is
 iterated through the horizon. Datatime is fixed throughout the Horizon.
 Used when the power system stays the same thrughout the horizon.
+
+PhaseinTwoTime works similar to FixedDataTwoTime, but it also has two
+scenariotimes. PhaseinTwoTime should be used when we want to use
+different scenarios at different times in the Horizon, or combine 
+scenarios. The field "phaseinvector" holds information on how much 
+each scenario should be weighted at a specific time.
 """
 
 using Dates
@@ -76,3 +83,35 @@ getscenariotime(x::FixedDataTwoTime) = x.scenariotime
 
 +(t::FixedDataTwoTime, d::TimeDelta) = FixedDataTwoTime(getdatatime(t), getscenariotime(t) + getduration(d))
 -(t::FixedDataTwoTime, d::TimeDelta) = FixedDataTwoTime(getdatatime(t), getscenariotime(t) - getduration(d))
+
+# --- PhaseinTwoTime ---
+struct PhaseinTwoTime <: ProbTime
+    datatime::DateTime
+    scenariotime1::DateTime
+    scenariotime2::DateTime
+    phaseinvector::InfiniteTimeVector
+    function(datatime, scenariotime1, scenariotime2, phaseinvector)
+        new(datatime, scenariotime1, scenariotime2, phaseinvector)
+    end
+    function(datatime, scenariotime1, scenariotime2, phaseinoffset::Millisecond, phaseindelta::Millisecond, phaseinsteps::Int)
+        index = Array{float}(phaseinsteps)
+        values = Array{DateTime}(phaseinsteps)
+        for i in 0:phaseinsteps
+            index[i] = scenariotime + phaseinoffset + phaseindelta*(i-1)/phaseinsteps
+            values[i] = i/phaseinsteps
+        end
+        phaseinvector = InfiniteTimeVector(index, values)
+        new(datatime, scenariotime1, scenariotime2, phaseinvector)
+    end
+end
+
+getdatatime(x::PhaseinTwoTime) = x.datatime
+getscenariotime1(x::PhaseinTwoTime) = x.scenariotime1
+getscenariotime2(x::PhaseinTwoTime) = x.scenariotime2
+getphaseinvector(x::PhaseinTwoTime) = x.phaseinvector
+
++(t::PhaseinTwoTime, d::Period) = PhaseinTwoTime(getdatatime(t), getscenariotime1(t) + d, getscenariotime2(t) + d, getphaseinvector(t))
+-(t::PhaseinTwoTime, d::Period) = PhaseinTwoTime(getdatatime(t), getscenariotime1(t) - d, getscenariotime2(t) + d, getphaseinvector(t))
+
++(t::PhaseinTwoTime, d::TimeDelta) = PhaseinTwoTime(getdatatime(t), getscenariotime1(t) + getduration(d), getscenariotime2(t) + getduration(d), getphaseinvector(t))
+-(t::PhaseinTwoTime, d::TimeDelta) = PhaseinTwoTime(getdatatime(t), getscenariotime1(t) - getduration(d), getscenariotime2(t) + getduration(d), getphaseinvector(t))

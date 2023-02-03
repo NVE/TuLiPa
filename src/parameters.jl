@@ -196,6 +196,15 @@ function getparamvalue(param::FossilMCParam, start::ProbTime, d::TimeDelta)
     return (fl * fp + cf * cl * cp) / ef + vo
 end
 
+function getparamvalue(param::MeanSeriesParam, start::ProbTime, d::TimeDelta)
+    datatime = getdatatime(start)
+    scenariotime = getscenariotime(start)
+    level = getweightedaverage(param.level, datatime, d)
+    profile = getweightedaverage(param.profile, scenariotime, d)
+    value = level * profile
+    return value
+end
+
 function getparamvalue(param::M3SToMM3SeriesParam, start::ProbTime, d::TimeDelta)
     datatime = getdatatime(start)
     scenariotime = getscenariotime(start)
@@ -222,13 +231,88 @@ function getparamvalue(param::CostPerMWToGWhParam, start::ProbTime, d::TimeDelta
     return cost / hours * 1e3
 end
 
-function getparamvalue(param::MeanSeriesParam, start::ProbTime, d::TimeDelta)
-    datatime = getdatatime(start)
-    scenariotime = getscenariotime(start)
-    level = getweightedaverage(param.level, datatime, d)
-    profile = getweightedaverage(param.profile, scenariotime, d)
+# Calculate the parameter value if the start value is a PhaseinTwoTime
+function getparamvalue(param::FossilMCParam, start::PhaseinTwoTime, d::TimeDelta)
+    fl = getweightedaverage(param.fuellevel,   start.datatime, d)
+    cf = getweightedaverage(param.co2factor,   start.datatime, d)
+    cl = getweightedaverage(param.co2level,    start.datatime, d)
+    ef = getweightedaverage(param.efficiency,  start.datatime, d)
+    vo = getweightedaverage(param.voc,         start.datatime, d)
+
+    phasein = getweightedaverage(param.level, start.scenariotime1, d)
+
+    if phasein == 0
+        cp = getweightedaverage(param.co2profile,  start.scenariotime1, d)
+        fp = getweightedaverage(param.fuelprofile, start.scenariotime1, d)
+    elseif phasein == 1
+        cp = getweightedaverage(param.co2profile,  start.scenariotime2, d)
+        fp = getweightedaverage(param.fuelprofile, start.scenariotime2, d)
+    else
+        cp1 = getweightedaverage(param.co2profile,  start.scenariotime1, d)
+        fp1 = getweightedaverage(param.fuelprofile, start.scenariotime1, d)
+        cp2 = getweightedaverage(param.co2profile,  start.scenariotime2, d)
+        fp2 = getweightedaverage(param.fuelprofile, start.scenariotime2, d)
+        cp = cp1*(1-phasein) + cp2*phasein
+        fp = fp1*(1-phasein) + fp2*phasein
+    end
+    
+    return (fl * fp + cf * cl * cp) / ef + vo
+end
+
+function getparamvalue(param::MeanSeriesParam, start::PhaseinTwoTime, d::TimeDelta)
+    phasein = getweightedaverage(param.level, start.scenariotime1, d)
+
+    if phasein == 0
+        profile = getweightedaverage(param.profile, start.scenariotime1, d)
+    elseif phasein == 1
+        profile = getweightedaverage(param.profile, start.scenariotime2, d)
+    else
+        profile1 = getweightedaverage(param.profile, start.scenariotime1, d)
+        profile2 = getweightedaverage(param.profile, start.scenariotime2, d)
+        profile = profile1*(1-phasein) + profile2*phasein
+    end
+
+    level = getweightedaverage(param.level, start.datatime, d)
     value = level * profile
     return value
+end
+
+function getparamvalue(param::M3SToMM3SeriesParam, start::PhaseinTwoTime, d::TimeDelta)
+    phasein = getweightedaverage(param.level, start.scenariotime1, d)
+
+    if phasein == 0
+        profile = getweightedaverage(param.profile, start.scenariotime1, d)
+    elseif phasein == 1
+        profile = getweightedaverage(param.profile, start.scenariotime2, d)
+    else
+        profile1 = getweightedaverage(param.profile, start.scenariotime1, d)
+        profile2 = getweightedaverage(param.profile, start.scenariotime2, d)
+        profile = profile1*(1-phasein) + profile2*phasein
+    end
+
+    level_m3s = getweightedaverage(param.level,   start.datatime, d)
+    m3s = level_m3s * profile
+    seconds = float(getduration(d).value / 1000)
+    return m3s * seconds / 1e6
+end
+
+function getparamvalue(param::MWToGWhSeriesParam, start::ProbTime, d::TimeDelta)
+    phasein = getweightedaverage(param.level, start.scenariotime1, d)
+
+    if phasein == 0
+        profile = getweightedaverage(param.profile, start.scenariotime1, d)
+    elseif phasein == 1
+        profile = getweightedaverage(param.profile, start.scenariotime2, d)
+    else
+        profile1 = getweightedaverage(param.profile, start.scenariotime1, d)
+        profile2 = getweightedaverage(param.profile, start.scenariotime2, d)
+        profile = profile1*(1-phasein) + profile2*phasein
+    end
+
+    level_mw = getweightedaverage(param.level,   start.datatime, d)
+    mw = level_mw * profile
+    hours = float(getduration(d).value / 3600000)
+    return mw * hours / 1e3
 end
 
 # ------ Include dataelements -------
