@@ -68,7 +68,6 @@ Horizon interface functions ---------------------
     # To combine datasets in time (e.g. adding future scenarios)
     hasoffset(horizon::Horizon) -> Bool
     getoffset(horizon::Horizon) -> TimeDelta
-    TODO: Test combining boundary variables in two datasets 
 """
 
 using Clustering, Random
