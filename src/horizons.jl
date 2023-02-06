@@ -11,8 +11,10 @@ timedelta1 and then N2 periods of duration timedelta2. One usecase
 for this is if the desired total problem time cant be divided by 
 the desired timedelta1. Then we could have N1 periods of timedelta1 
 and 1 period of timedelta2 = total time - timedelta1*N1.
-- Offset: An optional timedelta that shifts where the Horizon starts. 
-Can be used to combine datasets in time (e.g. adding future scenarios)
+- Offset: An optional element that shifts where the Horizon starts. 
+Can consist of a isoyear the starttime should be shifted to, and/or
+a TimeDelta. Can be used to combine datasets in time (e.g. adding 
+future scenarios). See timeoffset.jl
 
 AdaptiveHorizon ----------------------------
 Horizon with two dimensions. The overlying dimension is a 
@@ -67,7 +69,7 @@ Horizon interface functions ---------------------
 
     # To combine datasets in time (e.g. adding future scenarios)
     hasoffset(horizon::Horizon) -> Bool
-    getoffset(horizon::Horizon) -> TimeDelta
+    getoffset(horizon::Horizon) -> Offset
 """
 
 using Clustering, Random
@@ -267,15 +269,15 @@ end
 # --------- SequentialHorizon ------------------
 struct SequentialHorizon <: Horizon
     periods::SequentialPeriods
-    offset::Union{TimeDelta, Nothing}
+    offset::Union{Offset, Nothing}
 
-    function SequentialHorizon(int_period...; offset::Union{TimeDelta, Nothing} = nothing)
+    function SequentialHorizon(int_period...; offset::Union{Offset, Nothing} = nothing)
         periods = SequentialPeriods(int_period...)
         new(periods, offset)
     end
 
-    function SequentialHorizon( start::DateTime, stop::DateTime, duration::Period; 
-                                offset::Union{TimeDelta, Nothing} = nothing)
+    function SequentialHorizon(start::DateTime, stop::DateTime, duration::Period; 
+                                offset::Union{Offset, Nothing} = nothing)
         periods = SequentialPeriods(start, stop, duration)
         new(periods, offset)
     end
@@ -293,9 +295,11 @@ hasoffset(h::SequentialHorizon) = h.offset !== nothing
 getoffset(h::SequentialHorizon) = h.offset
 
 function getstarttime(h::SequentialHorizon, t::Int, start::ProbTime)
-    starttime = start + getstartduration(h.periods, t)
     if hasoffset(h)
-        starttime += getoffset(h)
+        starttime = getoffsettime(start, getoffset(h))
+        starttime += getstartduration(h.periods, t)
+    else
+        starttime = start + getstartduration(h.periods, t)
     end
     return starttime
 end
@@ -318,10 +322,10 @@ struct AdaptiveHorizon{D <: AdaptiveHorizonData, M <: AdaptiveHorizonMethod} <: 
     method::M
     periods::Vector{UnitsTimeDelta}
     Xs::Dict{Millisecond, Matrix{Float64}}
-    offset::Union{TimeDelta, Nothing}
+    offset::Union{Tuple{Int,TimeDelta}, Nothing}
 
     function AdaptiveHorizon(macro_periods::SequentialPeriods, num_block::Int, unit_duration::Period, 
-                            data, method; offset::Union{TimeDelta, Nothing} = nothing)
+                            data, method; offset::Union{Offset, Nothing} = nothing)
         unit_duration = Millisecond(unit_duration)
         @assert num_block > 0
         @assert unit_duration > Millisecond(0)
@@ -341,14 +345,14 @@ struct AdaptiveHorizon{D <: AdaptiveHorizonData, M <: AdaptiveHorizonMethod} <: 
     end
 
     function AdaptiveHorizon(num_block::Int, unit_duration::Period, 
-                            data, method, int_period...; offset::Union{TimeDelta, Nothing} = nothing)
+                            data, method, int_period...; offset::Union{Offset, Nothing} = nothing)
         macro_periods = SequentialPeriods(int_period...)
         AdaptiveHorizon(macro_periods, num_block, unit_duration, data, method; offset=offset)
     end
 
     function AdaptiveHorizon(num_block::Int, unit_duration::Period, data, method, 
                             start::DateTime, stop::DateTime, macro_duration::Period; 
-                            offset::Union{TimeDelta, Nothing} = nothing)
+                            offset::Union{Offset, Nothing} = nothing)
         macro_periods = SequentialPeriods(start, stop, macro_duration)
         AdaptiveHorizon(macro_periods, num_block, unit_duration, data, method; offset=offset)
     end
@@ -423,9 +427,11 @@ hasoffset(h::AdaptiveHorizon) = h.offset !== nothing
 getoffset(h::AdaptiveHorizon) = h.offset
 
 function getstarttime(h::AdaptiveHorizon, t::Int, start::ProbTime)
-    starttime = start + getstartduration(h, t)
     if hasoffset(h)
-        starttime += getoffset(h)
+        starttime = getoffsettime(start, getoffset(h))
+        starttime += getstartduration(h, t)
+    else
+        starttime = start + getstartduration(h, t)
     end
     return starttime
 end

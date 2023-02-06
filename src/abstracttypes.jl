@@ -502,6 +502,18 @@ abstract type Param end
 
 abstract type TimeVector end
 
+# ---- Offset -------------------
+# 
+# An optional element that shifts where the Horizon starts. 
+# Can consist of a isoyear the starttime should be shifted to, and/or
+# a TimeDelta. Can be used to combine datasets in time (e.g. adding 
+# future scenarios)
+# 
+# Interface:
+# getoffsettime(starttime, offset)
+
+abstract type Offset end
+
 
 
 
