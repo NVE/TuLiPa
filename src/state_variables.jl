@@ -22,7 +22,7 @@ getstatevariables(::Any) = StateVariableInfo[]
 getvarin(x::StateVariableInfo) = x.var_in
 getvarout(x::StateVariableInfo) = x.var_out
 
-function getoutgoingstates!(states::Dict{StateVariableInfo, Float64}, p::Prob)
+function getoutgoingstates!(p::Prob, states::Dict{StateVariableInfo, Float64})
     for var in keys(states)
         (id, ix) = getvarout(var)
         states[var] = getvarvalue(p, id, ix)
