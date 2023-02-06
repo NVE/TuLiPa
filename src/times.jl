@@ -90,15 +90,19 @@ struct PhaseinTwoTime <: ProbTime
     scenariotime1::DateTime
     scenariotime2::DateTime
     phaseinvector::InfiniteTimeVector
-    function(datatime, scenariotime1, scenariotime2, phaseinvector)
+    
+    function PhaseinTwoTime(datatime, scenariotime1, scenariotime2, phaseinvector)
         new(datatime, scenariotime1, scenariotime2, phaseinvector)
     end
-    function(datatime, scenariotime1, scenariotime2, phaseinoffset::Millisecond, phaseindelta::Millisecond, phaseinsteps::Int)
-        index = Array{float}(phaseinsteps)
-        values = Array{DateTime}(phaseinsteps)
+
+    function PhaseinTwoTime(datatime, scenariotime1, scenariotime2, 
+        phaseinoffset, phaseindelta, phaseinsteps)
+        
+        index = Vector{DateTime}(undef, phaseinsteps+1)
+        values = Vector{Float64}(undef, phaseinsteps+1)
         for i in 0:phaseinsteps
-            index[i] = scenariotime + phaseinoffset + phaseindelta*(i-1)/phaseinsteps
-            values[i] = i/phaseinsteps
+            index[i+1] = scenariotime1 + phaseinoffset + Millisecond(round(Int, phaseindelta.value*(i-1)/phaseinsteps))
+            values[i+1] = round(i/phaseinsteps,digits=3)
         end
         phaseinvector = InfiniteTimeVector(index, values)
         new(datatime, scenariotime1, scenariotime2, phaseinvector)
