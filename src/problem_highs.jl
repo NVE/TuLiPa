@@ -552,7 +552,7 @@ end
 
 function fix!(p::HiGHS_Prob, varid::Id, varix::Int, value::Float64)
     conid = p.fixable_vars[(varid, varix)]
-    row = p.cons[conid].start + varix # 1-based
+    row = p.cons[conid].start + 1 # 1-based
     p.row_lower[row] = value
     p.row_upper[row] = value
     p.row_bounds_mask[row] = 1
@@ -562,7 +562,7 @@ end
 function unfix!(p::HiGHS_Prob, varid::Id, varix::Int)
     conid = p.fixable_vars[(varid, varix)]
     info = p.cons[conid]
-    row = info.start + varix # 1-based
+    row = info.start + 1 # 1-based
     p.row_lower[row] = -Inf
     p.row_upper[row] = Inf
     p.row_bounds_mask[row] = 1
