@@ -27,8 +27,6 @@ Possible challenges:
    What to do if time delay and hourly master problem and 2-hourly subproblem? 
    Then time indexes for state variables does not have the same meaning in the two problems. 
    Similar issue if subproblem use non-sequential horizon.
-
-TODO: getobjects and getparent is the same thing?
 """
 
 # Interface for objects that are boundary condition types
@@ -42,7 +40,6 @@ isterminalcondition(::Any) = false
 # E.g. we want to be able to group all objects not already having a 
 # boundary condition and use optimality cuts for these
 getobjects(::BoundaryCondition) = error("Must implement")
-
 
 # Some simple types for turning off requirement that all objects with 
 # state variables should have boundary conditions
@@ -75,7 +72,6 @@ isterminalcondition(::NoTerminalCondition) = true
 isinitialcondition(::NoBoundaryCondition)  = true
 isterminalcondition(::NoBoundaryCondition) = true
 
-
 # ---- StartEqualStop <: BoundaryCondition ---
 
 struct StartEqualStop <: BoundaryCondition
@@ -95,6 +91,7 @@ getid(x::StartEqualStop) = x.id
 geteqid(x::StartEqualStop) = Id(BOUNDARYCONDITION_CONCEPT, string("Eq", getinstancename(getid(x))))
 
 getobjects(x::StartEqualStop) = [x.object]
+getparent(x::StartEqualStop) = x.object
 
 isinitialcondition(::StartEqualStop)  = true
 isterminalcondition(::StartEqualStop) = true
@@ -116,9 +113,6 @@ function setconstants!(p::Prob, x::StartEqualStop)
 end
 
 update!(::Prob, ::StartEqualStop, ::ProbTime) = nothing
-
-# TODO: Replace with getobjects?
-getparent(x::StartEqualStop) = x.object
 
 # Assemble - dependent on storage balance to be assembled (wont work if no state-variables, but not really necessary for assembling)
 function assemble!(x::StartEqualStop)::Bool
@@ -163,6 +157,7 @@ getid(x::ConnectTwoObjects) = x.id
 geteqid(x::ConnectTwoObjects) = Id(BOUNDARYCONDITION_CONCEPT, string("Eq", getinstancename(getid(x))))
 
 getobjects(x::ConnectTwoObjects) = [x.inobject, x.outobject]
+getparent(x::ConnectTwoObjects) = nothing
 
 isinitialcondition(::ConnectTwoObjects)  = true
 isterminalcondition(::ConnectTwoObjects) = true
@@ -188,13 +183,10 @@ end
 
 update!(::Prob, ::ConnectTwoObjects, ::ProbTime) = nothing
 
-# TODO: Replace with getobjects?
-getparent(x::ConnectTwoObjects) = [x.outobject, x.inobject]
-
 # Assemble - dependent on storage balance to be assembled (wont work if no state-variables, but not really necessary for assembling)
 function assemble!(x::ConnectTwoObjects)::Bool
-    for parent in getparents(x)
-        isnothing(gethorizon(getbalance(parent))) && return false
+    for obj in getobjects(x)
+        isnothing(gethorizon(getbalance(obj))) && return false
     end
     return true
 end
@@ -264,6 +256,8 @@ getslopes(x::SimpleSingleCuts) = x.slopes
 getmaxcuts(x::SimpleSingleCuts) = x.maxcuts
 getnumcuts(x::SimpleSingleCuts) = x.numcuts
 getcutix(x::SimpleSingleCuts) = x.cutix
+
+getparent(x::SimpleSingleCuts) = nothing
 
 function getfuturecostvarid(x::SimpleSingleCuts)
     return Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "FutureCost"))
