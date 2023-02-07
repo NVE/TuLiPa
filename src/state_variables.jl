@@ -22,6 +22,14 @@ getstatevariables(::Any) = StateVariableInfo[]
 getvarin(x::StateVariableInfo) = x.var_in
 getvarout(x::StateVariableInfo) = x.var_out
 
+function getingoingstates!(p::Prob, states::Dict{StateVariableInfo, Float64})
+    for var in keys(states)
+        (id, ix) = getvarin(var)
+        states[var] = getvarvalue(p, id, ix)
+    end
+    return states
+end
+
 function getoutgoingstates!(p::Prob, states::Dict{StateVariableInfo, Float64})
     for var in keys(states)
         (id, ix) = getvarout(var)
@@ -33,6 +41,14 @@ end
 function setingoingstates!(p::Prob, states::Dict{StateVariableInfo, Float64})
     for (var, state) in states
         (id, ix) = getvarin(var)
+        fix!(p, id, ix, state)
+    end
+    return
+end
+
+function setoutgoingstates!(p::Prob, states::Dict{StateVariableInfo, Float64})
+    for (var, state) in states
+        (id, ix) = getvarout(var)
         fix!(p, id, ix, state)
     end
     return
