@@ -49,6 +49,7 @@ Real world concepts like transmission lines, power plants, hydropower storages a
 - demos/Demo 2 - Deterministic power market with detailed data
 - demos/Demo 4 - Deterministic hydro
 - demos/Demo 5 - Two-stage stochastic hydro
+- demos/Demo 6 - Two-stage stochastic hydro with Benders decomposition
 
 #### Possible improvements to TuLiPa:
 See file "Possible improvements to TuLiPa"
