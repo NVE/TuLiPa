@@ -27,6 +27,21 @@ Possible challenges:
    What to do if time delay and hourly master problem and 2-hourly subproblem? 
    Then time indexes for state variables does not have the same meaning in the two problems. 
    Similar issue if subproblem use non-sequential horizon.
+
+We implement NoInitialCondition, NoTerminalCondition, NoBoundaryCondition, StartEqualStop,
+ConnectTwoObjects and SimpleSingleCuts
+
+NoInitialCondition, NoTerminalCondition, NoBoundaryCondition are simple types for turning off requirement 
+that all objects with state variables should have boundary conditions
+
+StartEqualStop adds an equation to set the start and end state variables equal to each other
+
+ConnectTwoObjects connects the terminal statevariable of one object with the initial state variable of
+another object. This boundary condition gives the possibility to make stochastic two-stage problems, where the
+reservoirs in the first stage are connected to the reservoir in the second stage scenarios.
+
+SimpleSingleCuts is a modelobject for adding Benders cuts to a problem. It preallocates a fixed number of cuts
+that can be activated. SimpleSingleCuts does not support cut selection.
 """
 
 # Interface for objects that are boundary condition types
@@ -41,8 +56,7 @@ isterminalcondition(::Any) = false
 # boundary condition and use optimality cuts for these
 getobjects(::BoundaryCondition) = error("Must implement")
 
-# Some simple types for turning off requirement that all objects with 
-# state variables should have boundary conditions
+# ---- NoInitialCondition, NoTerminalCondition and NoBoundaryCondition <: BoundaryCondition ---
 
 struct NoInitialCondition <: BoundaryCondition
     id::Id
@@ -157,10 +171,10 @@ getid(x::ConnectTwoObjects) = x.id
 geteqid(x::ConnectTwoObjects) = Id(BOUNDARYCONDITION_CONCEPT, string("Eq", getinstancename(getid(x))))
 
 getobjects(x::ConnectTwoObjects) = [x.inobject, x.outobject]
-getparent(x::ConnectTwoObjects) = nothing
+getparent(x::ConnectTwoObjects) = nothing # this framework is not compatible with ConnectTwoObjects
 
-isinitialcondition(::ConnectTwoObjects)  = true
-isterminalcondition(::ConnectTwoObjects) = true
+isinitialcondition(::ConnectTwoObjects)  = false # this framework is not compatible with ConnectTwoObjects
+isterminalcondition(::ConnectTwoObjects) = false # this framework is not compatible with ConnectTwoObjects
 
 function build!(p::Prob, x::ConnectTwoObjects) # assumes same amount of state variables for both
     N = length(getstatevariables(x.inobject)) 
@@ -257,7 +271,7 @@ getmaxcuts(x::SimpleSingleCuts) = x.maxcuts
 getnumcuts(x::SimpleSingleCuts) = x.numcuts
 getcutix(x::SimpleSingleCuts) = x.cutix
 
-getparent(x::SimpleSingleCuts) = nothing
+getparent(::SimpleSingleCuts) = nothing
 
 function getfuturecostvarid(x::SimpleSingleCuts)
     return Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "FutureCost"))
@@ -295,7 +309,7 @@ function setconstants!(p::Prob, x::SimpleSingleCuts)
         # inactivate cut slopes
         for object in getobjects(x)
             for statevar in getstatevariables(object)
-                (varid, varix) = getvarin(statevar)
+                (varid, varix) = getvarout(statevar)
                 setconcoeff!(p, getcutconid(x), varid, cutix, varix, 0.0)
             end
         end
@@ -317,11 +331,14 @@ function updatecuts!(p::Prob, x::SimpleSingleCuts,
     @assert length(scenarioparameters) == length(x.probabilities)
     
     # update cutix
-    cutix = getnumcuts(x) + 1
+    cutix = getcutix(x) + 1
     if cutix > getmaxcuts(x)
         cutix = 1
-        setcutix(x, cutix)
+        setcutix!(x, cutix)
+    elseif getnumcuts(x) == getmaxcuts(x)
+        setcutix!(x, cutix)
     else
+        setcutix!(x, cutix)
         setnumcuts!(x, cutix)
     end
     
@@ -331,25 +348,25 @@ function updatecuts!(p::Prob, x::SimpleSingleCuts,
 
     # calculate average cut parameters
     avgconstant = 0.0
-    avgslopes = avgslopes[cutix]
-    _set_values_to_zero!(avgslopes)
+    avgslope = avgslopes[cutix]
+    _set_values_to_zero!(avgslope)
     for (i, probability) in enumerate(getprobabilities(x))
         (constant, slopes) = scenarioparameters[i]
         avgconstant += constant * probability
         for (var, value) in slopes
-            avgslopes[var] += value * probability
+            avgslope[var] += value * probability
         end
     end
 
     # store updated cut internally
     avgconstants[cutix] = avgconstant
-    avgslopes[cutix] = avgslopes
+    avgslopes[cutix] = avgslope
 
     # set the newly updated cut in the problem
     setrhsterm!(p, getcutconid(x), getcutconstantid(x), cutix, avgconstant)
-    for (var, slope) in avgslopes
-        (varid, varix) = getvarin(var)
-        setconcoeff!(p, getcutconid(x), varid, cutix, varix, slope)
+    for (var, slope) in avgslope
+        (varid, varix) = getvarout(var)
+        setconcoeff!(p, getcutconid(x), varid, cutix, varix, -slope)
     end
 
     return
@@ -374,8 +391,8 @@ function clearcuts!(p::Prob, x::SimpleSingleCuts)
     for cutix in eachindex(avgconstants)
         setrhsterm!(p, getcutconid(x), getcutconstantid(x), cutix, avgconstants[cutix])
         for (var, slope) in avgslopes[cutix]
-            (varid, varix) = getvarin(var)
-            setconcoeff!(p, getcutconid(x), varid, cutix, varix, slope)
+            (varid, varix) = getvarout(var)
+            setconcoeff!(p, getcutconid(x), varid, cutix, varix, -slope)
         end
     end
     return
