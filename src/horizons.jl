@@ -322,7 +322,7 @@ struct AdaptiveHorizon{D <: AdaptiveHorizonData, M <: AdaptiveHorizonMethod} <: 
     method::M
     periods::Vector{UnitsTimeDelta}
     Xs::Dict{Millisecond, Matrix{Float64}}
-    offset::Union{Tuple{Int,TimeDelta}, Nothing}
+    offset::Union{Offset, Nothing}
 
     function AdaptiveHorizon(macro_periods::SequentialPeriods, num_block::Int, unit_duration::Period, 
                             data, method; offset::Union{Offset, Nothing} = nothing)
