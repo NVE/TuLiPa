@@ -17,6 +17,7 @@ end
 
 # -------- General fallback -----------------
 getstatevariables(::Any) = StateVariableInfo[]
+hasstatevariables(x::Any) = length(getstatevariables(x)) > 0
 
 # -------- Function interface ---------------
 getvarin(x::StateVariableInfo) = x.var_in
