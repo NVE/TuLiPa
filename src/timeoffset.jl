@@ -23,7 +23,7 @@ gettimedelta(offset::Offset) = offset.timedelta
 getisoyear(offset::IsoYearOffset) = offset.isoyear
 
 function getoffsettime(start::ProbTime, offset::TimeDeltaOffset)
-    return start + offset
+    return start + gettimedelta(offset)
 end
 
 function getoffsettime(start::TwoTime, offset::IsoYearOffset)
