@@ -66,3 +66,21 @@ Keywords to Google are “multiple dispatch”, “dynamically typed” and “j
 Julien Cabrol: jgrc@nve.no
 
 Harald Endresen:
+
+### Licensing:
+Copyright 2023 The Norwegian Water Resources and Energy Directorate, and contributors.
+
+TuLiPa is a free software; you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation; either version 3 of the License, or (at your
+option) any later version.
+
+TuLiPa is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with TuLiPa; see the file COPYING.LESSER.  If not, see
+http://www.gnu.org/licenses/ or write to the Free Software Foundation, Inc.,
+51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
