@@ -26,6 +26,21 @@ struct BaseAggSupplyCurve <: AggSupplyCurve
     balance::Balance
     flows::Vector{Flow}
     numclusters::Int
+    mcs::Matrix{Float64}
+    lbs::Matrix{Float64}
+    ubs::Matrix{Float64}
+
+    function BaseAggSupplyCurve(id, balance, flows, numclusters)
+        horizon = gethorizon(getcommodity(balance))
+        T = getnumperiods(horizon)
+        
+        numflows = length(flows)
+        mcs = zeros(Float64,T,numflows)
+        lbs = zeros(Float64,T,numflows)
+        ubs = zeros(Float64,T,numflows)
+
+        new(id,balance,flows,numclusters,mcs,lbs,ubs)
+    end
 end
 
 # --- Interface functions ---
@@ -63,26 +78,18 @@ end
 
 # Update the problem with cost and upper/lower bound for each equivalent flow
 function update!(p::Prob, var::AggSupplyCurve, start::ProbTime)
-    # Initialize
+    # Fill
     horizon = gethorizon(getcommodity(var.balance))
     T = getnumperiods(horizon)
     
     varname = getinstancename(var.id)
     numflows = length(var.flows)
-    mcs = zeros(Float64,T,numflows)
-    lbs = zeros(Float64,T,numflows)
-    ubs = zeros(Float64,T,numflows)
-    
-    querystarts = Vector{typeof(start)}(undef, T)
-    querydeltas = Vector{Any}(undef,T) 
-    
+
+    querystarts = [getstarttime(horizon, t, start) for t in 1:T]
+    querydeltas = [gettimedelta(horizon, t) for t in 1:T]
+
     dummytime = ConstantTime()
     dummydelta = MsTimeDelta(Hour(1))
-
-    for t in 1:T
-        querystarts[t] = getstarttime(horizon, t, start)
-        querydeltas[t] = gettimedelta(horizon, t)
-    end
 
     # Calculate costs and upper/lower bound for each flow and timeperiod
     for i in 1:numflows
@@ -93,11 +100,11 @@ function update!(p::Prob, var::AggSupplyCurve, start::ProbTime)
         if isconstant(cost)
             paramvalue = getparamvalue(cost, dummytime, dummydelta)
             for t in 1:T
-                mcs[t,i] = paramvalue # pq not supported
+                var.mcs[t,i] = paramvalue::Float64 # pq not supported
             end
         else
             for t in 1:T
-                mcs[t,i] = getparamvalue(cost, querystarts[t], querydeltas[t]) # pq not supported
+                var.mcs[t,i] = getparamvalue(cost, querystarts[t], querydeltas[t])::Float64 # pq not supported
             end
         end   
 
@@ -107,11 +114,11 @@ function update!(p::Prob, var::AggSupplyCurve, start::ProbTime)
             # Why? SequentialHorizon can have two or more sets of (nperiods, duration) pairs
             paramvalue = getparamvalue(lb, dummytime, dummydelta)
             for t in 1:T
-                lbs[t,i] = paramvalue 
+                var.lbs[t,i] = paramvalue::Float64
             end
         else
             for t in 1:T
-                lbs[t,i] = getparamvalue(lb, querystarts[t], querydeltas[t])
+                var.lbs[t,i] = getparamvalue(lb, querystarts[t], querydeltas[t])::Float64
             end
         end
 
@@ -120,11 +127,11 @@ function update!(p::Prob, var::AggSupplyCurve, start::ProbTime)
         if isconstant(ub) && !isdurational(ub)
             paramvalue = getparamvalue(ub, dummytime, dummydelta)
             for t in 1:T
-                ubs[t,i] = paramvalue 
+                var.ubs[t,i] = paramvalue::Float64
             end
         else
             for t in 1:T
-                ubs[t,i] = getparamvalue(ub, querystarts[t], querydeltas[t]) 
+                var.ubs[t,i] = getparamvalue(ub, querystarts[t], querydeltas[t])::Float64
             end
         end
     end
@@ -134,19 +141,19 @@ function update!(p::Prob, var::AggSupplyCurve, start::ProbTime)
 
     # For each timeperiod cluster flows by costs
     for t in 1:T
-        r = kmeans(reshape(mcs[t,:],1,numflows), var.numclusters)
+        r = kmeans(reshape(var.mcs[t,:],1,numflows), var.numclusters)
         assignments = r.assignments
 
         # For each cluster aggregate costs and upper/lower bounds
         for assignment in 1:var.numclusters
-            mc = 0
-            lb = 0
-            ub = 0
+            mc = float(0)
+            lb = float(0)
+            ub = float(0)
             for j in 1:numflows
                 if assignments[j] == assignment
-                    mc += mcs[t,j]*ubs[t,j]
-                    lb += lbs[t,j]
-                    ub += ubs[t,j]
+                    mc += var.mcs[t,j]*var.ubs[t,j]
+                    lb += var.lbs[t,j]
+                    ub += var.ubs[t,j]
                 end
             end
 
