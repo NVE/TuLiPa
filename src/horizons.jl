@@ -161,11 +161,11 @@ function SequentialPeriods(start::DateTime, stop::DateTime, delta::Period)
 end
 
 function getXs(x::SequentialPeriods, unit_duration::Millisecond)
-    Xs = Dict{Millisecond, Matrix{Float64}}()
+    Xs = Dict{Millisecond, Vector{Float64}}()
     for (__, ms) in x.data
         if !haskey(Xs, ms)
             num_col = Int(ms.value / unit_duration.value)
-            Xs[ms] = zeros(1, num_col)
+            Xs[ms] = zeros(num_col)
         end
     end
     return Xs
@@ -321,7 +321,7 @@ struct AdaptiveHorizon{D <: AdaptiveHorizonData, M <: AdaptiveHorizonMethod} <: 
     data::D
     method::M
     periods::Vector{UnitsTimeDelta}
-    Xs::Dict{Millisecond, Matrix{Float64}}
+    Xs::Dict{Millisecond, Vector{Float64}}
     offset::Union{Offset, Nothing}
 
     function AdaptiveHorizon(macro_periods::SequentialPeriods, num_block::Int, unit_duration::Period, 
@@ -491,7 +491,11 @@ function _get_residual_load(rhs_terms::Vector, datatime::DateTime, start::DateTi
     for rhs_term in rhs_terms
         t = FixedDataTwoTime(datatime, start)
         for i in eachindex(x)
-            x[i] += getparamvalue(rhs_term, t, delta)
+            value = getparamvalue(rhs_term, t, delta)::Float64
+            if isingoing(rhs_term)
+                value = -value
+            end
+            x[i] += value
             t += delta
         end
     end
@@ -532,14 +536,14 @@ function build!(data::StaticRHSAHData, prob::Prob)
     return
 end
 
-function update_X!(X::Matrix{Float64}, data::StaticRHSAHData, start::ProbTime, 
+function update_X!(X::Vector{Float64}, data::StaticRHSAHData, start::ProbTime, 
                    acc::Millisecond, unit_duration::Millisecond)
     fill!(X, 0.0)
     unit_delta = MsTimeDelta(unit_duration)
     scenariotime = getscenariotime(start)
-    for col in 1:last(size(X))
+    for col in eachindex(X)
         querystart = scenariotime + acc + (col - 1) * unit_duration
-        X[1, col] += getweightedaverage(data.residual_load, querystart, unit_delta)
+        X[col] += getweightedaverage(data.residual_load, querystart, unit_delta)::Float64
     end
     return
 end
@@ -558,14 +562,19 @@ function build!(data::DynamicRHSAHData, prob::Prob)
     return
 end
 
-function update_X!(X::Matrix{Float64}, data::DynamicRHSAHData, start::ProbTime, 
+function update_X!(X::Vector{Float64}, data::DynamicRHSAHData, start::ProbTime, 
                    acc::Millisecond, unit_duration::Millisecond)
     fill!(X, 0.0)
     unit_delta = MsTimeDelta(unit_duration)
+
     for rhs_term in data.rhs_terms
-        for col in 1:last(size(X))
+        for col in eachindex(X)
             querystart = start + acc + (col - 1) * unit_duration
-            X[1, col] += getparamvalue(rhs_term, querystart, unit_delta)
+            value = getparamvalue(rhs_term, querystart, unit_delta)::Float64
+            if isingoing(rhs_term)
+                value = -value
+            end
+            X[col] += value
         end
     end
     return
@@ -604,8 +613,8 @@ function init!(x::PercentilesAHMethod, ::SequentialPeriods, num_blocks::Int, ::M
     return
 end
 
-function assign_blocks!(method::PercentilesAHMethod, X::Matrix{Float64})
-    x = [(v, i) for (i, v) in enumerate(view(X, 1, :))]
+function assign_blocks!(method::PercentilesAHMethod, X::Vector{Float64})
+    x = [(v, i) for (i, v) in enumerate(view(X, :))]
     sort!(x)
     n = length(x)
     assignments = Vector{Int}(undef, n)
@@ -645,9 +654,9 @@ function init!(method::KMeansAHMethod, ::SequentialPeriods, num_block::Int, ::Mi
     return
 end
 
-function assign_blocks!(method::KMeansAHMethod, X::Matrix{Float64})
+function assign_blocks!(method::KMeansAHMethod, X::Vector{Float64})
     Random.seed!(1000) # NB!!! for consistent results in testing-------------------------------
-    result = kmeans(X, method.num_cluster)
+    result = kmeans(reshape(X, 1, length(X)), method.num_cluster)
     return result.assignments
 end
 
