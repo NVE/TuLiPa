@@ -277,6 +277,22 @@ struct SequentialHorizon <: Horizon
         periods = SequentialPeriods(start, stop, duration)
         new(periods, offset)
     end
+
+    # Make a fine horizon that is compatible with a coarse horizon (TODO: Also split mulitple (n,ms) pairs?)
+    function SequentialHorizon(coarse::SequentialHorizon, fineparts::Int) 
+        data = Tuple{Int,Millisecond}[]
+        offset = coarse.offset
+
+        for (i, (n,ms)) in enumerate(coarse.periods.data)
+            if i == 1
+                n *= fineparts
+                ms /= fineparts
+            end
+            push!(data, (n,ms))
+        end
+
+        new(SequentialPeriods(data), offset)
+    end
 end
 
 isadaptive(::SequentialHorizon) = false
