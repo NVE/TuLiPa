@@ -538,12 +538,11 @@ end
 
 function update_X!(X::Vector{Float64}, data::StaticRHSAHData, start::ProbTime, 
                    acc::Millisecond, unit_duration::Millisecond)
-    fill!(X, 0.0)
     unit_delta = MsTimeDelta(unit_duration)
     scenariotime = getscenariotime(start)
     for col in eachindex(X)
         querystart = scenariotime + acc + (col - 1) * unit_duration
-        X[col] += getweightedaverage(data.residual_load, querystart, unit_delta)::Float64
+        X[col] = getweightedaverage(data.residual_load, querystart, unit_delta)::Float64
     end
     return
 end
