@@ -239,7 +239,10 @@ function getparamvalue(param::FossilMCParam, start::PhaseinTwoTime, d::TimeDelta
     ef = getweightedaverage(param.efficiency,  start.datatime, d)
     vo = getweightedaverage(param.voc,         start.datatime, d)
 
-    phasein = getweightedaverage(param.level, start.scenariotime1, d)
+    phasein = getweightedaverage(start.phaseinvector, start.scenariotime1, d)
+
+    local cp::Float64
+    local fp::Float64
 
     if phasein == 0
         cp = getweightedaverage(param.co2profile,  start.scenariotime1, d)
@@ -262,6 +265,8 @@ end
 function getparamvalue(param::MeanSeriesParam, start::PhaseinTwoTime, d::TimeDelta)
     phasein = getweightedaverage(start.phaseinvector, start.scenariotime1, d)
 
+    local profile::Float64
+
     if phasein == 0
         profile = getweightedaverage(param.profile, start.scenariotime1, d)
     elseif phasein == 1
@@ -279,6 +284,8 @@ end
 
 function getparamvalue(param::M3SToMM3SeriesParam, start::PhaseinTwoTime, d::TimeDelta)
     phasein = getweightedaverage(start.phaseinvector, start.scenariotime1, d)
+
+    local profile::Float64
 
     if phasein == 0
         profile = getweightedaverage(param.profile, start.scenariotime1, d)
@@ -298,6 +305,8 @@ end
 
 function getparamvalue(param::MWToGWhSeriesParam, start::PhaseinTwoTime, d::TimeDelta)
     phasein = getweightedaverage(start.phaseinvector, start.scenariotime1, d)
+
+    local profile::Float64
 
     if phasein == 0
         profile = getweightedaverage(param.profile, start.scenariotime1, d)
