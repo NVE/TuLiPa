@@ -226,12 +226,8 @@ function getsubperiods(coarse::SequentialPeriods, fine::SequentialPeriods, coars
     fine_start = 0
     acc = Millisecond(0)
 
-    (list_ix, fine_start, acc) = accumulate_duration(fine, acc, startduration, list_ix, fine_start)
-
-    # fine_stop = (fine_start - 1)
-    
-    (list_ix, fine_stop, acc) = accumulate_duration(fine, acc, stopduration, list_ix, fine_start-1)
-    # (list_ix, fine_stop, acc) = accumulate_duration(fine, acc, stopduration, list_ix, fine_stop)
+    (list_ix, fine_start, acc) = accumulate_duration(fine, acc, startduration, list_ix, fine_start, true) 
+    (list_ix, fine_stop, acc) = accumulate_duration(fine, acc, stopduration, list_ix, fine_start-1, false)
 
     fine_start += 1
     fine_stop += 1
@@ -239,13 +235,13 @@ function getsubperiods(coarse::SequentialPeriods, fine::SequentialPeriods, coars
     return fine_start:fine_stop
 end
 
-function accumulate_duration(x::SequentialPeriods, acc::Millisecond, target::Millisecond, list_ix::Int, t::Int)
+function accumulate_duration(x::SequentialPeriods, acc::Millisecond, target::Millisecond, list_ix::Int, t::Int, start::Bool)
     for i in list_ix:lastindex(x.data)
         (n, ms) = x.data[i]
 
         to_next_duration = acc + ms * n
 
-        if target > to_next_duration
+        if (target == to_next_duration) && start
             t += n
             acc = to_next_duration
         else
