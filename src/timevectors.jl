@@ -333,7 +333,13 @@ function _isdifferent(index, values)
 end
 # TODO: Probably move checks to constructor
 
+# More effective searching for special types
+# - When Vector is a StepRange we can calculate the index
+# - searchsortedlastlo does not search through the the whole Vector, but starts from istart
+# - TODO: Test different search algorithms
+
 using Base.Order
+import Base.searchsortedlast
 
 function searchsortedlastlo(v::AbstractVector, x, lo::T, hi::T, o::Ordering)::keytype(v) where T<:Integer
     u = T(1)
@@ -355,7 +361,7 @@ searchsortedlastlo(v::AbstractVector, x, lo, o::Ordering) = searchsortedlastlo(v
 searchsortedlastlo(v::AbstractVector, x, lo;
     lt=isless, by=identity, rev::Union{Bool,Nothing}=nothing, order::Ordering=Forward) = searchsortedlastlo(v,x,lo,ord(lt,by,rev,order))
 
-function searchsortedlastlo(v::StepRange, x)::keytype(v)
+function searchsortedlastlo(v::StepRange, x, lo)::keytype(v)
     if x > last(v)
         return lastindex(v)
     else
@@ -363,22 +369,11 @@ function searchsortedlastlo(v::StepRange, x)::keytype(v)
     end
 end
 
-import Base.searchsortedlast
-
 function searchsortedlast(v::StepRange, x)::keytype(v)
     if x > last(v)
         return lastindex(v)
     else   
         return floor((x-v.start)/v.step) + 1
-    end
-end
-
-for s in [:searchsortedlast]
-    @eval begin
-        $s(v::AbstractVector, x, o::Ordering) = $s(v,x,firstindex(v),lastindex(v),o)
-        $s(v::AbstractVector, x;
-           lt=isless, by=identity, rev::Union{Bool,Nothing}=nothing, order::Ordering=Forward) =
-            $s(v,x,ord(lt,by,rev,order))
     end
 end
 
