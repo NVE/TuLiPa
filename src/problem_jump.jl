@@ -70,6 +70,9 @@ mutable struct JuMP_Prob <: Prob
 
         return p
     end
+    function JuMP_Prob()
+        new(JuMP.Model(), [], [], Dict(), false)
+    end
 end
 
 getobjects(p::JuMP_Prob) = p.objects

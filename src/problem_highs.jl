@@ -140,6 +140,23 @@ mutable struct HiGHS_Prob <: Prob
         finalizer(Highs_destroy, p)
         
         return p
+    end
+    function HiGHS_Prob()
+        p = new(
+            [],
+            Highs_create(), 
+            Dict{Any, HiGHSVarInfo}(),
+            Dict{Any, HiGHSConInfo}(),
+            0, 0,
+            [], [], [], [], [],
+            Dict{Int, Dict{Int, Float64}}(),
+            [], [],
+            false,
+            [], [], [],
+            false, false, false,
+            [],
+            Dict()
+        )
     end    
 end
 
