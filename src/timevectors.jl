@@ -86,7 +86,7 @@ function getweightedaverage(x::InfiniteTimeVector, t::DateTime, delta::MsTimeDel
     qstop  = t + getduration(delta)
     
     istart = searchsortedlast(index, qstart)
-    istop  = searchsortedlast(index, qstop)
+    istop  = searchsortedlastlo(index, qstop, istart)
 
     (istart == istop == 0             ) && return first(values)
     (istart == istop == length(values)) && return last(values)
@@ -176,7 +176,7 @@ function getweightedaverage(x::RotatingTimeVector, t::DateTime, delta::MsTimeDel
     qstop  = tininterval + getduration(delta)
 
     istart = searchsortedlast(index, qstart)
-    istop  = searchsortedlast(index, qstop)
+    istop  = searchsortedlastlo(index, qstop, istart)
     
     # Return early if possible
     (istart == istop == 0)            && return xN # use xN for [lb, t0] and [tN, ub]
@@ -324,11 +324,6 @@ function getweightedaverage(x::RotatingTimeVector, t::DateTime, delta::MsTimeDel
     return x / n
 end
 
-
-"""
-Here we register functions to include data elements relating to TimeVector
-"""
-
 function _isdifferent(index, values)
     try
         return length(index) == length(values)
@@ -337,6 +332,59 @@ function _isdifferent(index, values)
     end
 end
 # TODO: Probably move checks to constructor
+
+using Base.Order
+
+function searchsortedlastlo(v::AbstractVector, x, lo::T, hi::T, o::Ordering)::keytype(v) where T<:Integer
+    u = T(1)
+    lo = lo - u
+    hi = hi + u
+    @inbounds while lo < hi - u
+        m = midpoint(lo, hi)
+        if lt(o, x, v[m])
+            hi = m
+        else
+            lo = m
+        end
+    end
+    return lo
+end
+
+midpoint(lo::T, hi::T) where T<:Integer = lo + ((hi - lo) >>> 0x01)
+searchsortedlastlo(v::AbstractVector, x, lo, o::Ordering) = searchsortedlastlo(v,x,lo,lastindex(v),o)
+searchsortedlastlo(v::AbstractVector, x, lo;
+    lt=isless, by=identity, rev::Union{Bool,Nothing}=nothing, order::Ordering=Forward) = searchsortedlastlo(v,x,lo,ord(lt,by,rev,order))
+
+function searchsortedlastlo(v::StepRange, x)::keytype(v)
+    if x > last(v)
+        return lastindex(v)
+    else
+        return floor((x-v.start)/v.step) + 1
+    end
+end
+
+import Base.searchsortedlast
+
+function searchsortedlast(v::StepRange, x)::keytype(v)
+    if x > last(v)
+        return lastindex(v)
+    else   
+        return floor((x-v.start)/v.step) + 1
+    end
+end
+
+for s in [:searchsortedlast]
+    @eval begin
+        $s(v::AbstractVector, x, o::Ordering) = $s(v,x,firstindex(v),lastindex(v),o)
+        $s(v::AbstractVector, x;
+           lt=isless, by=identity, rev::Union{Bool,Nothing}=nothing, order::Ordering=Forward) =
+            $s(v,x,ord(lt,by,rev,order))
+    end
+end
+
+"""
+Here we register functions to include data elements relating to TimeVector
+"""
 
 # --- VectorTimeIndex ---
 # TimeIndex described by a Vector
