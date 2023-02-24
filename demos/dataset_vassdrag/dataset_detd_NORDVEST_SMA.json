@@ -2,7 +2,7 @@
     [
         "Balance",
         "BaseBalance",
-        "HydroBalance_40301",
+        "HydroBalance_66624",
         [
             "Commodity",
             "Hydro"
@@ -11,27 +11,27 @@
     [
         "Param",
         "M3SToMM3SeriesParam",
-        "InflowParam_40301",
+        "InflowParam_66624",
         [
             "Level",
-            0.8872399797057331
+            31.40728056823947
         ],
         [
             "Profile",
-            "InflowProfile_630-E"
+            "InflowProfile_1438-E"
         ]
     ],
     [
         "RHSTerm",
         "BaseRHSTerm",
-        "Inflow_40301",
+        "Inflow_66624",
         [
             "Param",
-            "InflowParam_40301"
+            "InflowParam_66624"
         ],
         [
             "Balance",
-            "HydroBalance_40301"
+            "HydroBalance_66624"
         ],
         [
             "Direction",
@@ -41,12 +41,12 @@
     [
         "Flow",
         "BaseFlow",
-        "Spill_40301"
+        "Spill_66624"
     ],
     [
         "Param",
         "M3SToMM3SeriesParam",
-        "SpillCapParam_40301",
+        "SpillCapParam_66624",
         [
             "Level",
             10000
@@ -59,18 +59,18 @@
     [
         "Capacity",
         "PositiveCapacity",
-        "SpillCap_40301",
+        "SpillCap_66624",
         [
             "Bound",
             "Upper"
         ],
         [
             "Param",
-            "SpillCapParam_40301"
+            "SpillCapParam_66624"
         ],
         [
             "WhichInstance",
-            "Spill_40301"
+            "Spill_66624"
         ],
         [
             "WhichConcept",
@@ -80,18 +80,18 @@
     [
         "Arrow",
         "BaseArrow",
-        "SpillArrow_40301",
+        "SpillArrow_66624",
         [
             "Conversion",
             1
         ],
         [
             "Flow",
-            "Spill_40301"
+            "Spill_66624"
         ],
         [
             "Balance",
-            "HydroBalance_40301"
+            "HydroBalance_66624"
         ],
         [
             "Direction",
@@ -101,12 +101,12 @@
     [
         "Flow",
         "BaseFlow",
-        "Bypass_40301"
+        "Bypass_66624"
     ],
     [
         "Param",
         "M3SToMM3SeriesParam",
-        "BypassCapParam_40301",
+        "BypassCapParam_66624",
         [
             "Level",
             10000.0
@@ -119,18 +119,18 @@
     [
         "Capacity",
         "PositiveCapacity",
-        "BypassCap_40301",
+        "BypassCap_66624",
         [
             "Bound",
             "Upper"
         ],
         [
             "Param",
-            "BypassCapParam_40301"
+            "BypassCapParam_66624"
         ],
         [
             "WhichInstance",
-            "Bypass_40301"
+            "Bypass_66624"
         ],
         [
             "WhichConcept",
@@ -140,18 +140,18 @@
     [
         "Arrow",
         "BaseArrow",
-        "BypassArrow_40301",
+        "BypassArrow_66624",
         [
             "Conversion",
             1
         ],
         [
             "Flow",
-            "Bypass_40301"
+            "Bypass_66624"
         ],
         [
             "Balance",
-            "HydroBalance_40301"
+            "HydroBalance_66624"
         ],
         [
             "Direction",
@@ -161,15 +161,15 @@
     [
         "Flow",
         "BaseFlow",
-        "Release_40301"
+        "Release_66624"
     ],
     [
         "Param",
         "M3SToMM3SeriesParam",
-        "ReleaseCapParam_40301",
+        "ReleaseCapParam_66624",
         [
             "Level",
-            2.0
+            78.42
         ],
         [
             "Profile",
@@ -179,18 +179,18 @@
     [
         "Capacity",
         "PositiveCapacity",
-        "ReleaseCap_40301",
+        "ReleaseCap_66624",
         [
             "Bound",
             "Upper"
         ],
         [
             "Param",
-            "ReleaseCapParam_40301"
+            "ReleaseCapParam_66624"
         ],
         [
             "WhichInstance",
-            "Release_40301"
+            "Release_66624"
         ],
         [
             "WhichConcept",
@@ -200,18 +200,18 @@
     [
         "Arrow",
         "BaseArrow",
-        "ReleaseArrow_40301",
+        "ReleaseArrow_66624",
         [
             "Conversion",
             1
         ],
         [
             "Flow",
-            "Release_40301"
+            "Release_66624"
         ],
         [
             "Balance",
-            "HydroBalance_40301"
+            "HydroBalance_66624"
         ],
         [
             "Direction",
@@ -221,14 +221,14 @@
     [
         "Arrow",
         "BaseArrow",
-        "ProdArrowTo_40301-NO3",
+        "ProdArrowTo_66624-NO3",
         [
             "Conversion",
-            0.972
+            1.0
         ],
         [
             "Flow",
-            "Release_40301"
+            "Release_66624"
         ],
         [
             "Balance",
@@ -237,83 +237,6 @@
         [
             "Direction",
             "In"
-        ]
-    ],
-    [
-        "TimeIndex",
-        "VectorTimeIndex",
-        "RestrictionProfileIndex_minforb_40301",
-        [
-            "Vector",
-            [
-                "1980-12-29 00:00:00",
-                "1981-04-27 00:00:00",
-                "1981-10-19 00:00:00"
-            ]
-        ]
-    ],
-    [
-        "TimeValues",
-        "VectorTimeValues",
-        "RestrictionProfileValues_minforb_40301",
-        [
-            "Vector",
-            [
-                0.0,
-                0.01,
-                0.0
-            ]
-        ]
-    ],
-    [
-        "TimeVector",
-        "OneYearTimeVector",
-        "RestrictionProfile_minforb_40301",
-        [
-            "TimeIndex",
-            "RestrictionProfileIndex_minforb_40301"
-        ],
-        [
-            "TimeValues",
-            "RestrictionProfileValues_minforb_40301"
-        ]
-    ],
-    [
-        "Param",
-        "M3SToMM3SeriesParam",
-        "RestrictionParam_minforb_40301",
-        [
-            "Level",
-            1
-        ],
-        [
-            "Profile",
-            "RestrictionProfile_minforb_40301"
-        ]
-    ],
-    [
-        "SoftBound",
-        "BaseSoftBound",
-        "SoftCap_minforb_40301",
-        [
-            "Bound",
-            "Lower"
-        ],
-        [
-            "SoftCap",
-            "RestrictionParam_minforb_40301"
-        ],
-        [
-            "WhichInstance",
-            "Bypass_40301"
-        ],
-        [
-            "WhichConcept",
-            "Flow"
-        ],
-        [
-            "Penalty",
-            1000000.0
         ]
     ]
 ]

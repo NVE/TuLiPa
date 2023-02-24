@@ -2,66 +2,36 @@
     [
         "Balance",
         "BaseBalance",
-        "HydroBalance_63901",
+        "HydroBalance_66622",
         [
             "Commodity",
             "Hydro"
         ]
     ],
     [
-        "Storage",
-        "BaseStorage",
-        "Reservoir_63901",
-        [
-            "Balance",
-            "HydroBalance_63901"
-        ]
-    ],
-    [
-        "Capacity",
-        "PositiveCapacity",
-        "ResCap_63901",
-        [
-            "Bound",
-            "Upper"
-        ],
-        [
-            "Param",
-            2.0
-        ],
-        [
-            "WhichInstance",
-            "Reservoir_63901"
-        ],
-        [
-            "WhichConcept",
-            "Storage"
-        ]
-    ],
-    [
         "Param",
         "M3SToMM3SeriesParam",
-        "InflowParam_63901",
+        "InflowParam_66622",
         [
             "Level",
-            6.565195332318619
+            20.309487569761544
         ],
         [
             "Profile",
-            "InflowProfile_705-E"
+            "InflowProfile_1736-E"
         ]
     ],
     [
         "RHSTerm",
         "BaseRHSTerm",
-        "Inflow_63901",
+        "Inflow_66622",
         [
             "Param",
-            "InflowParam_63901"
+            "InflowParam_66622"
         ],
         [
             "Balance",
-            "HydroBalance_63901"
+            "HydroBalance_66622"
         ],
         [
             "Direction",
@@ -71,12 +41,12 @@
     [
         "Flow",
         "BaseFlow",
-        "Spill_63901"
+        "Spill_66622"
     ],
     [
         "Param",
         "M3SToMM3SeriesParam",
-        "SpillCapParam_63901",
+        "SpillCapParam_66622",
         [
             "Level",
             10000
@@ -89,18 +59,18 @@
     [
         "Capacity",
         "PositiveCapacity",
-        "SpillCap_63901",
+        "SpillCap_66622",
         [
             "Bound",
             "Upper"
         ],
         [
             "Param",
-            "SpillCapParam_63901"
+            "SpillCapParam_66622"
         ],
         [
             "WhichInstance",
-            "Spill_63901"
+            "Spill_66622"
         ],
         [
             "WhichConcept",
@@ -110,18 +80,18 @@
     [
         "Arrow",
         "BaseArrow",
-        "SpillArrow_63901",
+        "SpillArrow_66622",
         [
             "Conversion",
             1
         ],
         [
             "Flow",
-            "Spill_63901"
+            "Spill_66622"
         ],
         [
             "Balance",
-            "HydroBalance_63901"
+            "HydroBalance_66622"
         ],
         [
             "Direction",
@@ -131,15 +101,15 @@
     [
         "Flow",
         "BaseFlow",
-        "Release_63901"
+        "Bypass_66622"
     ],
     [
         "Param",
         "M3SToMM3SeriesParam",
-        "ReleaseCapParam_63901",
+        "BypassCapParam_66622",
         [
             "Level",
-            10.23
+            10000.0
         ],
         [
             "Profile",
@@ -149,18 +119,18 @@
     [
         "Capacity",
         "PositiveCapacity",
-        "ReleaseCap_63901",
+        "BypassCap_66622",
         [
             "Bound",
             "Upper"
         ],
         [
             "Param",
-            "ReleaseCapParam_63901"
+            "BypassCapParam_66622"
         ],
         [
             "WhichInstance",
-            "Release_63901"
+            "Bypass_66622"
         ],
         [
             "WhichConcept",
@@ -170,18 +140,78 @@
     [
         "Arrow",
         "BaseArrow",
-        "ReleaseArrow_63901",
+        "BypassArrow_66622",
         [
             "Conversion",
             1
         ],
         [
             "Flow",
-            "Release_63901"
+            "Bypass_66622"
         ],
         [
             "Balance",
-            "HydroBalance_63901"
+            "HydroBalance_66622"
+        ],
+        [
+            "Direction",
+            "Out"
+        ]
+    ],
+    [
+        "Flow",
+        "BaseFlow",
+        "Release_66622"
+    ],
+    [
+        "Param",
+        "M3SToMM3SeriesParam",
+        "ReleaseCapParam_66622",
+        [
+            "Level",
+            39.23
+        ],
+        [
+            "Profile",
+            1
+        ]
+    ],
+    [
+        "Capacity",
+        "PositiveCapacity",
+        "ReleaseCap_66622",
+        [
+            "Bound",
+            "Upper"
+        ],
+        [
+            "Param",
+            "ReleaseCapParam_66622"
+        ],
+        [
+            "WhichInstance",
+            "Release_66622"
+        ],
+        [
+            "WhichConcept",
+            "Flow"
+        ]
+    ],
+    [
+        "Arrow",
+        "BaseArrow",
+        "ReleaseArrow_66622",
+        [
+            "Conversion",
+            1
+        ],
+        [
+            "Flow",
+            "Release_66622"
+        ],
+        [
+            "Balance",
+            "HydroBalance_66622"
         ],
         [
             "Direction",
@@ -191,18 +221,18 @@
     [
         "Arrow",
         "BaseArrow",
-        "ProdArrowTo_63901-NO4",
+        "ProdArrowTo_66622-NO5",
         [
             "Conversion",
-            0.19
+            1.0
         ],
         [
             "Flow",
-            "Release_63901"
+            "Release_66622"
         ],
         [
             "Balance",
-            "PowerBalance_NO4"
+            "PowerBalance_NO5"
         ],
         [
             "Direction",

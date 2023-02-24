@@ -44,7 +44,7 @@
         "InflowParam_32606",
         [
             "Level",
-            0.44552257737189244
+            0.5932902080162354
         ],
         [
             "Profile",
@@ -275,7 +275,7 @@
         "InflowParam_32607",
         [
             "Level",
-            1.5068493150684932
+            1.8756341958396752
         ],
         [
             "Profile",
@@ -725,7 +725,7 @@
         "InflowParam_32703",
         [
             "Level",
-            1.0952562151192287
+            1.539193302891933
         ],
         [
             "Profile",
@@ -870,63 +870,12 @@
         ]
     ],
     [
-        "Param",
-        "M3SToMM3SeriesParam",
-        "ReleaseCapParam_32703_pq1",
-        [
-            "Level",
-            9.75
-        ],
-        [
-            "Profile",
-            1
-        ]
-    ],
-    [
-        "Param",
-        "M3SToMM3SeriesParam",
-        "ReleaseCapParam_32703_pq2",
-        [
-            "Level",
-            4.16
-        ],
-        [
-            "Profile",
-            1
-        ]
-    ],
-    [
-        "Param",
-        "M3SToMM3SeriesParam",
-        "ReleaseCapParam_32703_pq3",
-        [
-            "Level",
-            5.690000000000001
-        ],
-        [
-            "Profile",
-            1
-        ]
-    ],
-    [
         "Arrow",
-        "SegmentedArrow",
+        "BaseArrow",
         "ProdArrowTo_32703-NO3",
         [
             "Conversion",
-            [
-                1.4282051282051282,
-                1.3334668803418799,
-                1.2692833430970512
-            ]
-        ],
-        [
-            "Capacity",
-            [
-                "ReleaseCapParam_32703_pq1",
-                "ReleaseCapParam_32703_pq2",
-                "ReleaseCapParam_32703_pq3"
-            ]
+            1.317
         ],
         [
             "Flow",
@@ -1113,48 +1062,12 @@
         ]
     ],
     [
-        "Param",
-        "M3SToMM3SeriesParam",
-        "ReleaseCapParam_32705_pq1",
-        [
-            "Level",
-            4.31
-        ],
-        [
-            "Profile",
-            1
-        ]
-    ],
-    [
-        "Param",
-        "M3SToMM3SeriesParam",
-        "ReleaseCapParam_32705_pq2",
-        [
-            "Level",
-            0.5900000000000007
-        ],
-        [
-            "Profile",
-            1
-        ]
-    ],
-    [
         "Arrow",
-        "SegmentedArrow",
+        "BaseArrow",
         "ProdArrowTo_32705-NO3",
         [
             "Conversion",
-            [
-                0.22944057746841973,
-                0.17890772128060234
-            ]
-        ],
-        [
-            "Capacity",
-            [
-                "ReleaseCapParam_32705_pq1",
-                "ReleaseCapParam_32705_pq2"
-            ]
+            0.223
         ],
         [
             "Flow",
@@ -1214,7 +1127,7 @@
         "InflowParam_32706",
         [
             "Level",
-            1.0813039066463723
+            1.2458777270421104
         ],
         [
             "Profile",
@@ -1401,78 +1314,12 @@
         ]
     ],
     [
-        "Param",
-        "M3SToMM3SeriesParam",
-        "ReleaseCapParam_32706_pq1",
-        [
-            "Level",
-            11.12
-        ],
-        [
-            "Profile",
-            1
-        ]
-    ],
-    [
-        "Param",
-        "M3SToMM3SeriesParam",
-        "ReleaseCapParam_32706_pq2",
-        [
-            "Level",
-            3.780000000000001
-        ],
-        [
-            "Profile",
-            1
-        ]
-    ],
-    [
-        "Param",
-        "M3SToMM3SeriesParam",
-        "ReleaseCapParam_32706_pq3",
-        [
-            "Level",
-            1.450000000000001
-        ],
-        [
-            "Profile",
-            1
-        ]
-    ],
-    [
-        "Param",
-        "M3SToMM3SeriesParam",
-        "ReleaseCapParam_32706_pq4",
-        [
-            "Level",
-            0.41999999999999815
-        ],
-        [
-            "Profile",
-            1
-        ]
-    ],
-    [
         "Arrow",
-        "SegmentedArrow",
+        "BaseArrow",
         "ProdArrowTo_32706-NO3",
         [
             "Conversion",
-            [
-                1.3881394884092726,
-                1.3330393885949432,
-                1.2701149425287366,
-                1.223544973544975
-            ]
-        ],
-        [
-            "Capacity",
-            [
-                "ReleaseCapParam_32706_pq1",
-                "ReleaseCapParam_32706_pq2",
-                "ReleaseCapParam_32706_pq3",
-                "ReleaseCapParam_32706_pq4"
-            ]
+            1.362
         ],
         [
             "Flow",
@@ -1532,7 +1379,7 @@
         "InflowParam_32707",
         [
             "Level",
-            4.416539827498731
+            4.956557584982242
         ],
         [
             "Profile",
@@ -1844,7 +1691,7 @@
         "InflowParam_32708",
         [
             "Level",
-            0.28475393201420596
+            0.3735413495687468
         ],
         [
             "Profile",
@@ -2054,7 +1901,7 @@
         "InflowParam_32709",
         [
             "Level",
-            0.11352105530187721
+            0.13444951801116184
         ],
         [
             "Profile",
@@ -2366,7 +2213,7 @@
         "InflowParam_32710",
         [
             "Level",
-            0.9535134449518011
+            1.0327879249112126
         ],
         [
             "Profile",
@@ -2597,7 +2444,7 @@
         "InflowParam_32711",
         [
             "Level",
-            2.1540461694571285
+            2.1809994926433283
         ],
         [
             "Profile",
@@ -2828,7 +2675,7 @@
         "InflowParam_32712",
         [
             "Level",
-            0.4994292237442922
+            0.5358954845256214
         ],
         [
             "Profile",
@@ -3059,7 +2906,7 @@
         "InflowParam_32713",
         [
             "Level",
-            1.777333840690005
+            1.8347285641806188
         ],
         [
             "Profile",
@@ -3290,7 +3137,7 @@
         "InflowParam_32714",
         [
             "Level",
-            1.8302891933028917
+            2.236491628614916
         ],
         [
             "Profile",
@@ -3500,7 +3347,7 @@
         "InflowParam_32715",
         [
             "Level",
-            3.2997209538305428
+            4.359462201927955
         ],
         [
             "Profile",
@@ -3710,7 +3557,7 @@
         "InflowParam_32716",
         [
             "Level",
-            0.36561390157280566
+            0.4537671232876712
         ],
         [
             "Profile",
@@ -3941,7 +3788,7 @@
         "InflowParam_32717",
         [
             "Level",
-            0.09322678843226788
+            0.11510654490106544
         ],
         [
             "Profile",
@@ -4172,7 +4019,7 @@
         "InflowParam_32718",
         [
             "Level",
-            0.24733637747336376
+            0.31297564687975643
         ],
         [
             "Profile",
@@ -4793,7 +4640,7 @@
         "InflowParam_32720",
         [
             "Level",
-            0.3025114155251141
+            0.37449264332825977
         ],
         [
             "Profile",

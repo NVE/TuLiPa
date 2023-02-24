@@ -14,7 +14,7 @@
         "InflowParam_57921",
         [
             "Level",
-            1.0188356164383563
+            1.0105910705225774
         ],
         [
             "Profile",
@@ -194,7 +194,7 @@
         "InflowParam_57922",
         [
             "Level",
-            17.986745306950787
+            18.201420598680873
         ],
         [
             "Profile",
@@ -416,7 +416,7 @@
         "InflowParam_57926",
         [
             "Level",
-            8.367897006595635
+            8.277524099441909
         ],
         [
             "Profile",
@@ -719,7 +719,7 @@
         "InflowParam_57927",
         [
             "Level",
-            69.86935565702689
+            69.47647133434805
         ],
         [
             "Profile",
@@ -941,7 +941,7 @@
         "InflowParam_57928",
         [
             "Level",
-            17.771752917300862
+            17.530441400304415
         ],
         [
             "Profile",
@@ -1253,7 +1253,7 @@
         "InflowParam_57931",
         [
             "Level",
-            1.272196854388635
+            1.2338280060882798
         ],
         [
             "Profile",
@@ -1521,48 +1521,12 @@
         ]
     ],
     [
-        "Param",
-        "M3SToMM3SeriesParam",
-        "ReleaseCapParam_57931_pq1",
-        [
-            "Level",
-            77.01
-        ],
-        [
-            "Profile",
-            1
-        ]
-    ],
-    [
-        "Param",
-        "M3SToMM3SeriesParam",
-        "ReleaseCapParam_57931_pq2",
-        [
-            "Level",
-            8.989999999999995
-        ],
-        [
-            "Profile",
-            1
-        ]
-    ],
-    [
         "Arrow",
-        "SegmentedArrow",
+        "BaseArrow",
         "ProdArrowTo_57931-NO4",
         [
             "Conversion",
-            [
-                0.581093364498117,
-                0.30589543937708596
-            ]
-        ],
-        [
-            "Capacity",
-            [
-                "ReleaseCapParam_57931_pq1",
-                "ReleaseCapParam_57931_pq2"
-            ]
+            0.552
         ],
         [
             "Flow",
@@ -1622,7 +1586,7 @@
         "InflowParam_57936",
         [
             "Level",
-            13.916793505834601
+            13.590499746321663
         ],
         [
             "Profile",
@@ -2489,7 +2453,7 @@
         "InflowParam_57943",
         [
             "Level",
-            13.52486047691527
+            13.628868594622018
         ],
         [
             "Profile",
@@ -2822,7 +2786,7 @@
         "InflowParam_57945",
         [
             "Level",
-            37.49778031456113
+            37.62430238457635
         ],
         [
             "Profile",
@@ -3134,7 +3098,7 @@
         "InflowParam_96401",
         [
             "Level",
-            13.300672247590054
+            13.073630136986301
         ],
         [
             "Profile",

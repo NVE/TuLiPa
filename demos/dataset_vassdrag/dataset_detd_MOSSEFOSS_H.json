@@ -2,187 +2,7 @@
     [
         "Balance",
         "BaseBalance",
-        "HydroBalance_2101u",
-        [
-            "Commodity",
-            "Hydro"
-        ]
-    ],
-    [
-        "Param",
-        "M3SToMM3SeriesParam",
-        "InflowParam_2101u",
-        [
-            "Level",
-            11.421867072552002
-        ],
-        [
-            "Profile",
-            "InflowProfile_2158-E"
-        ]
-    ],
-    [
-        "RHSTerm",
-        "BaseRHSTerm",
-        "Inflow_2101u",
-        [
-            "Param",
-            "InflowParam_2101u"
-        ],
-        [
-            "Balance",
-            "HydroBalance_2101u"
-        ],
-        [
-            "Direction",
-            "In"
-        ]
-    ],
-    [
-        "Flow",
-        "BaseFlow",
-        "Spill_2101u"
-    ],
-    [
-        "Param",
-        "M3SToMM3SeriesParam",
-        "SpillCapParam_2101u",
-        [
-            "Level",
-            10000
-        ],
-        [
-            "Profile",
-            1
-        ]
-    ],
-    [
-        "Capacity",
-        "PositiveCapacity",
-        "SpillCap_2101u",
-        [
-            "Bound",
-            "Upper"
-        ],
-        [
-            "Param",
-            "SpillCapParam_2101u"
-        ],
-        [
-            "WhichInstance",
-            "Spill_2101u"
-        ],
-        [
-            "WhichConcept",
-            "Flow"
-        ]
-    ],
-    [
-        "Arrow",
-        "BaseArrow",
-        "SpillArrow_2101u",
-        [
-            "Conversion",
-            1
-        ],
-        [
-            "Flow",
-            "Spill_2101u"
-        ],
-        [
-            "Balance",
-            "HydroBalance_2101u"
-        ],
-        [
-            "Direction",
-            "Out"
-        ]
-    ],
-    [
-        "Flow",
-        "BaseFlow",
-        "Release_2101u"
-    ],
-    [
-        "Param",
-        "M3SToMM3SeriesParam",
-        "ReleaseCapParam_2101u",
-        [
-            "Level",
-            15.38
-        ],
-        [
-            "Profile",
-            1
-        ]
-    ],
-    [
-        "Capacity",
-        "PositiveCapacity",
-        "ReleaseCap_2101u",
-        [
-            "Bound",
-            "Upper"
-        ],
-        [
-            "Param",
-            "ReleaseCapParam_2101u"
-        ],
-        [
-            "WhichInstance",
-            "Release_2101u"
-        ],
-        [
-            "WhichConcept",
-            "Flow"
-        ]
-    ],
-    [
-        "Arrow",
-        "BaseArrow",
-        "ReleaseArrow_2101u",
-        [
-            "Conversion",
-            1
-        ],
-        [
-            "Flow",
-            "Release_2101u"
-        ],
-        [
-            "Balance",
-            "HydroBalance_2101u"
-        ],
-        [
-            "Direction",
-            "Out"
-        ]
-    ],
-    [
-        "Arrow",
-        "BaseArrow",
-        "ProdArrowTo_2101u-NO1",
-        [
-            "Conversion",
-            0.056
-        ],
-        [
-            "Flow",
-            "Release_2101u"
-        ],
-        [
-            "Balance",
-            "PowerBalance_NO1"
-        ],
-        [
-            "Direction",
-            "In"
-        ]
-    ],
-    [
-        "Balance",
-        "BaseBalance",
-        "HydroBalance_2101r",
+        "HydroBalance_2101",
         [
             "Commodity",
             "Hydro"
@@ -191,16 +11,16 @@
     [
         "Storage",
         "BaseStorage",
-        "Reservoir_2101r",
+        "Reservoir_2101",
         [
             "Balance",
-            "HydroBalance_2101r"
+            "HydroBalance_2101"
         ]
     ],
     [
         "Capacity",
         "PositiveCapacity",
-        "ResCap_2101r",
+        "ResCap_2101",
         [
             "Bound",
             "Upper"
@@ -211,7 +31,7 @@
         ],
         [
             "WhichInstance",
-            "Reservoir_2101r"
+            "Reservoir_2101"
         ],
         [
             "WhichConcept",
@@ -221,10 +41,10 @@
     [
         "Param",
         "M3SToMM3SeriesParam",
-        "InflowParam_2101r",
+        "InflowParam_2101",
         [
             "Level",
-            11.909563673262301
+            12.004693049213596
         ],
         [
             "Profile",
@@ -234,14 +54,14 @@
     [
         "RHSTerm",
         "BaseRHSTerm",
-        "Inflow_2101r",
+        "Inflow_2101",
         [
             "Param",
-            "InflowParam_2101r"
+            "InflowParam_2101"
         ],
         [
             "Balance",
-            "HydroBalance_2101r"
+            "HydroBalance_2101"
         ],
         [
             "Direction",
@@ -251,12 +71,12 @@
     [
         "Flow",
         "BaseFlow",
-        "Spill_2101r"
+        "Spill_2101"
     ],
     [
         "Param",
         "M3SToMM3SeriesParam",
-        "SpillCapParam_2101r",
+        "SpillCapParam_2101",
         [
             "Level",
             10000
@@ -269,18 +89,18 @@
     [
         "Capacity",
         "PositiveCapacity",
-        "SpillCap_2101r",
+        "SpillCap_2101",
         [
             "Bound",
             "Upper"
         ],
         [
             "Param",
-            "SpillCapParam_2101r"
+            "SpillCapParam_2101"
         ],
         [
             "WhichInstance",
-            "Spill_2101r"
+            "Spill_2101"
         ],
         [
             "WhichConcept",
@@ -290,18 +110,18 @@
     [
         "Arrow",
         "BaseArrow",
-        "SpillArrow_2101r",
+        "SpillArrow_2101",
         [
             "Conversion",
             1
         ],
         [
             "Flow",
-            "Spill_2101r"
+            "Spill_2101"
         ],
         [
             "Balance",
-            "HydroBalance_2101r"
+            "HydroBalance_2101"
         ],
         [
             "Direction",
@@ -311,12 +131,12 @@
     [
         "Flow",
         "BaseFlow",
-        "Bypass_2101r"
+        "Bypass_2101"
     ],
     [
         "Param",
         "M3SToMM3SeriesParam",
-        "BypassCapParam_2101r",
+        "BypassCapParam_2101",
         [
             "Level",
             100.0
@@ -329,18 +149,18 @@
     [
         "Capacity",
         "PositiveCapacity",
-        "BypassCap_2101r",
+        "BypassCap_2101",
         [
             "Bound",
             "Upper"
         ],
         [
             "Param",
-            "BypassCapParam_2101r"
+            "BypassCapParam_2101"
         ],
         [
             "WhichInstance",
-            "Bypass_2101r"
+            "Bypass_2101"
         ],
         [
             "WhichConcept",
@@ -350,18 +170,18 @@
     [
         "Arrow",
         "BaseArrow",
-        "BypassArrow_2101r",
+        "BypassArrow_2101",
         [
             "Conversion",
             1
         ],
         [
             "Flow",
-            "Bypass_2101r"
+            "Bypass_2101"
         ],
         [
             "Balance",
-            "HydroBalance_2101r"
+            "HydroBalance_2101"
         ],
         [
             "Direction",
@@ -371,36 +191,15 @@
     [
         "Flow",
         "BaseFlow",
-        "Release_2101r"
-    ],
-    [
-        "Arrow",
-        "BaseArrow",
-        "ReleaseArrowTo_2101r",
-        [
-            "Conversion",
-            1
-        ],
-        [
-            "Flow",
-            "Release_2101r"
-        ],
-        [
-            "Balance",
-            "HydroBalance_2101u"
-        ],
-        [
-            "Direction",
-            "In"
-        ]
+        "Release_2101"
     ],
     [
         "Param",
         "M3SToMM3SeriesParam",
-        "ReleaseCapParam_2101r",
+        "ReleaseCapParam_2101",
         [
             "Level",
-            1000.0
+            15.38
         ],
         [
             "Profile",
@@ -410,18 +209,18 @@
     [
         "Capacity",
         "PositiveCapacity",
-        "ReleaseCap_2101r",
+        "ReleaseCap_2101",
         [
             "Bound",
             "Upper"
         ],
         [
             "Param",
-            "ReleaseCapParam_2101r"
+            "ReleaseCapParam_2101"
         ],
         [
             "WhichInstance",
-            "Release_2101r"
+            "Release_2101"
         ],
         [
             "WhichConcept",
@@ -431,18 +230,18 @@
     [
         "Arrow",
         "BaseArrow",
-        "ReleaseArrow_2101r",
+        "ReleaseArrow_2101",
         [
             "Conversion",
             1
         ],
         [
             "Flow",
-            "Release_2101r"
+            "Release_2101"
         ],
         [
             "Balance",
-            "HydroBalance_2101r"
+            "HydroBalance_2101"
         ],
         [
             "Direction",
@@ -450,9 +249,30 @@
         ]
     ],
     [
+        "Arrow",
+        "BaseArrow",
+        "ProdArrowTo_2101-NO1",
+        [
+            "Conversion",
+            0.056
+        ],
+        [
+            "Flow",
+            "Release_2101"
+        ],
+        [
+            "Balance",
+            "PowerBalance_NO1"
+        ],
+        [
+            "Direction",
+            "In"
+        ]
+    ],
+    [
         "TimeIndex",
         "VectorTimeIndex",
-        "RestrictionProfileIndex_maxmag_2101r",
+        "RestrictionProfileIndex_maxmag_2101",
         [
             "Vector",
             [
@@ -465,7 +285,7 @@
     [
         "TimeValues",
         "VectorTimeValues",
-        "RestrictionProfileValues_maxmag_2101r",
+        "RestrictionProfileValues_maxmag_2101",
         [
             "Vector",
             [
@@ -478,44 +298,44 @@
     [
         "TimeVector",
         "OneYearTimeVector",
-        "RestrictionProfile_maxmag_2101r",
+        "RestrictionProfile_maxmag_2101",
         [
             "TimeIndex",
-            "RestrictionProfileIndex_maxmag_2101r"
+            "RestrictionProfileIndex_maxmag_2101"
         ],
         [
             "TimeValues",
-            "RestrictionProfileValues_maxmag_2101r"
+            "RestrictionProfileValues_maxmag_2101"
         ]
     ],
     [
         "Param",
         "MeanSeriesParam",
-        "RestrictionParam_maxmag_2101r",
+        "RestrictionParam_maxmag_2101",
         [
             "Level",
             1
         ],
         [
             "Profile",
-            "RestrictionProfile_maxmag_2101r"
+            "RestrictionProfile_maxmag_2101"
         ]
     ],
     [
         "SoftBound",
         "BaseSoftBound",
-        "SoftCap_maxmag_2101r",
+        "SoftCap_maxmag_2101",
         [
             "Bound",
             "Upper"
         ],
         [
             "SoftCap",
-            "RestrictionParam_maxmag_2101r"
+            "RestrictionParam_maxmag_2101"
         ],
         [
             "WhichInstance",
-            "Reservoir_2101r"
+            "Reservoir_2101"
         ],
         [
             "WhichConcept",
@@ -529,7 +349,7 @@
     [
         "TimeIndex",
         "VectorTimeIndex",
-        "RestrictionProfileIndex_minforb_2101r",
+        "RestrictionProfileIndex_minforb_2101",
         [
             "Vector",
             [
@@ -542,7 +362,7 @@
     [
         "TimeValues",
         "VectorTimeValues",
-        "RestrictionProfileValues_minforb_2101r",
+        "RestrictionProfileValues_minforb_2101",
         [
             "Vector",
             [
@@ -555,44 +375,44 @@
     [
         "TimeVector",
         "OneYearTimeVector",
-        "RestrictionProfile_minforb_2101r",
+        "RestrictionProfile_minforb_2101",
         [
             "TimeIndex",
-            "RestrictionProfileIndex_minforb_2101r"
+            "RestrictionProfileIndex_minforb_2101"
         ],
         [
             "TimeValues",
-            "RestrictionProfileValues_minforb_2101r"
+            "RestrictionProfileValues_minforb_2101"
         ]
     ],
     [
         "Param",
         "M3SToMM3SeriesParam",
-        "RestrictionParam_minforb_2101r",
+        "RestrictionParam_minforb_2101",
         [
             "Level",
             1
         ],
         [
             "Profile",
-            "RestrictionProfile_minforb_2101r"
+            "RestrictionProfile_minforb_2101"
         ]
     ],
     [
         "SoftBound",
         "BaseSoftBound",
-        "SoftCap_minforb_2101r",
+        "SoftCap_minforb_2101",
         [
             "Bound",
             "Lower"
         ],
         [
             "SoftCap",
-            "RestrictionParam_minforb_2101r"
+            "RestrictionParam_minforb_2101"
         ],
         [
             "WhichInstance",
-            "Bypass_2101r"
+            "Bypass_2101"
         ],
         [
             "WhichConcept",
@@ -606,7 +426,7 @@
     [
         "TimeIndex",
         "VectorTimeIndex",
-        "RestrictionProfileIndex_minmag_2101r",
+        "RestrictionProfileIndex_minmag_2101",
         [
             "Vector",
             [
@@ -620,7 +440,7 @@
     [
         "TimeValues",
         "VectorTimeValues",
-        "RestrictionProfileValues_minmag_2101r",
+        "RestrictionProfileValues_minmag_2101",
         [
             "Vector",
             [
@@ -634,44 +454,44 @@
     [
         "TimeVector",
         "OneYearTimeVector",
-        "RestrictionProfile_minmag_2101r",
+        "RestrictionProfile_minmag_2101",
         [
             "TimeIndex",
-            "RestrictionProfileIndex_minmag_2101r"
+            "RestrictionProfileIndex_minmag_2101"
         ],
         [
             "TimeValues",
-            "RestrictionProfileValues_minmag_2101r"
+            "RestrictionProfileValues_minmag_2101"
         ]
     ],
     [
         "Param",
         "MeanSeriesParam",
-        "RestrictionParam_minmag_2101r",
+        "RestrictionParam_minmag_2101",
         [
             "Level",
             1
         ],
         [
             "Profile",
-            "RestrictionProfile_minmag_2101r"
+            "RestrictionProfile_minmag_2101"
         ]
     ],
     [
         "SoftBound",
         "BaseSoftBound",
-        "SoftCap_minmag_2101r",
+        "SoftCap_minmag_2101",
         [
             "Bound",
             "Lower"
         ],
         [
             "SoftCap",
-            "RestrictionParam_minmag_2101r"
+            "RestrictionParam_minmag_2101"
         ],
         [
             "WhichInstance",
-            "Reservoir_2101r"
+            "Reservoir_2101"
         ],
         [
             "WhichConcept",

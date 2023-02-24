@@ -2,7 +2,7 @@
     [
         "Balance",
         "BaseBalance",
-        "HydroBalance_26401",
+        "HydroBalance_66626",
         [
             "Commodity",
             "Hydro"
@@ -11,27 +11,27 @@
     [
         "Param",
         "M3SToMM3SeriesParam",
-        "InflowParam_26401",
+        "InflowParam_66626",
         [
             "Level",
-            1.1786529680365296
+            13.247082699137493
         ],
         [
             "Profile",
-            "InflowProfile_1420-E"
+            "InflowProfile_1668-E"
         ]
     ],
     [
         "RHSTerm",
         "BaseRHSTerm",
-        "Inflow_26401",
+        "Inflow_66626",
         [
             "Param",
-            "InflowParam_26401"
+            "InflowParam_66626"
         ],
         [
             "Balance",
-            "HydroBalance_26401"
+            "HydroBalance_66626"
         ],
         [
             "Direction",
@@ -41,12 +41,12 @@
     [
         "Flow",
         "BaseFlow",
-        "Spill_26401"
+        "Spill_66626"
     ],
     [
         "Param",
         "M3SToMM3SeriesParam",
-        "SpillCapParam_26401",
+        "SpillCapParam_66626",
         [
             "Level",
             10000
@@ -59,18 +59,18 @@
     [
         "Capacity",
         "PositiveCapacity",
-        "SpillCap_26401",
+        "SpillCap_66626",
         [
             "Bound",
             "Upper"
         ],
         [
             "Param",
-            "SpillCapParam_26401"
+            "SpillCapParam_66626"
         ],
         [
             "WhichInstance",
-            "Spill_26401"
+            "Spill_66626"
         ],
         [
             "WhichConcept",
@@ -80,18 +80,18 @@
     [
         "Arrow",
         "BaseArrow",
-        "SpillArrow_26401",
+        "SpillArrow_66626",
         [
             "Conversion",
             1
         ],
         [
             "Flow",
-            "Spill_26401"
+            "Spill_66626"
         ],
         [
             "Balance",
-            "HydroBalance_26401"
+            "HydroBalance_66626"
         ],
         [
             "Direction",
@@ -101,15 +101,15 @@
     [
         "Flow",
         "BaseFlow",
-        "Release_26401"
+        "Bypass_66626"
     ],
     [
         "Param",
         "M3SToMM3SeriesParam",
-        "ReleaseCapParam_26401",
+        "BypassCapParam_66626",
         [
             "Level",
-            6.5
+            10000.0
         ],
         [
             "Profile",
@@ -119,18 +119,18 @@
     [
         "Capacity",
         "PositiveCapacity",
-        "ReleaseCap_26401",
+        "BypassCap_66626",
         [
             "Bound",
             "Upper"
         ],
         [
             "Param",
-            "ReleaseCapParam_26401"
+            "BypassCapParam_66626"
         ],
         [
             "WhichInstance",
-            "Release_26401"
+            "Bypass_66626"
         ],
         [
             "WhichConcept",
@@ -140,18 +140,78 @@
     [
         "Arrow",
         "BaseArrow",
-        "ReleaseArrow_26401",
+        "BypassArrow_66626",
         [
             "Conversion",
             1
         ],
         [
             "Flow",
-            "Release_26401"
+            "Bypass_66626"
         ],
         [
             "Balance",
-            "HydroBalance_26401"
+            "HydroBalance_66626"
+        ],
+        [
+            "Direction",
+            "Out"
+        ]
+    ],
+    [
+        "Flow",
+        "BaseFlow",
+        "Release_66626"
+    ],
+    [
+        "Param",
+        "M3SToMM3SeriesParam",
+        "ReleaseCapParam_66626",
+        [
+            "Level",
+            38.03
+        ],
+        [
+            "Profile",
+            1
+        ]
+    ],
+    [
+        "Capacity",
+        "PositiveCapacity",
+        "ReleaseCap_66626",
+        [
+            "Bound",
+            "Upper"
+        ],
+        [
+            "Param",
+            "ReleaseCapParam_66626"
+        ],
+        [
+            "WhichInstance",
+            "Release_66626"
+        ],
+        [
+            "WhichConcept",
+            "Flow"
+        ]
+    ],
+    [
+        "Arrow",
+        "BaseArrow",
+        "ReleaseArrow_66626",
+        [
+            "Conversion",
+            1
+        ],
+        [
+            "Flow",
+            "Release_66626"
+        ],
+        [
+            "Balance",
+            "HydroBalance_66626"
         ],
         [
             "Direction",
@@ -161,18 +221,18 @@
     [
         "Arrow",
         "BaseArrow",
-        "ProdArrowTo_26401-NO5",
+        "ProdArrowTo_66626-NO3",
         [
             "Conversion",
-            0.785
+            1.0
         ],
         [
             "Flow",
-            "Release_26401"
+            "Release_66626"
         ],
         [
             "Balance",
-            "PowerBalance_NO5"
+            "PowerBalance_NO3"
         ],
         [
             "Direction",

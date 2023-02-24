@@ -203,7 +203,7 @@
         "InflowParam_4302",
         [
             "Level",
-            0.9975900558092339
+            0.9934677828513444
         ],
         [
             "Profile",
@@ -421,7 +421,7 @@
         "ReleaseCapParam_4302",
         [
             "Level",
-            194.44
+            255.38
         ],
         [
             "Profile",
@@ -506,7 +506,7 @@
         "InflowParam_4303",
         [
             "Level",
-            0.30124302384576357
+            0.29363267376966007
         ],
         [
             "Profile",
@@ -788,7 +788,7 @@
         "InflowParam_4304",
         [
             "Level",
-            0.441400304414003
+            0.4306189751395231
         ],
         [
             "Profile",
@@ -985,7 +985,7 @@
         "ReleaseCapParam_4304",
         [
             "Level",
-            544.61
+            486.11
         ],
         [
             "Profile",
@@ -1035,48 +1035,12 @@
         ]
     ],
     [
-        "Param",
-        "M3SToMM3SeriesParam",
-        "ReleaseCapParam_4304_pq1",
-        [
-            "Level",
-            400.0
-        ],
-        [
-            "Profile",
-            1
-        ]
-    ],
-    [
-        "Param",
-        "M3SToMM3SeriesParam",
-        "ReleaseCapParam_4304_pq2",
-        [
-            "Level",
-            150.0
-        ],
-        [
-            "Profile",
-            1
-        ]
-    ],
-    [
         "Arrow",
-        "SegmentedArrow",
+        "BaseArrow",
         "ProdArrowTo_4304-NO1",
         [
             "Conversion",
-            [
-                0.03819444444444445,
-                0.01796296296296297
-            ]
-        ],
-        [
-            "Capacity",
-            [
-                "ReleaseCapParam_4304_pq1",
-                "ReleaseCapParam_4304_pq2"
-            ]
+            0.04
         ],
         [
             "Flow",
@@ -1106,7 +1070,7 @@
         "InflowParam_4305",
         [
             "Level",
-            0.027904616945712835
+            0.027270421106037543
         ],
         [
             "Profile",
@@ -1841,7 +1805,7 @@
         "InflowParam_4307",
         [
             "Level",
-            0.2495560629122273
+            0.24670218163368848
         ],
         [
             "Profile",
@@ -2059,7 +2023,7 @@
         "ReleaseCapParam_4307",
         [
             "Level",
-            71.23
+            82.09
         ],
         [
             "Profile",
@@ -2114,7 +2078,7 @@
         "ProdArrowTo_4307-NO1",
         [
             "Conversion",
-            0.039
+            0.042
         ],
         [
             "Flow",
@@ -2144,7 +2108,7 @@
         "InflowParam_4308",
         [
             "Level",
-            0.06785895484525621
+            0.06659056316590563
         ],
         [
             "Profile",
@@ -2456,7 +2420,7 @@
         "InflowParam_4309",
         [
             "Level",
-            1.73896499238965
+            1.6853754439370876
         ],
         [
             "Profile",
@@ -2990,7 +2954,7 @@
         "InflowParam_4311",
         [
             "Level",
-            36.88800101471334
+            35.96270928462709
         ],
         [
             "Profile",
@@ -3839,7 +3803,7 @@
         "InflowParam_4316",
         [
             "Level",
-            8.934868087265347
+            9.254502790461695
         ],
         [
             "Profile",
@@ -4172,7 +4136,7 @@
         "InflowParam_4317",
         [
             "Level",
-            11.451357179096904
+            11.374619482496193
         ],
         [
             "Profile",
@@ -4697,7 +4661,7 @@
         "InflowParam_4323",
         [
             "Level",
-            0.9557331303906647
+            0.9408295281582952
         ],
         [
             "Profile",
@@ -4894,7 +4858,7 @@
         "ReleaseCapParam_4323",
         [
             "Level",
-            1.3
+            1.5
         ],
         [
             "Profile",
@@ -4949,7 +4913,7 @@
         "ProdArrowTo_4323-NO1",
         [
             "Conversion",
-            0.64
+            0.759
         ],
         [
             "Flow",
@@ -5009,7 +4973,7 @@
         "InflowParam_4324",
         [
             "Level",
-            0.23433536276002026
+            0.2219685438863521
         ],
         [
             "Profile",
@@ -5291,7 +5255,7 @@
         "InflowParam_4325",
         [
             "Level",
-            0.07705479452054795
+            0.07166412988330796
         ],
         [
             "Profile",
@@ -5559,48 +5523,12 @@
         ]
     ],
     [
-        "Param",
-        "M3SToMM3SeriesParam",
-        "ReleaseCapParam_4325_pq1",
-        [
-            "Level",
-            120.0
-        ],
-        [
-            "Profile",
-            1
-        ]
-    ],
-    [
-        "Param",
-        "M3SToMM3SeriesParam",
-        "ReleaseCapParam_4325_pq2",
-        [
-            "Level",
-            40.0
-        ],
-        [
-            "Profile",
-            1
-        ]
-    ],
-    [
         "Arrow",
-        "SegmentedArrow",
+        "BaseArrow",
         "ProdArrowTo_4325-NO1",
         [
             "Conversion",
-            [
-                0.05324074074074074,
-                0.037499999999999985
-            ]
-        ],
-        [
-            "Capacity",
-            [
-                "ReleaseCapParam_4325_pq1",
-                "ReleaseCapParam_4325_pq2"
-            ]
+            0.051
         ],
         [
             "Flow",
@@ -5630,7 +5558,7 @@
         "InflowParam_4326",
         [
             "Level",
-            0.06056570268899036
+            0.05676052765093861
         ],
         [
             "Profile",
@@ -5912,7 +5840,7 @@
         "InflowParam_4327",
         [
             "Level",
-            0.019342973110096397
+            0.01839167935058346
         ],
         [
             "Profile",
@@ -6716,7 +6644,7 @@
         "InflowParam_4329",
         [
             "Level",
-            0.9877600202942668
+            0.9693683409436834
         ],
         [
             "Profile",
@@ -6917,7 +6845,7 @@
         "InflowParam_4330",
         [
             "Level",
-            7.613521055301876
+            7.573883815322171
         ],
         [
             "Profile",
@@ -7250,7 +7178,7 @@
         "InflowParam_4334",
         [
             "Level",
-            2.5640537798072045
+            2.535832064941654
         ],
         [
             "Profile",
@@ -7583,7 +7511,7 @@
         "InflowParam_4336",
         [
             "Level",
-            5.656709791983764
+            5.584728564180619
         ],
         [
             "Profile",
@@ -7895,7 +7823,7 @@
         "InflowParam_4337",
         [
             "Level",
-            12.82312278031456
+            12.636669203450024
         ],
         [
             "Profile",
@@ -8207,7 +8135,7 @@
         "InflowParam_4338",
         [
             "Level",
-            2.4635337392186707
+            2.5177574835109082
         ],
         [
             "Profile",
@@ -8540,7 +8468,7 @@
         "InflowParam_4339",
         [
             "Level",
-            7.1061643835616435
+            7.019279553526129
         ],
         [
             "Profile",
@@ -8771,7 +8699,7 @@
         "InflowParam_4340",
         [
             "Level",
-            1.2924911212582444
+            1.3422754946727549
         ],
         [
             "Profile",
@@ -9083,7 +9011,7 @@
         "InflowParam_4341",
         [
             "Level",
-            0.360857432775241
+            0.380517503805175
         ],
         [
             "Profile",
@@ -9314,7 +9242,7 @@
         "InflowParam_4342",
         [
             "Level",
-            3.529299847792998
+            3.5524479959411464
         ],
         [
             "Profile",
@@ -9545,7 +9473,7 @@
         "InflowParam_4343",
         [
             "Level",
-            0.36212582445459157
+            0.36466260781329274
         ],
         [
             "Profile",
@@ -9776,7 +9704,7 @@
         "InflowParam_4345",
         [
             "Level",
-            2.273592085235921
+            2.3040334855403346
         ],
         [
             "Profile",
@@ -10088,7 +10016,7 @@
         "InflowParam_4346",
         [
             "Level",
-            3.202688990360223
+            2.9648655504819885
         ],
         [
             "Profile",
@@ -10383,7 +10311,7 @@
         ],
         [
             "Param",
-            11.0
+            0.1
         ],
         [
             "WhichInstance",
@@ -10400,7 +10328,7 @@
         "InflowParam_4347",
         [
             "Level",
-            1.357179096905124
+            0.15854895991882292
         ],
         [
             "Profile",
@@ -10508,19 +10436,19 @@
     [
         "Flow",
         "BaseFlow",
-        "Release_4347"
+        "Bypass_4347"
     ],
     [
         "Arrow",
         "BaseArrow",
-        "ReleaseArrowTo_4347",
+        "BypassArrowTo_4347",
         [
             "Conversion",
             1
         ],
         [
             "Flow",
-            "Release_4347"
+            "Bypass_4347"
         ],
         [
             "Balance",
@@ -10534,7 +10462,340 @@
     [
         "Param",
         "M3SToMM3SeriesParam",
-        "ReleaseCapParam_4347",
+        "BypassCapParam_4347",
+        [
+            "Level",
+            10000.0
+        ],
+        [
+            "Profile",
+            1
+        ]
+    ],
+    [
+        "Capacity",
+        "PositiveCapacity",
+        "BypassCap_4347",
+        [
+            "Bound",
+            "Upper"
+        ],
+        [
+            "Param",
+            "BypassCapParam_4347"
+        ],
+        [
+            "WhichInstance",
+            "Bypass_4347"
+        ],
+        [
+            "WhichConcept",
+            "Flow"
+        ]
+    ],
+    [
+        "Arrow",
+        "BaseArrow",
+        "BypassArrow_4347",
+        [
+            "Conversion",
+            1
+        ],
+        [
+            "Flow",
+            "Bypass_4347"
+        ],
+        [
+            "Balance",
+            "HydroBalance_4347"
+        ],
+        [
+            "Direction",
+            "Out"
+        ]
+    ],
+    [
+        "Flow",
+        "BaseFlow",
+        "Pump_4347"
+    ],
+    [
+        "Arrow",
+        "BaseArrow",
+        "PumpArrowTo_4347",
+        [
+            "Conversion",
+            1
+        ],
+        [
+            "Flow",
+            "Pump_4347"
+        ],
+        [
+            "Balance",
+            "HydroBalance_4346"
+        ],
+        [
+            "Direction",
+            "In"
+        ]
+    ],
+    [
+        "Param",
+        "M3SToMM3SeriesParam",
+        "PumpCapParam_4347",
+        [
+            "Level",
+            5.87
+        ],
+        [
+            "Profile",
+            1
+        ]
+    ],
+    [
+        "Capacity",
+        "PositiveCapacity",
+        "PumpCap_4347",
+        [
+            "Bound",
+            "Upper"
+        ],
+        [
+            "Param",
+            "PumpCapParam_4347"
+        ],
+        [
+            "WhichInstance",
+            "Pump_4347"
+        ],
+        [
+            "WhichConcept",
+            "Flow"
+        ]
+    ],
+    [
+        "Arrow",
+        "BaseArrow",
+        "PumpArrow_4347",
+        [
+            "Conversion",
+            1
+        ],
+        [
+            "Flow",
+            "Pump_4347"
+        ],
+        [
+            "Balance",
+            "HydroBalance_4347"
+        ],
+        [
+            "Direction",
+            "Out"
+        ]
+    ],
+    [
+        "Arrow",
+        "BaseArrow",
+        "PumpArrowTo_4347-NO1",
+        [
+            "Conversion",
+            0.056
+        ],
+        [
+            "Flow",
+            "Pump_4347"
+        ],
+        [
+            "Balance",
+            "PowerBalance_NO1"
+        ],
+        [
+            "Direction",
+            "Out"
+        ]
+    ],
+    [
+        "Balance",
+        "BaseBalance",
+        "HydroBalance_4348",
+        [
+            "Commodity",
+            "Hydro"
+        ]
+    ],
+    [
+        "Storage",
+        "BaseStorage",
+        "Reservoir_4348",
+        [
+            "Balance",
+            "HydroBalance_4348"
+        ]
+    ],
+    [
+        "Capacity",
+        "PositiveCapacity",
+        "ResCap_4348",
+        [
+            "Bound",
+            "Upper"
+        ],
+        [
+            "Param",
+            11.0
+        ],
+        [
+            "WhichInstance",
+            "Reservoir_4348"
+        ],
+        [
+            "WhichConcept",
+            "Storage"
+        ]
+    ],
+    [
+        "Param",
+        "M3SToMM3SeriesParam",
+        "InflowParam_4348",
+        [
+            "Level",
+            1.4006215119228818
+        ],
+        [
+            "Profile",
+            "InflowProfile_2723-E"
+        ]
+    ],
+    [
+        "RHSTerm",
+        "BaseRHSTerm",
+        "Inflow_4348",
+        [
+            "Param",
+            "InflowParam_4348"
+        ],
+        [
+            "Balance",
+            "HydroBalance_4348"
+        ],
+        [
+            "Direction",
+            "In"
+        ]
+    ],
+    [
+        "Flow",
+        "BaseFlow",
+        "Spill_4348"
+    ],
+    [
+        "Arrow",
+        "BaseArrow",
+        "SpillArrowTo_4348",
+        [
+            "Conversion",
+            1
+        ],
+        [
+            "Flow",
+            "Spill_4348"
+        ],
+        [
+            "Balance",
+            "HydroBalance_4345"
+        ],
+        [
+            "Direction",
+            "In"
+        ]
+    ],
+    [
+        "Param",
+        "M3SToMM3SeriesParam",
+        "SpillCapParam_4348",
+        [
+            "Level",
+            10000
+        ],
+        [
+            "Profile",
+            1
+        ]
+    ],
+    [
+        "Capacity",
+        "PositiveCapacity",
+        "SpillCap_4348",
+        [
+            "Bound",
+            "Upper"
+        ],
+        [
+            "Param",
+            "SpillCapParam_4348"
+        ],
+        [
+            "WhichInstance",
+            "Spill_4348"
+        ],
+        [
+            "WhichConcept",
+            "Flow"
+        ]
+    ],
+    [
+        "Arrow",
+        "BaseArrow",
+        "SpillArrow_4348",
+        [
+            "Conversion",
+            1
+        ],
+        [
+            "Flow",
+            "Spill_4348"
+        ],
+        [
+            "Balance",
+            "HydroBalance_4348"
+        ],
+        [
+            "Direction",
+            "Out"
+        ]
+    ],
+    [
+        "Flow",
+        "BaseFlow",
+        "Release_4348"
+    ],
+    [
+        "Arrow",
+        "BaseArrow",
+        "ReleaseArrowTo_4348",
+        [
+            "Conversion",
+            1
+        ],
+        [
+            "Flow",
+            "Release_4348"
+        ],
+        [
+            "Balance",
+            "HydroBalance_4345"
+        ],
+        [
+            "Direction",
+            "In"
+        ]
+    ],
+    [
+        "Param",
+        "M3SToMM3SeriesParam",
+        "ReleaseCapParam_4348",
         [
             "Level",
             30.0
@@ -10547,18 +10808,18 @@
     [
         "Capacity",
         "PositiveCapacity",
-        "ReleaseCap_4347",
+        "ReleaseCap_4348",
         [
             "Bound",
             "Upper"
         ],
         [
             "Param",
-            "ReleaseCapParam_4347"
+            "ReleaseCapParam_4348"
         ],
         [
             "WhichInstance",
-            "Release_4347"
+            "Release_4348"
         ],
         [
             "WhichConcept",
@@ -10568,18 +10829,18 @@
     [
         "Arrow",
         "BaseArrow",
-        "ReleaseArrow_4347",
+        "ReleaseArrow_4348",
         [
             "Conversion",
             1
         ],
         [
             "Flow",
-            "Release_4347"
+            "Release_4348"
         ],
         [
             "Balance",
-            "HydroBalance_4347"
+            "HydroBalance_4348"
         ],
         [
             "Direction",
@@ -10631,7 +10892,7 @@
         "InflowParam_4349",
         [
             "Level",
-            3.362189244038559
+            3.327308472856418
         ],
         [
             "Profile",
@@ -10964,7 +11225,7 @@
         "InflowParam_4351",
         [
             "Level",
-            2.2165144596651447
+            2.185438863521055
         ],
         [
             "Profile",
@@ -11297,7 +11558,7 @@
         "InflowParam_4352",
         [
             "Level",
-            2.2047818366311516
+            2.156900050735667
         ],
         [
             "Profile",
@@ -11609,7 +11870,7 @@
         "InflowParam_4353",
         [
             "Level",
-            8.867643328259765
+            8.949137493658043
         ],
         [
             "Profile",
@@ -11921,7 +12182,7 @@
         "InflowParam_4354",
         [
             "Level",
-            1.4228183663115168
+            1.431697108066971
         ],
         [
             "Profile",
@@ -12203,7 +12464,7 @@
         "InflowParam_4357",
         [
             "Level",
-            1.758625063419584
+            1.6866438356164382
         ],
         [
             "Profile",
@@ -12536,7 +12797,7 @@
         "InflowParam_4358",
         [
             "Level",
-            30.91577879249112
+            29.814814814814813
         ],
         [
             "Profile",
@@ -12839,7 +13100,7 @@
         "InflowParam_4367",
         [
             "Level",
-            10.52669964485033
+            10.392567224759006
         ],
         [
             "Profile",
@@ -13061,7 +13322,7 @@
         "InflowParam_4368",
         [
             "Level",
-            5.2990233384069
+            5.432204464738711
         ],
         [
             "Profile",
@@ -13313,7 +13574,7 @@
         "InflowParam_4369",
         [
             "Level",
-            1.2201927955352612
+            1.2344622019279552
         ],
         [
             "Profile",
@@ -13565,7 +13826,7 @@
         "InflowParam_4370",
         [
             "Level",
-            7.300228310502282
+            7.0842846270928455
         ],
         [
             "Profile",
@@ -13787,7 +14048,7 @@
         "InflowParam_4371",
         [
             "Level",
-            0.2704845256215119
+            0.26192288178589546
         ],
         [
             "Profile",
@@ -14090,7 +14351,7 @@
         "InflowParam_4372",
         [
             "Level",
-            13.613013698630137
+            13.416095890410958
         ],
         [
             "Profile",
@@ -14393,7 +14654,7 @@
         "InflowParam_4373",
         [
             "Level",
-            3.1950786402841196
+            3.105339928970066
         ],
         [
             "Profile",
@@ -14615,7 +14876,7 @@
         "InflowParam_4374",
         [
             "Level",
-            0.6912734652460679
+            0.679540842212075
         ],
         [
             "Profile",
@@ -14918,7 +15179,7 @@
         "InflowParam_4375",
         [
             "Level",
-            5.729008117706747
+            5.612950279046169
         ],
         [
             "Profile",
@@ -15251,7 +15512,7 @@
         "InflowParam_4376",
         [
             "Level",
-            0.9281456113647893
+            0.9072171486555047
         ],
         [
             "Profile",
@@ -15584,7 +15845,7 @@
         "InflowParam_4379",
         [
             "Level",
-            11.525558092338914
+            11.5515601217656
         ],
         [
             "Profile",
@@ -15917,7 +16178,7 @@
         "InflowParam_4380",
         [
             "Level",
-            0.7420091324200913
+            0.7248858447488584
         ],
         [
             "Profile",
@@ -16319,7 +16580,7 @@
         "InflowParam_4382",
         [
             "Level",
-            4.593797564687976
+            4.492009132420091
         ],
         [
             "Profile",
@@ -16622,7 +16883,7 @@
         "InflowParam_4383",
         [
             "Level",
-            5.388444951801116
+            5.781012176560122
         ],
         [
             "Profile",
@@ -16955,7 +17216,7 @@
         "InflowParam_4384",
         [
             "Level",
-            2.420408422120751
+            2.366501775748351
         ],
         [
             "Profile",
@@ -17288,7 +17549,7 @@
         "InflowParam_4385",
         [
             "Level",
-            4.201547437848808
+            4.704147640791476
         ],
         [
             "Profile",
@@ -17489,7 +17750,7 @@
         "InflowParam_4386",
         [
             "Level",
-            2.3100583460172497
+            2.2682014205986807
         ],
         [
             "Profile",
@@ -17720,7 +17981,7 @@
         "InflowParam_4387",
         [
             "Level",
-            0.8799467275494672
+            0.8577498731608321
         ],
         [
             "Profile",
@@ -17951,7 +18212,7 @@
         "InflowParam_4388",
         [
             "Level",
-            1.197995941146626
+            1.1662861491628616
         ],
         [
             "Profile",
@@ -18242,7 +18503,7 @@
         "InflowParam_4389",
         [
             "Level",
-            9.707318619989852
+            9.794837645865043
         ],
         [
             "Profile",
@@ -18943,7 +19204,7 @@
         "ReleaseCapParam_4391u",
         [
             "Level",
-            7.83
+            12.0
         ],
         [
             "Profile",
@@ -18998,7 +19259,7 @@
         "ProdArrowTo_4391u-NO1",
         [
             "Conversion",
-            0.078
+            0.083
         ],
         [
             "Flow",
@@ -19328,7 +19589,7 @@
         "InflowParam_4394",
         [
             "Level",
-            4.79927701674277
+            4.7215880263825465
         ],
         [
             "Profile",
@@ -19559,7 +19820,7 @@
         "InflowParam_4395",
         [
             "Level",
-            1.1770674784373414
+            1.1570903094875697
         ],
         [
             "Profile",
@@ -19790,7 +20051,7 @@
         "InflowParam_4396",
         [
             "Level",
-            1.143455098934551
+            1.1206240487062404
         ],
         [
             "Profile",
@@ -20102,7 +20363,7 @@
         "InflowParam_4397",
         [
             "Level",
-            9.32775240994419
+            9.087392186707254
         ],
         [
             "Profile",
@@ -20405,7 +20666,7 @@
         "InflowParam_4398",
         [
             "Level",
-            3.4503424657534247
+            3.4392440385591065
         ],
         [
             "Profile",
@@ -20738,7 +20999,7 @@
         "InflowParam_4399",
         [
             "Level",
-            0.9779299847792998
+            0.949074074074074
         ],
         [
             "Profile",
