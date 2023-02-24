@@ -1,6 +1,5 @@
 - System for results. Abstract type and generic function to transfer problem results to result type. Methods to update model objects with results from other problems.
 - We can use the time-series more efficiently. Now very generic:
---- If data points have constant distance between them, we can make a more efficient getweightedaverage that takes advantage of this
 --- Many objects can get data from the same time-series. Instead of the same calculations being done several times, we could store the results in an intermediate storage
 --- We could store the index of the previous time-series query, to quicker look up the next value
 - Make structures for ramping restrictions, watercourse with time delay (arrow), hydro reservoir segmented end value, negative lower bound, 
