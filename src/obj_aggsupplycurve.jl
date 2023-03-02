@@ -110,7 +110,7 @@ function update!(p::Prob, var::AggSupplyCurve, start::ProbTime)
 
         # Lower bound
         lb = getlb(flow)
-        if isconstant(lb) && !isdurational(lb) # assumes Horizon hasconstantdurations. TODO: add check
+        if isconstant(lb) && !isdurational(lb)
             # Why? SequentialHorizon can have two or more sets of (nperiods, duration) pairs
             paramvalue = getparamvalue(lb, dummytime, dummydelta)
             for t in 1:T
