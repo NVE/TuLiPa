@@ -2,6 +2,7 @@
 - We can use the time-series more efficiently. Now very generic:
 --- Many objects can get data from the same time-series. Instead of the same calculations being done several times, we could store the results in an intermediate storage
 --- We could store the index of the previous time-series query, to quicker look up the next value
+--- When updating the problem for a new time-step we read all the time-series data again. An alternative is to reuse the values from the previous time-step and only read new values for new periods.
 - Make structures for ramping restrictions, watercourse with time delay (arrow), hydro reservoir segmented end value, negative lower bound, 
 - Extend Prob interface to allow setrhs!(prob, conid, value) instead of setrhsterms!
 - Better error messages for including dataelements
