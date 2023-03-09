@@ -106,7 +106,11 @@ function istransmissionvariable(x)
 end
 
 function getstorages(modelobjects::Dict)
-    Set(x for x in values(modelobjects) if x isa Storage)
+    [x for x in values(modelobjects) if x isa Storage]
+end
+
+function getstorages(modelobjects::Vector)
+    [x for x in modelobjects if x isa Storage]
 end
 
 function getbalanceflows(modelobjects::Dict)
@@ -127,13 +131,12 @@ end
 
 # kan ikke ha hvilke som helst modellobjekter
 function getstoragesystems(modelobjects::Dict)
-    storages = getstorages(modelobjects)
+    storages = Set(getstorages(modelobjects))
     storagebalances = Dict(getbalance(s) => s for s in storages)
     balanceflows = getbalanceflows(modelobjects)
     traits = getmainmodelobjects(modelobjects)
 
-    systems = Dict()
-    id = 0
+    systems = []
     while length(storages) > 0
         completed = Set()
 
@@ -185,19 +188,18 @@ function getstoragesystems(modelobjects::Dict)
             end
         end
 
-        id += 1
-        systems[id] = completed
+        push!(systems, collect(completed))
     end
     return systems
 end
 
 # TODO: Replace inputted hint with getemptyduration(storage) -> Time to empty in ms starting with full storage
-function getshorttermstoragesystems(storagesystems::Dict, durationcutoff::Period)
-    ret = Dict()
+function getshorttermstoragesystems(storagesystems::Vector, durationcutoff::Period)
+    ret = []
     
-    for systemid in keys(storagesystems)
+    for storagesystem in storagesystems
         isshortterm = true
-        for obj in storagesystems[systemid]
+        for obj in storagesystem
             (obj isa Storage) || continue
 
             timedelta = getstoragehint(obj)
@@ -214,21 +216,59 @@ function getshorttermstoragesystems(storagesystems::Dict, durationcutoff::Period
         end
 
         if isshortterm
-            ret[systemid] = storagesystems[systemid]
+            push!(ret, storagesystem)
         end
     end
 
     return ret
 end
 
-function removestoragesystems!(modelobjects::Dict, removelist)
+function getstoragesystems_full!(storagesystems::Vector) # including powerbalances
+    for storagesystem in storagesystems
+        for obj in storagesystem
+            if obj isa Flow
+                for arrow in getarrows(obj)
+                    balance = getbalance(arrow)
+                    if !(balance in storagesystem)
+                        push!(storagesystem, balance)
+                    end
+                end
+            end
+        end
+    end
+
+    return storagesystems
+end
+
+function removestoragesystems!(modelobjects::Dict, durationcutoff)
     storagesystems = getstoragesystems(modelobjects)
-    shorttermstoragesystems = getshorttermstoragesystems(storagesystems, removelist)
-    for systemid in keys(shorttermstoragesystems)
-        for obj in shorttermstoragesystems[systemid]
+    shorttermstoragesystems = getshorttermstoragesystems(storagesystems, durationcutoff)
+    for shorttermstoragesystem in shorttermstoragesystems
+        for obj in shorttermstoragesystem
             delete!(modelobjects,getid(obj))
         end
     end
+end
+
+function getshorttermstorages(modelobjects::Vector, durationcutoff)
+    modelobjectsdict = Dict{Id,Any}() # TODO: Quick fix... decide if modelobjects should always be vector or dict (latter preferred)
+    for obj in modelobjects
+        modelobjectsdict[getid(obj)] = obj
+    end
+
+    shorttermstorages = Storage[]
+
+    storagesystems = getstoragesystems(modelobjectsdict)
+    shorttermstoragesystems = getshorttermstoragesystems(storagesystems, durationcutoff)
+    for shorttermstoragesystem in shorttermstoragesystems
+        for obj in shorttermstoragesystem
+            if obj isa Storage
+                push!(shorttermstorages, obj)
+            end
+        end
+    end
+
+    return shorttermstorages
 end
 
 #-------------------------------------
