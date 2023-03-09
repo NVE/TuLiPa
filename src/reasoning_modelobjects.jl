@@ -223,6 +223,32 @@ function getshorttermstoragesystems(storagesystems::Vector, durationcutoff::Peri
     return ret
 end
 
+function getlongtermstoragesystems(storagesystems::Vector, durationcutoff::Period)
+    ret = []
+    
+    for storagesystem in storagesystems
+        islongterm = true
+        for obj in storagesystem
+            (obj isa Storage) || continue
+
+            timedelta = getstoragehint(obj)
+
+            if timedelta !== nothing
+                if getduration(timedelta) < durationcutoff
+                    islongterm = false
+                    break
+                end
+            end
+        end
+
+        if islongterm
+            push!(ret, storagesystem)
+        end
+    end
+
+    return ret
+end
+
 function getstoragesystems_full!(storagesystems::Vector) # including powerbalances
     for storagesystem in storagesystems
         for obj in storagesystem
