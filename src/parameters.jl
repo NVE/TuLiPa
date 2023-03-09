@@ -73,6 +73,11 @@ struct CostPerMWToGWhParam{P <: Param} <: Param
     param::P
 end
 
+struct MeanSeriesIgnorePhaseinParam{L <: TimeVector, P <: TimeVector} <: Param # Special case that ignores phasein of scenarios.
+    level::L
+    profile::P
+end
+
 # These concrete types uses Price, Conversion, Loss and Capacity types
 struct ExogenCostParam{P <: Price, C <: Conversion, L <: Loss} <: Param
     price::P
@@ -118,6 +123,7 @@ iszero(param::M3SToMM3SeriesParam) = false
 iszero(param::MWToGWhSeriesParam) = false
 iszero(param::CostPerMWToGWhParam) = false
 iszero(param::MeanSeriesParam) = false
+iszero(param::MeanSeriesIgnorePhaseinParam) = false
 iszero(param::ExogenCostParam) = iszero(param.price) && iszero(param.conversion)
 iszero(param::ExogenIncomeParam) = iszero(param.price) && iszero(param.conversion)
 iszero(param::InConversionLossParam) = iszero(param.conversion)
@@ -135,6 +141,7 @@ isone(param::M3SToMM3SeriesParam) = false
 isone(param::MWToGWhSeriesParam) = false
 isone(param::CostPerMWToGWhParam) = false
 isone(param::MeanSeriesParam) = false
+isone(param::MeanSeriesIgnorePhaseinParam) = false
 isone(param::ExogenCostParam) = false
 isone(param::ExogenIncomeParam) = false
 isone(param::InConversionLossParam) = false
@@ -161,6 +168,7 @@ isdurational(param::M3SToMM3SeriesParam) = true
 isdurational(param::MWToGWhSeriesParam) = true
 isdurational(param::CostPerMWToGWhParam) = isdurational(param.param)
 isdurational(param::MeanSeriesParam) = false
+isdurational(param::MeanSeriesIgnorePhaseinParam) = false
 isdurational(param::ExogenCostParam) = isdurational(param.price) && isdurational(param.conversion) && isdurational(param.loss)
 isdurational(param::ExogenIncomeParam) = isdurational(param.price) && isdurational(param.conversion) && isdurational(param.loss)
 isdurational(param::InConversionLossParam) = isdurational(param.conversion) && isdurational(param.loss)
@@ -197,6 +205,15 @@ function getparamvalue(param::FossilMCParam, start::ProbTime, d::TimeDelta)
 end
 
 function getparamvalue(param::MeanSeriesParam, start::ProbTime, d::TimeDelta)
+    datatime = getdatatime(start)
+    scenariotime = getscenariotime(start)
+    level = getweightedaverage(param.level, datatime, d)
+    profile = getweightedaverage(param.profile, scenariotime, d)
+    value = level * profile
+    return value
+end
+
+function getparamvalue(param::MeanSeriesIgnorePhaseinParam, start::ProbTime, d::TimeDelta)
     datatime = getdatatime(start)
     scenariotime = getscenariotime(start)
     level = getweightedaverage(param.level, datatime, d)
@@ -449,8 +466,27 @@ function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, valu
     return true
 end
 
+function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    checkkey(lowlevel, elkey)
+    
+    level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
+    profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
+    
+    (level,   ok) = getdicttimevectorvalue(lowlevel, level)   ;  ok || return false
+    (profile, ok) = getdicttimevectorvalue(lowlevel, profile) ;  ok || return false
+    
+    lowlevel[getobjkey(elkey)] = MeanSeriesIgnorePhaseinParam(level, profile)
+    return true
+end
+
+function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MeanSeriesIgnorePhaseinParam)::Bool
+    lowlevel[getobjkey(elkey)] = value
+    return true
+end
+
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "FossilMCParam")] = includeFossilMCParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "M3SToMM3SeriesParam")] = includeM3SToMM3SeriesParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MWToGWhSeriesParam")] = includeMWToGWhSeriesParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "CostPerMWToGWhParam")] = includeCostPerMWToGWhParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MeanSeriesParam")] = includeMeanSeriesParam!
+INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MeanSeriesIgnorePhaseinParam")] = includeMeanSeriesIgnorePhaseinParam!
