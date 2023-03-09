@@ -52,6 +52,7 @@ Horizon interface functions ---------------------
     getstarttime(h::Horizon, t::Int, start::ProbTime) -> ProbTime
     getduration(h::Horizon) -> Millisecond
     getstartduration(::Horizon, ::Int) -> Millisecond
+    getendperiodfromduration(::Horizon, ::Millisecond) -> Int
     gettimedelta(::Horizon, ::Int) -> TimeDelta
     
     # To support different Horizons between variables (Flow and Storage) and Balances
@@ -199,6 +200,21 @@ function getstartduration(x::SequentialPeriods, t::Int)
     error("t > getnumperiods(horizon)")
 end
 
+function getendperiodfromduration(x::SequentialPeriods, d::Millisecond)
+    acc = Millisecond(0)
+    period = 0
+    for (n, ms) in x.data
+        for i in 1:n
+            period += 1
+            acc += ms
+            if acc == d
+                return period
+            end
+        end
+    end
+    error("Duration does not correspond to period")
+end
+
 function gettimedelta(x::SequentialPeriods, t::Int)
     t < 1 && error("t < 1")
     start = 1
@@ -301,6 +317,7 @@ build!(::SequentialHorizon, ::Prob) = nothing
 update!(::SequentialHorizon, ::ProbTime) = nothing
 getnumperiods(h::SequentialHorizon) = getnumperiods(h.periods)
 getstartduration(h::SequentialHorizon, t::Int) = getstartduration(h.periods, t)
+getendperiodfromduration(h::SequentialHorizon, d::Millisecond) = getendperiodfromduration(h.periods, d)
 getduration(h::SequentialHorizon) = getduration(h.periods)
 gettimedelta(h::SequentialHorizon, t::Int) = gettimedelta(h.periods, t)
 hasoffset(h::SequentialHorizon) = h.offset !== nothing
