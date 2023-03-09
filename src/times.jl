@@ -110,12 +110,13 @@ struct PhaseinTwoTime <: ProbTime
 end
 
 getdatatime(x::PhaseinTwoTime) = x.datatime
+getscenariotime(x::PhaseinTwoTime) = x.scenariotime2 # used if Phasein should be ignored
 getscenariotime1(x::PhaseinTwoTime) = x.scenariotime1
 getscenariotime2(x::PhaseinTwoTime) = x.scenariotime2
 getphaseinvector(x::PhaseinTwoTime) = x.phaseinvector
 
 +(t::PhaseinTwoTime, d::Period) = PhaseinTwoTime(getdatatime(t), getscenariotime1(t) + d, getscenariotime2(t) + d, getphaseinvector(t))
--(t::PhaseinTwoTime, d::Period) = PhaseinTwoTime(getdatatime(t), getscenariotime1(t) - d, getscenariotime2(t) + d, getphaseinvector(t))
+-(t::PhaseinTwoTime, d::Period) = PhaseinTwoTime(getdatatime(t), getscenariotime1(t) - d, getscenariotime2(t) - d, getphaseinvector(t))
 
 +(t::PhaseinTwoTime, d::TimeDelta) = PhaseinTwoTime(getdatatime(t), getscenariotime1(t) + getduration(d), getscenariotime2(t) + getduration(d), getphaseinvector(t))
--(t::PhaseinTwoTime, d::TimeDelta) = PhaseinTwoTime(getdatatime(t), getscenariotime1(t) - getduration(d), getscenariotime2(t) + getduration(d), getphaseinvector(t))
+-(t::PhaseinTwoTime, d::TimeDelta) = PhaseinTwoTime(getdatatime(t), getscenariotime1(t) - getduration(d), getscenariotime2(t) - getduration(d), getphaseinvector(t))
