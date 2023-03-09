@@ -40,6 +40,9 @@ ConnectTwoObjects connects the terminal statevariable of one object with the ini
 another object. This boundary condition gives the possibility to make stochastic two-stage problems, where the
 reservoirs in the first stage are connected to the reservoir in the second stage scenarios.
 
+EndValues sets individual end values for different objects. For example the value of the water stored in a
+reservoir at the end of the horizon.
+
 SimpleSingleCuts is a modelobject for adding Benders cuts to a problem. It preallocates a fixed number of cuts
 that can be activated. SimpleSingleCuts does not support cut selection.
 """
@@ -171,7 +174,7 @@ getid(x::ConnectTwoObjects) = x.id
 geteqid(x::ConnectTwoObjects) = Id(BOUNDARYCONDITION_CONCEPT, string("Eq", getinstancename(getid(x))))
 
 getobjects(x::ConnectTwoObjects) = [x.inobject, x.outobject]
-getparent(x::ConnectTwoObjects) = nothing # this framework is not compatible with ConnectTwoObjects
+getparent(::ConnectTwoObjects) = nothing # this framework is not compatible with ConnectTwoObjects
 
 isinitialcondition(::ConnectTwoObjects)  = false # this framework is not compatible with ConnectTwoObjects
 isterminalcondition(::ConnectTwoObjects) = false # this framework is not compatible with ConnectTwoObjects
@@ -206,6 +209,46 @@ function assemble!(x::ConnectTwoObjects)::Bool
 end
 
 # TODO: Decleare interface for cut-style boundary conditions?
+
+# ---- EndValues <: BoundaryCondition ---
+
+mutable struct EndValues <: BoundaryCondition
+    id::Id
+    objects::Any
+    values::Vector{Float64}
+    function EndValues(id, objects)
+        new(id, objects, zeros(Float64, length(objects)))
+    end
+end
+
+getid(x::EndValues) = x.id
+getobjects(x::EndValues) = [x.objects]
+getparent(::EndValues) = nothing # this framework is not compatible with EndValues
+
+isinitialcondition(::EndValues)  = false
+isterminalcondition(::EndValues) = true
+
+build!(::Prob, ::EndValues) = nothing
+setconstants!(::Prob, ::EndValues) = nothing
+update!(::Prob, ::EndValues, ::ProbTime) = nothing
+
+function updateendvalues!(p::Prob, x::EndValues, values::Vector{Float64})
+    @assert length(x.objects) == length(values)
+
+    x.values = values
+    for (i, obj) in enumerate(x.objects)
+        T = getnumperiods(gethorizon(getbalance(obj)))
+        setobjcoeff!(p, getid(obj), T, -values[i])
+    end
+end
+
+function clearendvalues!(p::Prob, x::EndValues)
+
+    for (i, obj) in enumerate(x.objects)
+        T = getnumperiods(gethorizon(getbalance(obj)))
+        setobjcoeff!(p, getid(obj), T, 0)
+    end
+end
 
 # ------- SimpleSingleCuts -------
 # (Simple because we don't have any cut selection, and because we allocate and use a fixed number of cuts)
