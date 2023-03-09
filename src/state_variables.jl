@@ -39,6 +39,14 @@ function getoutgoingstates!(p::Prob, states::Dict{StateVariableInfo, Float64})
     return states
 end
 
+function getinsidestates!(p::Prob, states::Dict{StateVariableInfo, Float64}, t::Int) # TODO: Make compatible with variables with multiple state variables
+    for var in keys(states)
+        (id, ix) = getvarout(var)
+        states[var] = getvarvalue(p, id, t)
+    end
+    return states
+end
+
 function setingoingstates!(p::Prob, states::Dict{StateVariableInfo, Float64})
     for (var, state) in states
         (id, ix) = getvarin(var)
