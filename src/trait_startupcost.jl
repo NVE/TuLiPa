@@ -28,6 +28,7 @@ end
 # ------- Interface functions ----------------
 getid(trait::SimpleStartUpCost) = trait.id
 getflow(trait::SimpleStartUpCost) = trait.flow
+gethorizon(trait::SimpleStartUpCost) = gethorizon(trait.flow)
 
 getparent(trait::SimpleStartUpCost) = getflow(trait)
 
