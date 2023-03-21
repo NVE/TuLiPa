@@ -47,6 +47,17 @@ function getinsidestates!(p::Prob, states::Dict{StateVariableInfo, Float64}, t::
     return states
 end
 
+function changeendtoinsidestates!(p::Prob, states::Dict{StateVariableInfo, Float64}, t::Int) # TODO: Make compatible with variables with multiple state variables
+    for var in keys(states)
+        (id, ix) = getvarout(var)
+        newvar = StateVariableInfo(getvarin(var), (id, t))
+        states[newvar] = getvarvalue(p, id, t)
+
+        delete!(states, var)
+    end
+    return states
+end
+
 function setingoingstates!(p::Prob, states::Dict{StateVariableInfo, Float64})
     for (var, state) in states
         (id, ix) = getvarin(var)
