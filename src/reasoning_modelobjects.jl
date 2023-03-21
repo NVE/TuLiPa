@@ -22,18 +22,20 @@ function getmainmodelobjects(modelobjects::Dict)
         else
             mainobj = getparent(obj)
 
-            if !(mainobj isa MAINTYPES)
-                error("Main model object for $id is not $MAINTYPES. Got $(typeof(mainobj))")
-            end
+            if !((obj isa SimpleSingleCuts) || (obj isa EndValues))
+                if !(mainobj isa MAINTYPES)
+                    error("Main model object for $id is not $MAINTYPES. Got $(typeof(mainobj))")
+                end
 
-            if !haskey(modelobjects, getid(mainobj))
-                error("Main model object for $id with id $(getid(mainobj)) does not exist in supplied model objects")
-            end
+                if !haskey(modelobjects, getid(mainobj))
+                    error("Main model object for $id with id $(getid(mainobj)) does not exist in supplied model objects")
+                end
 
-            if !haskey(d, mainobj)
-                d[mainobj] = Set()
+                if !haskey(d, mainobj)
+                    d[mainobj] = Set()
+                end
+                push!(d[mainobj], obj)
             end
-            push!(d[mainobj], obj)
         end
     end
     return d
