@@ -219,6 +219,9 @@ mutable struct EndValues <: BoundaryCondition
     function EndValues(id, objects)
         new(id, objects, zeros(Float64, length(objects)))
     end
+    function EndValues()
+        new(Id("Empty","Empty"),[],[])
+    end
 end
 
 getid(x::EndValues) = x.id
@@ -295,6 +298,9 @@ mutable struct SimpleSingleCuts <: BoundaryCondition
         cutix = 0
 
         return new(id, objects, probabilities, constants, slopes, maxcuts, numcuts, cutix, lower_bound)
+    end
+    function SimpleSingleCuts()
+        return new(Id("Empty","Empty"), [], [], [], [], 0, 0, 0, 0.0)
     end
 end
 
