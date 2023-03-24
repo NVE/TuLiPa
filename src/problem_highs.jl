@@ -157,6 +157,7 @@ mutable struct HiGHS_Prob <: Prob
             [],
             Dict()
         )
+        finalizer(Highs_destroy, p)
     end    
 end
 
