@@ -132,13 +132,17 @@ end
 
 function setub!(p::JuMP_Prob, varid::Id, i::Int, value::Float64)
     var = p.model[Symbol(getname(varid))]
-    set_upper_bound(var[i], value)
+    if !JuMP._moi_is_fixed(JuMP.backend(p.model), var[i]) # skip updating upper and lower bounds of fixed variables, JuMP gives error, TODO
+        set_upper_bound(var[i], value)
+    end
     return
 end
 
 function setlb!(p::JuMP_Prob, varid::Id, i::Int, value::Float64)
     var = p.model[Symbol(getname(varid))]
-    set_lower_bound(var[i], value)
+    if !JuMP._moi_is_fixed(JuMP.backend(p.model), var[i]) # skip updating upper and lower bounds of fixed variables, JuMP gives error, TODO
+        set_lower_bound(var[i], value)
+    end
     return
 end
 
