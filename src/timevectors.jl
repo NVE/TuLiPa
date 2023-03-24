@@ -40,7 +40,7 @@ struct InfiniteTimeVector{I, V} <: TimeVector
     values::V
 end
 
-struct RotatingTimeVector{I, V} <: TimeVector
+mutable struct RotatingTimeVector{I, V} <: TimeVector
     index::I
     values::V
     start::DateTime
