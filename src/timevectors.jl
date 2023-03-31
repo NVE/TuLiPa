@@ -35,12 +35,12 @@ struct ConstantTimeVector <: TimeVector
     value::Float64
 end
 
-struct InfiniteTimeVector{I, V} <: TimeVector
+mutable struct InfiniteTimeVector{I, V} <: TimeVector
     index::I
     values::V
 end
 
-mutable struct RotatingTimeVector{I, V} <: TimeVector
+struct RotatingTimeVector{I, V} <: TimeVector
     index::I
     values::V
     start::DateTime
