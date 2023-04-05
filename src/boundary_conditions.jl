@@ -247,6 +247,7 @@ end
 
 function clearendvalues!(p::Prob, x::EndValues)
 
+    x.values = zeros(Float64, length(x.objects))
     for (i, obj) in enumerate(x.objects)
         T = getnumperiods(gethorizon(getbalance(obj)))
         setobjcoeff!(p, getid(obj), T, 0)
