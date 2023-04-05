@@ -453,7 +453,12 @@ function setconcoeff!(p::HiGHS_Prob, con::Id, var::Id, ci::Int, vi::Int, value::
         p.A[col] = Dict{Int, Float64}()
     end
     p.A[col][row] = value
-    p.is_A_updated = true
+    if p.isoptimal
+        ret = Highs_changeCoeff(p, row-1, col-1, value)
+        checkret(ret)
+    else
+        p.is_A_updated = true
+    end
     return
 end
 
