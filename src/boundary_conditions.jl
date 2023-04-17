@@ -343,7 +343,7 @@ end
 
 # Needed to use setrhsterm! in setconstants!
 # TODO: Extend Prob interface to allow setrhs!(prob, conid, value) instead of setrhsterms!
-getcutconstantid(::SimpleSingleCuts) = Id("CutConstant", "CutConstant")
+getcutconstantid(x::SimpleSingleCuts) = Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "CutConstant"))
 
 function setconstants!(p::Prob, x::SimpleSingleCuts)
     # set future cost variable objective function
@@ -361,6 +361,29 @@ function setconstants!(p::Prob, x::SimpleSingleCuts)
             for statevar in getstatevariables(object)
                 (varid, varix) = getvarout(statevar)
                 setconcoeff!(p, getcutconid(x), varid, cutix, varix, 0.0)
+            end
+        end
+    end
+    return
+end
+
+# Variation where a cut from another problem is used (different state variables due to different time resolutions)
+function setconstants!(p::Prob, x::SimpleSingleCuts, varendperiod::Dict)
+    # set future cost variable objective function
+    setobjcoeff!(p, getfuturecostvarid(x), 1, 1.0)
+
+    for cutix in 1:getmaxcuts(x)
+        # set future cost variable in lhs of cut constraints
+        setconcoeff!(p, getcutconid(x), getfuturecostvarid(x), cutix, 1, 1.0)
+
+        # inactivate cut constant
+        setrhsterm!(p, getcutconid(x), getcutconstantid(x), cutix, x.lower_bound)
+
+        # inactivate cut slopes
+        for object in getobjects(x)
+            for statevar in getstatevariables(object)
+                (varid, varix) = getvarout(statevar)
+                setconcoeff!(p, getcutconid(x), varid, cutix, varendperiod[varid], 0.0)
             end
         end
     end
@@ -419,6 +442,39 @@ function updatecuts!(p::Prob, x::SimpleSingleCuts,
         setconcoeff!(p, getcutconid(x), varid, cutix, varix, -slope)
     end
 
+    return
+end
+
+function updatecuts!(p::Prob, x::SimpleSingleCuts)
+    # get internal storage for cut parameters
+    avgconstants = getconstants(x)
+    avgslopes = getslopes(x)
+
+    # update cuts in problem
+    for cutix in eachindex(avgconstants)
+        setrhsterm!(p, getcutconid(x), getcutconstantid(x), cutix, avgconstants[cutix])
+        for (var, slope) in avgslopes[cutix]
+            (varid, varix) = getvarout(var)
+            setconcoeff!(p, getcutconid(x), varid, cutix, varix, -slope)
+        end
+    end
+    return
+end
+
+# Variation where a cut from another problem is used (different state variables due to different time resolutions)
+function updatecuts!(p::Prob, x::SimpleSingleCuts, varendperiod::Dict)
+    # get internal storage for cut parameters
+    avgconstants = getconstants(x)
+    avgslopes = getslopes(x)
+
+    # update cuts in problem
+    for cutix in eachindex(avgconstants)
+        setrhsterm!(p, getcutconid(x), getcutconstantid(x), cutix, avgconstants[cutix])
+        for (var, slope) in avgslopes[cutix]
+            (varid, varix) = getvarout(var)
+            setconcoeff!(p, getcutconid(x), varid, cutix, varendperiod[varid], -slope)
+        end
+    end
     return
 end
 
