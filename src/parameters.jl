@@ -444,7 +444,7 @@ function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, 
 end
 
 function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)::Bool
-    lowlevel[getobjkey(elkey)] = ConstantParam(value)
+    lowlevel[getobjkey(elkey)] = CostPerMWToGWhParam(ConstantParam(value))
     return true
 end
 
