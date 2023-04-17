@@ -42,6 +42,7 @@ include("obj_storage.jl")
 include("obj_aggsupplycurve.jl")
 include("trait_softbound.jl")
 include("trait_startupcost.jl")
+include("trait_ramping.jl")
 
 # State variables and boundary conditions
 include("state_variables.jl")

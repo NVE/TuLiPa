@@ -436,6 +436,26 @@ abstract type AggSupplyCurve  end
 
 abstract type StartUpCost end
 
+# ---- Ramping ----
+# 
+# Optional trait that affects a (or several) flow(s)
+# Maximum increase in a flow variable (ramping) over a given period
+# Builds and updates internal variables and equations for each period in a Horizon.
+# Has internal state variables
+# 
+# Interface:
+# getid(trait)
+# gethorizon(trait)
+# getparent(trait)
+# getstatevariables(trait)
+# assemble(trait)
+# build!(trait)
+# setconstants!(trait)
+# update!(trait)
+
+
+abstract type Ramping end
+
 # ---- SoftBound ----
 #
 # Optional trait object that affects a variable object (e.g. Flow or Storage)

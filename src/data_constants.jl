@@ -44,6 +44,7 @@ const STORAGE_CONCEPT    = "Storage"
 const COMMODITY_CONCEPT  = "Commodity"
 const AGGSUPPLYCURVE_CONCEPT   = "AggSupplyCurve"
 const STARTUPCOST_CONCEPT = "StartUpCost"
+const RAMPING_CONCEPT = "Ramping"
 
 #  -> toplevel object traits
 const ARROW_CONCEPT      = "Arrow"

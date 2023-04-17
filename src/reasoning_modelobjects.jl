@@ -452,6 +452,7 @@ replacebalance!(x::ExogenBalance, coupling, modelobjects) = nothing
 replacebalance!(x::SimpleStartUpCost, coupling, modelobjects) = nothing
 replacebalance!(x::StartEqualStop, coupling, modelobjects) = nothing
 replacebalance!(x::BaseSoftBound, coupling, modelobjects) = nothing
+replacebalance!(x::TransmissionRamping, coupling, modelobjects) = nothing # handled in replacebalance!(x::BaseFlow
 
 function replacebalance!(x::BaseStorage, coupling, modelobjects)
     if haskey(coupling, getbalance(x))
@@ -460,6 +461,8 @@ function replacebalance!(x::BaseStorage, coupling, modelobjects)
 end
 
 function replacebalance!(x::BaseFlow, coupling, modelobjects)
+    mainmodelobjects = getmainmodelobjects(modelobjects)
+
     replacer = BaseBalance[]
     for arrow in getarrows(x)
         if haskey(coupling, getbalance(arrow))
@@ -480,6 +483,9 @@ function replacebalance!(x::BaseFlow, coupling, modelobjects)
             end
         end
         delete!(modelobjects, getid(x))
+        for minor in mainmodelobjects[x]
+            delete!(modelobjects, getid(minor))
+        end
     elseif length(replacer) > 0
         assemble!(x) # needed? commodity/horizon should not be updated
     end
