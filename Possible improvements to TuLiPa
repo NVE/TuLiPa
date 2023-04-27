@@ -1,9 +1,9 @@
-- System for results. Abstract type and generic function to transfer problem results to result type. Methods to update model objects with results from other problems.
 - We can use the time-series more efficiently. Now very generic:
 --- Many objects can get data from the same time-series. Instead of the same calculations being done several times, we could store the results in an intermediate storage
 --- We could store the index of the previous time-series query, to quicker look up the next value
 --- When updating the problem for a new time-step we read all the time-series data again. An alternative is to reuse the values from the previous time-step and only read new values for new periods.
-- Make structures for ramping restrictions, watercourse with time delay (arrow), hydro reservoir segmented end value, negative lower bound, 
+- System for results. Abstract type and generic function to transfer problem results to result type. Methods to update model objects with results from other problems.
+- Make structures for watercourse with time delay (arrow), hydro reservoir segmented end value, negative lower bound, 
 - Extend Prob interface to allow setrhs!(prob, conid, value) instead of setrhsterms!
 - Better error messages for including dataelements
 - Code can be made more robust by validating more inputs/behaviour
@@ -11,5 +11,3 @@
 - Add metadata for more objects
 - Startupcost that support other variables like Storage, and also ramping
 - Implement RoRRHSTerm. A simplification of the run-of-river hydropower could be to include the inflow (with cutoff at max production) as a parameter rather than modelling it as a variable. Motivation is simplification of the problem or to include the unregulated inflow when we make an AdaptiveHorizon based on the residual load
-- Account for hydropower head in production calculation and in algorithm
-- Look at default costs of breaching environmental constraints for dataset used in Demo 4 and 5.
