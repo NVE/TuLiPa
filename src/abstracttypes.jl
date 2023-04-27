@@ -441,7 +441,7 @@ abstract type StartUpCost end
 # Optional trait that affects a (or several) flow(s)
 # Maximum increase in a flow variable (ramping) over a given period
 # Builds and updates internal variables and equations for each period in a Horizon.
-# Has internal state variables
+# Can have internal state variables
 # 
 # Interface:
 # getid(trait)
