@@ -96,7 +96,7 @@ function setconstants!(p::Prob, var::BaseStorage)
 
     T = getnumperiods(gethorizon(var))
     for t in 1:T
-        setconcoeff!(p, getid(getbalance(var)), getid(var), t, t, -1.0)
+        setconcoeff!(p, getid(getbalance(var)), getid(var), t, t, 1.0)
     end
 
     if (!isnothing(var.loss) && isconstant(var.loss)) || isnothing(var.loss)
@@ -109,11 +109,11 @@ function setconstants!(p::Prob, var::BaseStorage)
         end
 
         for t in 2:T
-            setconcoeff!(p, getid(getbalance(var)), getid(var), t, t-1, coeff)
+            setconcoeff!(p, getid(getbalance(var)), getid(var), t, t-1, -coeff)
         end
 
         # set start storage variable in first balance equation
-        setconcoeff!(p, getid(getbalance(var)), getstartvarid(var), 1, 1, coeff)
+        setconcoeff!(p, getid(getbalance(var)), getstartvarid(var), 1, 1, -coeff)
     end
 
     return
@@ -140,14 +140,14 @@ function update!(p::Prob, var::BaseStorage, start::ProbTime)
         querystart = getstarttime(horizon, 1, start)
         querydelta = gettimedelta(horizon, 1)
         coeff = 1.0 - getparamvalue(var.loss, querystart, querydelta)
-        setconcoeff!(p, getid(getbalance(var)), getstartvarid(var), t, 1, coeff)
+        setconcoeff!(p, getid(getbalance(var)), getstartvarid(var), t, 1, -coeff)
 
         T = getnumperiods(horizon)
         for t in 2:T
             querystart = getstarttime(horizon, t, start)
             querydelta = gettimedelta(horizon, t)
             coeff = 1.0 - getparamvalue(var.loss, querystart, querydelta)
-            setconcoeff!(p, getid(getbalance(var)), getid(var), t, t-1, coeff)
+            setconcoeff!(p, getid(getbalance(var)), getid(var), t, t-1, -coeff)
         end    
     end
 

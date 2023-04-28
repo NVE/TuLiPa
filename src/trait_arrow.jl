@@ -151,7 +151,7 @@ function setconstants!(p::Prob, var::Any, arrow::BaseArrow)
             value = getparamvalue(param, ConstantTime(), MsTimeDelta(Hour(1)))
 
             # The direction decides if the contribution is positive or negative
-            if !arrow.isingoing 
+            if arrow.isingoing 
                 value = -value
             end
 
@@ -184,7 +184,7 @@ function update!(p::Prob, var::Any, arrow::BaseArrow, start::ProbTime)
                     querystart = getstarttime(varhorizon, t, start)
                     querydelta = gettimedelta(varhorizon, t)
                     value = getparamvalue(param, querystart, querydelta)
-                    if !arrow.isingoing 
+                    if arrow.isingoing 
                         value = -value
                     end
 
@@ -278,7 +278,7 @@ function setconstants!(p::Prob, var::Any, arrow::SegmentedArrow)
             # The contribution of the segment variables is added to the Balance
             if isconstant(conversion)
                 value = getparamvalue(conversion, ConstantTime(), MsTimeDelta(Hour(1)))
-                if !arrow.isingoing
+                if arrow.isingoing
                     value = -value
                 end
 
@@ -344,7 +344,7 @@ function update!(p::Prob, var::Any, arrow::SegmentedArrow, start::ProbTime)
                         querystart = getstarttime(varhorizon, t, start)
                         querydelta = gettimedelta(varhorizon, t)
                         value = getparamvalue(conversion, querystart, querydelta)
-                        if !arrow.isingoing
+                        if arrow.isingoing
                             value = -value
                         end
 

@@ -71,9 +71,9 @@ isexogen(::ExogenBalance) = true
 getprice(balance::ExogenBalance) = balance.price
 
 # ExogenBalance does not have equations to build and update
-build!(p::Prob, balance::ExogenBalance) = nothing
-setconstants!(p::Prob, balance::ExogenBalance) = nothing
-update!(p::Prob, balance::ExogenBalance, start::ProbTime) = nothing
+build!(::Prob, ::ExogenBalance) = nothing
+setconstants!(::Prob, ::ExogenBalance) = nothing
+update!(::Prob, ::ExogenBalance, ::ProbTime) = nothing
 
 # Build empty balance equation for BaseBalance
 function build!(p::Prob, balance::BaseBalance)
@@ -92,7 +92,7 @@ function setconstants!(p::Prob, balance::BaseBalance)
                 querystart = getstarttime(balance.horizon, t, dummytime)
                 querydelta = gettimedelta(balance.horizon, t)
                 value = getparamvalue(rhsterm, querystart, querydelta)
-                if isingoing(rhsterm)
+                if !isingoing(rhsterm)
                     value = -value
                 end
                 setrhsterm!(p, balance.id, getid(rhsterm), t, value)
@@ -111,7 +111,7 @@ function update!(p::Prob, balance::BaseBalance, start::ProbTime)
                 querystart = getstarttime(balance.horizon, t, start)
                 querydelta = gettimedelta(balance.horizon, t)
                 value = getparamvalue(rhsterm, querystart, querydelta)
-                if isingoing(rhsterm)
+                if !isingoing(rhsterm)
                     value = -value
                 end
                 setrhsterm!(p, balance.id, getid(rhsterm), t, value)

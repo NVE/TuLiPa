@@ -71,7 +71,7 @@ function setconstants!(p::Prob, var::AggSupplyCurve)
     for c in 1:var.numclusters
         newname = string(varname,"_",c)
         for t in 1:eqperiods
-            setconcoeff!(p, Id(BALANCE_CONCEPT, eqinstance), Id(AGGSUPPLYCURVE_CONCEPT, newname), t, t, 1.0)
+            setconcoeff!(p, Id(BALANCE_CONCEPT, eqinstance), Id(AGGSUPPLYCURVE_CONCEPT, newname), t, t, -1.0)
         end
     end
 end
