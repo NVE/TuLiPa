@@ -151,7 +151,7 @@ function update!(p::Prob, var::AggSupplyCurve, start::ProbTime)
             ub = float(0)
             for j in 1:numflows
                 if assignments[j] == assignment
-                    mc += var.mcs[t,j]*var.ubs[t,j]
+                    mc += var.mcs[t,j]*(var.ubs[t,j]-var.lbs[t,j])
                     lb += var.lbs[t,j]
                     ub += var.ubs[t,j]
                 end
@@ -160,7 +160,7 @@ function update!(p::Prob, var::AggSupplyCurve, start::ProbTime)
             if ub == 0 # TODO: More robust. Checks
                 mc = 100000
             else
-                mc /= ub
+                mc /= (ub - lb)
             end
 
             newname = string(varname,"_",assignment)
