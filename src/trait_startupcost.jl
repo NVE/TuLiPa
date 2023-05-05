@@ -141,7 +141,7 @@ function update!(p::Prob, trait::StartUpCost, start::ProbTime)
     startvarid = getstartvarid(trait)
     h = gethorizon(trait.flow)
 
-    if !_must_dynamic_update(trait.startcost, h)   
+    if _must_dynamic_update(trait.startcost, h)   
         for t in 1:getnumperiods(h)
             querystart = getstarttime(h, t, start)
             querydelta = gettimedelta(h, t)
