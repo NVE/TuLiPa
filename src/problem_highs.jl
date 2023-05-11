@@ -136,6 +136,7 @@ mutable struct HiGHS_Prob <: Prob
         end
 
         _passLP!(p)
+        Highs_setIntOptionValue(p, "simplex_scale_strategy", 5)
         
         finalizer(Highs_destroy, p)
         
@@ -425,15 +426,23 @@ function solve!(p::HiGHS_Prob)
     checkret(ret)
 
     if !(kHighsModelStatusOptimal == Highs_getScaledModelStatus(p))
-        scale_strategy = 1
-        while scale_strategy < 5
-            scale_strategy += 1
+        scale_strategy = 5
+        while (scale_strategy > 2) && !(kHighsModelStatusOptimal == Highs_getScaledModelStatus(p))
+            scale_strategy -= 1
             println(string("Rescaling LP with scale strategy ", scale_strategy))
             Highs_setIntOptionValue(p, "simplex_scale_strategy", scale_strategy)
             ret = Highs_run(p)
             checkret(ret)
+
+            if (scale_strategy == 2) && !(kHighsModelStatusOptimal == Highs_getScaledModelStatus(p))
+                println("Resetting solver: Rebuilding full LP and pass to solver")
+                _passLP!(p)
+                ret = Highs_run(p)
+                checkret(ret)
+                scale_strategy = 5
+            end
         end
-        Highs_setIntOptionValue(p, "simplex_scale_strategy", 1)
+        Highs_setIntOptionValue(p, "simplex_scale_strategy", 5)
     end
 
     p.isoptimal = kHighsModelStatusOptimal == Highs_getScaledModelStatus(p)
