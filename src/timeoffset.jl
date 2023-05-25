@@ -41,7 +41,7 @@ function getoffsettime(start::PhaseinTwoTime, offset::TimeDeltaOffset)
 end
 
 
-function getoffsettime(start::TwoTime, offset::ScenarioOffset) # generic fallback
+function getoffsettime(start::ProbTime, offset::ScenarioOffset) # generic fallback
     return start + gettimedelta(offset) + getscenariodelta(offset)
 end
 
