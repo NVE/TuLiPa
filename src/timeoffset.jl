@@ -29,7 +29,7 @@ end
 # --------- Interface functions ------------
 
 gettimedelta(offset::Offset) = offset.timedelta
-getscenariodelta(offset::Offset) = offset.timedelta
+getscenariodelta(offset::Offset) = offset.scenariodelta
 getisoyear(offset::IsoYearOffset) = offset.isoyear
 
 function getoffsettime(start::ProbTime, offset::TimeDeltaOffset)
