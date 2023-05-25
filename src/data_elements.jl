@@ -96,6 +96,115 @@ function getelement(concept, concrete, instance, pairs...; path="") # should be 
     return DataElement(concept, concrete, instance, d)
 end
 
+# -------------- Add primitive dataelements ---------------
+function addflow!(elements, instance)
+    push!(elements, getelement(FLOW_CONCEPT,"BaseFlow",instance))
+end
+        
+function addstorage!(elements, instance, balance)
+    push!(elements, getelement(STORAGE_CONCEPT,"BaseStorage",instance,
+          (BALANCE_CONCEPT,balance)))
+end
+
+function addarrow!(elements, instance, conversion, flow, balance, direction)
+    push!(elements, getelement(ARROW_CONCEPT,"BaseArrow",instance,
+          (CONVERSION_CONCEPT,conversion),
+          (FLOW_CONCEPT,flow),
+          (BALANCE_CONCEPT,balance),
+          (DIRECTIONKEY,direction)))
+end
+        
+function addcapacity!(elements, instance, uplow, param, whichinstance, whichconcept)
+    push!(elements, getelement(CAPACITY_CONCEPT, "PositiveCapacity", instance,
+            (WHICHCONCEPT, whichconcept),
+            (WHICHINSTANCE, whichinstance),
+            (PARAM_CONCEPT, param),
+            (BOUNDKEY, uplow)))
+end
+
+function addbalance!(elements, name, commodity)
+    # Power markets or water balances are represented with a Balance equation
+    # - They have a commodity which will decide the horizon (time-resolution) of the Balance
+    push!(elements, getelement(BALANCE_CONCEPT, "BaseBalance", name, 
+            (COMMODITY_CONCEPT, commodity)))
+    # Power Balances needs a slack variable if inelastic wind, solar, or run-of-river is higher than the inelastic demand
+    if commodity == "Power"
+        slackname = "SlackVar" * name
+        addflow!(elements, slackname)
+        
+        slackarrowname = "SlackArrow" * name
+        addarrow!(elements, slackarrowname, 1.0, slackname, name, DIRECTIONOUT)
+    end
+end
+
+function addexogenbalance!(elements, name, commodity, price)
+    # Add an exogenous price area that the plants and pumps can interact with. All units are in NO5.
+    push!(elements, getelement(BALANCE_CONCEPT, "ExogenBalance", name, 
+            (COMMODITY_CONCEPT, commodity),
+            (PRICE_CONCEPT, price)))
+end
+
+# Rhsterms contribute to the right hand side of a Balance equation
+function addrhsterm!(elements, name, balance, direction)
+    push!(elements, getelement(RHSTERM_CONCEPT, "BaseRHSTerm", name, 
+        (BALANCE_CONCEPT, balance), 
+        (PARAM_CONCEPT, name), # constant or time-series data
+        (DIRECTIONKEY, direction))) # positive or negative contriution to the balance
+end
+
+function addparam!(elements, concrete, instance, level, profile)
+    push!(elements, getelement(PARAM_CONCEPT,concrete,instance,
+          ("Level", level),
+          ("Profile", profile)))
+end
+
+function addscenariotimeperiod!(elements, instance, start, stop)
+    push!(elements, getelement(TIMEPERIOD_CONCEPT, "ScenarioTimePeriod", instance, 
+    ("Start", start), ("Stop", stop)))
+end
+
+# -------------- Add composed dataelements ---------------
+# DataElements for transmission between areas
+function addpowertrans!(elements, frombalance, tobalance, cap, eff)
+    
+    # Transmission variable
+    flowname = frombalance * "->" * tobalance
+    addflow!(elements, flowname)
+    
+    # Variable out from one Balance
+    fromarrowname = flowname * "From"
+    addarrow!(elements, fromarrowname, 1.0, flowname, frombalance, DIRECTIONOUT)
+    
+    toarrowname = flowname * "To"
+    addarrow!(elements, toarrowname, eff, flowname, tobalance, DIRECTIONIN)
+    
+    # Transmission capacity
+    capname = flowname * "Cap"
+    addparam!(elements, "MWToGWhSeriesParam", capname * "Param", cap, 1.0)
+    addcapacity!(elements, capname, BOUNDUPPER, capname * "Param", flowname, FLOW_CONCEPT)
+end
+
+function addbattery!(elements, name, powerbalance, storagecap, lossbattery, chargecap)
+    balancename = "BatteryBalance_" * name
+    addbalance!(elements, balancename, "Battery")
+    
+    storagename = "BatteryStorage_" * name
+    addstorage!(elements, storagename, balancename)
+    addcapacity!(elements, "BatteryStorageCap_" * name, BOUNDUPPER, storagecap, storagename, STORAGE_CONCEPT)
+    
+    chargename = "PlantCharge_" * name
+    addflow!(elements, chargename)
+    addarrow!(elements, "ChargePowerArrow_" * name, 1, chargename, powerbalance, "Out")
+    addarrow!(elements,"ChargeBatteryArrow_" * name, 1-lossbattery, chargename, balancename, "In")
+    addcapacity!(elements, "ChargeCapacity_" * name, "Upper", chargecap, chargename, FLOW_CONCEPT)
+    
+    dischargename = "PlantDischarge_" * name
+    addflow!(elements,dischargename)
+    addarrow!(elements, "DischargePowerArrow_" * name, 1, dischargename, powerbalance, "In")
+    addarrow!(elements,"DischargeBatteryArrow_" * name, 1, dischargename, balancename, "Out")
+    addcapacity!(elements, "DischargeCapacity_" * name, "Upper", chargecap, dischargename, FLOW_CONCEPT)
+end
+
 
 
 
