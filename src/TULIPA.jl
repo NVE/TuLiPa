@@ -1,7 +1,7 @@
 # Abstract types in our modelling framework and general descriptions
 include("abstracttypes.jl")
 
-# Code to convert data elements into model objects
+# Code to add and convert data elements into model objects
 include("data_elements.jl")
 include("data_elements_to_objects.jl")
 include("data_constants.jl")
@@ -51,3 +51,6 @@ include("boundary_conditions.jl") # (Toplevel)
 # Code to manipulate model objects
 # (e.g. alter, aggregate, distinguish features)
 include("reasoning_modelobjects.jl")
+
+# Resulthandling
+include("results.jl")
