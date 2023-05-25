@@ -427,6 +427,7 @@ function solve!(p::HiGHS_Prob)
 
     if !(kHighsModelStatusOptimal == Highs_getScaledModelStatus(p))
         scale_strategy = 5
+        reset = false
         while (scale_strategy > 2) && !(kHighsModelStatusOptimal == Highs_getScaledModelStatus(p))
             scale_strategy -= 1
             println(string("Rescaling LP with scale strategy ", scale_strategy))
@@ -434,12 +435,13 @@ function solve!(p::HiGHS_Prob)
             ret = Highs_run(p)
             checkret(ret)
 
-            if (scale_strategy == 2) && !(kHighsModelStatusOptimal == Highs_getScaledModelStatus(p))
+            if (scale_strategy == 2) && !(kHighsModelStatusOptimal == Highs_getScaledModelStatus(p)) && !reset
                 println("Resetting solver: Rebuilding full LP and pass to solver")
                 _passLP!(p)
                 ret = Highs_run(p)
                 checkret(ret)
                 scale_strategy = 5
+                reset = true
             end
         end
         Highs_setIntOptionValue(p, "simplex_scale_strategy", 5)
@@ -450,6 +452,7 @@ function solve!(p::HiGHS_Prob)
     p.isvarvaluesupdated = false
     p.iscondualsupdated = false
 
+    !p.isoptimal && Highs_writeModel(p, "failed_model.mps")
     @assert p.isoptimal
 
     return
