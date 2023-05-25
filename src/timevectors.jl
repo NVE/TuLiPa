@@ -86,7 +86,7 @@ function getweightedaverage(x::InfiniteTimeVector, t::DateTime, delta::MsTimeDel
     qstop  = t + getduration(delta)
     
     istart = searchsortedlast(index, qstart)
-    istop  = searchsortedlastlo(index, qstop, istart)
+    istop  = searchsortedlastlo(index, qstop, max(istart, 1))
 
     (istart == istop == 0             ) && return first(values)
     (istart == istop == length(values)) && return last(values)
@@ -176,7 +176,7 @@ function getweightedaverage(x::RotatingTimeVector, t::DateTime, delta::MsTimeDel
     qstop  = tininterval + getduration(delta)
 
     istart = searchsortedlast(index, qstart)
-    istop  = searchsortedlastlo(index, qstop, istart)
+    istop  = searchsortedlastlo(index, qstop, istart) # Can cause stability issues? Solution?: searchsortedlastlo(index, qstop, max(istart, 1)) like for getweightedaverage(::InfiniteTimeVector)
     
     # Return early if possible
     (istart == istop == 0)            && return xN # use xN for [lb, t0] and [tN, ub]
