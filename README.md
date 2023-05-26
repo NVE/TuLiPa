@@ -51,6 +51,7 @@ The framework supports having state variables and setting them with boundary con
 - demos/Demo 4 - Deterministic hydro
 - demos/Demo 5 - Two-stage stochastic hydro
 - demos/Demo 6 - Two-stage stochastic hydro with Benders decomposition
+- demos/Demo 8 - Solar & Battery subsystem simulation w Benders
 - [JulES, an energy market simulation model that uses TuLiPa as building blocks](https://github.com/NVE/JulES/)
 
 #### Possible improvements to TuLiPa:
