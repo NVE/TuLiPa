@@ -9,6 +9,8 @@ The units are a list of time periods with unit_duration
 See AdaptiveHorizon in horizons.jl
 """
 
+import Base.:/, Base.:*
+
 # ----- Concrete types ----------
 struct MsTimeDelta <: TimeDelta
     ms::Millisecond
@@ -41,6 +43,9 @@ function getlength(x::UnitsTimeDelta)
     length(x.units) == 0 && return 0
     return sum(length(r) for r in x.units)
 end
+
+/(d::MsTimeDelta, i::Int) = MsTimeDelta(getduration(d)/i)
+*(d::MsTimeDelta, i::Int) = MsTimeDelta(getduration(d)*i)
 
 # ------ Include dataelements -------
 function includeMsTimeDelta!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
