@@ -45,13 +45,13 @@ The framework supports having state variables and setting them with boundary con
 - src/balance.jl - src/flow.jl - src/storage.jl - src/trait_arrow.jl – the main model objects that make up the real-world concepts and how they are connected (like power markets, power plants, demands and hydro storages)
 - src/ - the rest of the source code is also commented
 
-#### See also demos:
-- demos/Demo 1 - Deterministic power market with dummy data
+#### See also demos (:heavy_check_mark: = open data so you can run it yourself):
+- demos/Demo 1 - Deterministic power market with dummy data :heavy_check_mark:
 - demos/Demo 2 - Deterministic power market with detailed data
-- demos/Demo 4 - Deterministic hydro
-- demos/Demo 5 - Two-stage stochastic hydro
-- demos/Demo 6 - Two-stage stochastic hydro with Benders decomposition
-- demos/Demo 8 - Solar & Battery subsystem simulation w Benders
+- demos/Demo 4 - Deterministic hydro :heavy_check_mark:
+- demos/Demo 5 - Two-stage stochastic hydro :heavy_check_mark:
+- demos/Demo 6 - Two-stage stochastic hydro with Benders decomposition :heavy_check_mark:
+- demos/Demo 8 - Solar & Battery subsystem simulation w Benders :heavy_check_mark:
 - [JulES, an energy market simulation model that uses TuLiPa as building blocks](https://github.com/NVE/JulES/)
 
 #### Possible improvements to TuLiPa:
