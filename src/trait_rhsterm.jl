@@ -12,7 +12,7 @@ inflow when we make an AdaptiveHorizon based on the residual load
 isdurational(rhsterm::RHSTerm) = true
 
 # -------- Concrete types --------------
-struct BaseRHSTerm <: RHSTerm
+mutable struct BaseRHSTerm <: RHSTerm
     id::Id
     param::Param
     isingoing::Bool
