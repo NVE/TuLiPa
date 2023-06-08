@@ -312,6 +312,16 @@ function getbalances(modelobjects::Dict, commodityid::Id)
     return balances
 end
 
+function getbalances(modelobjects::Vector)
+    balances = Set()
+    for obj in values(modelobjects)
+        if obj isa Balance
+            push!(balances,obj)
+        end
+    end
+    return balances
+end
+
 function getpowersystems(modelobjects::Dict)
     storages = getstorages(modelobjects)
     storagebalances = Dict(getbalance(s) => s for s in storages)
