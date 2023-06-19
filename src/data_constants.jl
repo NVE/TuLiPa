@@ -25,6 +25,13 @@ const STARTCOSTKEY = "StartCost"
 # Metadata
 const STORAGEHINTKEY   = "Storagehint"
 const RESIDUALHINTKEY = "Residualhint"
+const RESERVOIRCURVEKEY = "ReservoirCurve"
+const PRODUCTIONINFOKEY = "ProductionInfo"
+const HYDRAULICHINTKEY = "HydraulicHint"
+const GLOBALENEQKEY = "GlobalEneq"
+
+const OUTLETLEVELKEY = "OutletLevel" # better word for this?
+const NOMINALHEADKEY = "NominalHead"
 
 # Data world concepts
 

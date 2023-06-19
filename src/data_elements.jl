@@ -90,6 +90,8 @@ function getelement(concept, concrete, instance, pairs...; path="") # should be 
             v = v |> Int64    
         elseif v isa Int
             v = v |> Float64
+        elseif concrete == "ReservoirCurve" && ((k == "Res") || (k == "Head"))
+            v = v |> Vector{Float64}
         end
         d[k] = v
     end
