@@ -131,6 +131,22 @@ function getbalanceflows(modelobjects::Dict)
     return d
 end
 
+function getbalanceflows(modelobjects::Vector)
+    d = Dict()
+    for obj in modelobjects
+        if obj isa Flow 
+            for a in getarrows(obj)
+                b = getbalance(a)
+                if !haskey(d, b)
+                    d[b] = Set()
+                end
+                push!(d[b], obj)
+            end
+        end
+    end
+    return d
+end
+
 # kan ikke ha hvilke som helst modellobjekter
 function getstoragesystems(modelobjects::Dict)
     storages = Set(getstorages(modelobjects))
