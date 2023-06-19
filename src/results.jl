@@ -11,7 +11,7 @@ TODO: Add support for AdaptiveHorizon, customized time resolution per element an
 """
 
 # Initialize results objects and collect results
-function init_results(problem, modelobjects, resultobjects, numperiods_powerhorizon, numperiods_hydrohorizon, periodduration_power, t)
+function init_results(problem, modelobjects, resultobjects, numperiods_powerhorizon, numperiods_hydrohorizon, periodduration_power, t, includeexogenprice=true)
     # Order result objects into lists
     powerbalances = []
     rhsterms = []
@@ -25,13 +25,17 @@ function init_results(problem, modelobjects, resultobjects, numperiods_powerhori
     hydrostorages = []
     batterystorages = []
     
-    for obj in resultobjects # regret using Ids rather than the whole object
+    for obj in resultobjects
         
         # Powerbalances
         if obj isa Balance
             if getinstancename(getid(getcommodity(obj))) == "Power"
-                push!(powerbalances, obj)
-                if !isexogen(obj)
+                if isexogen(obj)
+                    if includeexogenprice
+                        push!(powerbalances, obj)
+                    end
+                else
+                    push!(powerbalances, obj)
                     for rhsterm in getrhsterms(obj)
                         push!(rhsterms,getid(rhsterm))
                         push!(rhstermbalances,getid(obj))
@@ -190,10 +194,29 @@ function get_results(problem, powerbalances, rhsterms, plants, plantbalances, pl
                 pqarrowbool = [arrow isa SegmentedArrow for arrow in arrows]
                 pqarrows = arrows[pqarrowbool]                        
                 if sum(pqarrowbool) == 1
+                    arrow = pqarrows[1]
                     production[j, i] = 0
-                    for k in 1:length(getconversions(pqarrows[1]))
-                        segmentid = getsegmentid(pqarrows[1], k)
-                        production[j, i] += getvarvalue(problem, segmentid, j)*abs(getconcoeff(problem, plantbalances[i], segmentid, j, j))/timefactor
+                    for (k, conversion) in enumerate(getconversions(arrow))
+                        segmentid = getsegmentid(arrow, k)
+                        if isexogen(getbalance(arrow))
+                            # TODO: Balance and variable can have different horizons
+                            horizon = gethorizon(arrow)
+
+                            if isone(conversion)
+                                param = getprice(arrow.balance)
+                            else
+                                param = TwoProductParam(getprice(arrow.balance), conversion)
+                            end
+                            querystart = getstarttime(horizon, j, t)
+                            querydelta = gettimedelta(horizon, j)
+                            conversionvalue = getparamvalue(param, querystart, querydelta)
+                            if arrow.isingoing
+                                conversionvalue = -conversionvalue
+                            end
+                            production[j, i] = getvarvalue(problem, segmentid, j)*conversionvalue/timefactor
+                        else
+                            production[j, i] += getvarvalue(problem, segmentid, j)*abs(getconcoeff(problem, plantbalances[i], segmentid, j, j))/timefactor
+                        end
                     end
                 else
                     if isexogen(modelobjects[plantbalances[i]])
