@@ -2,6 +2,8 @@
 We implement several concrete parameter types (see abstracttypes.jl)
 """
 
+using Interpolations
+
 # ---- Generic fallbacks -----
 function isconstant(param::Param)
     for field in fieldnames(typeof(param))
@@ -110,6 +112,21 @@ end
 function TransmissionLossRHSParam(capacity::Capacity, L::SimpleLoss)
     return TransmissionLossRHSParam(capacity, L.value, L.utilisation)
 end
+
+# Other concrete types
+struct XYCurve <: Param
+    interpolator
+
+    function XYCurve(x::T, y::T) where {T <: AbstractVector{Float64}}
+        @assert length(x) == length(y)
+        @assert length(y) > 1
+        @assert issorted(x)
+        @assert issorted(y) || issorted(y, rev=true)
+        new(LinearInterpolation(x, y; extrapolation_bc=Flat()))
+    end
+end
+
+yvalue(xycurve::XYCurve, x::Float64) = xycurve.interpolator(x)
 
 # ------ Interface functions ---------
 iszero(param::FlipSignParam) = iszero(param.param)
