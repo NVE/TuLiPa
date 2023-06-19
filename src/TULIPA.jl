@@ -51,6 +51,7 @@ include("boundary_conditions.jl") # (Toplevel)
 # Code to manipulate model objects
 # (e.g. alter, aggregate, distinguish features)
 include("reasoning_modelobjects.jl")
+include("reasoning_nvehydro.jl")
 
 # Resulthandling
 include("results.jl")
