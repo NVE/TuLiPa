@@ -10,7 +10,7 @@ for net flow on transmission line with no losses.
 """
 
 # ---- Concrete types ----
-struct PositiveCapacity <: Capacity
+mutable struct PositiveCapacity <: Capacity
     id::Id
     param::Param
     isupper::Bool
