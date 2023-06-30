@@ -9,6 +9,19 @@
         ]
     ],
     [
+        "Metadata",
+        "GlobalEneq",
+        "GlobalEneq_63901",
+        [
+            "Balance",
+            "HydroBalance_63901"
+        ],
+        [
+            "Value",
+            0.19
+        ]
+    ],
+    [
         "Storage",
         "BaseStorage",
         "Reservoir_63901",
@@ -207,6 +220,23 @@
         [
             "Direction",
             "In"
+        ]
+    ],
+    [
+        "Metadata",
+        "ProductionInfo",
+        "ProductionInfo_63901",
+        [
+            "Flow",
+            "Release_63901"
+        ],
+        [
+            "OutletLevel",
+            -1.0
+        ],
+        [
+            "NominalHead",
+            0.0
         ]
     ]
 ]

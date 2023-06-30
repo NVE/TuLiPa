@@ -9,6 +9,19 @@
         ]
     ],
     [
+        "Metadata",
+        "GlobalEneq",
+        "GlobalEneq_67401",
+        [
+            "Balance",
+            "HydroBalance_67401"
+        ],
+        [
+            "Value",
+            0.42
+        ]
+    ],
+    [
         "Storage",
         "BaseStorage",
         "Reservoir_67401",
@@ -36,6 +49,29 @@
         [
             "WhichConcept",
             "Storage"
+        ]
+    ],
+    [
+        "Metadata",
+        "ReservoirCurve",
+        "ResCurve_67401",
+        [
+            "Storage",
+            "Reservoir_67401"
+        ],
+        [
+            "Res",
+            [
+                0.0,
+                22.8
+            ]
+        ],
+        [
+            "Head",
+            [
+                472.0,
+                495.0
+            ]
         ]
     ],
     [
@@ -210,12 +246,42 @@
         ]
     ],
     [
+        "Metadata",
+        "ProductionInfo",
+        "ProductionInfo_67401",
+        [
+            "Flow",
+            "Release_67401"
+        ],
+        [
+            "OutletLevel",
+            274.7
+        ],
+        [
+            "NominalHead",
+            213.0
+        ]
+    ],
+    [
         "Balance",
         "BaseBalance",
         "HydroBalance_67501",
         [
             "Commodity",
             "Hydro"
+        ]
+    ],
+    [
+        "Metadata",
+        "GlobalEneq",
+        "GlobalEneq_67501",
+        [
+            "Balance",
+            "HydroBalance_67501"
+        ],
+        [
+            "Value",
+            0.712
         ]
     ],
     [
@@ -246,6 +312,29 @@
         [
             "WhichConcept",
             "Storage"
+        ]
+    ],
+    [
+        "Metadata",
+        "ReservoirCurve",
+        "ResCurve_67501",
+        [
+            "Storage",
+            "Reservoir_67501"
+        ],
+        [
+            "Res",
+            [
+                0.0,
+                28.0
+            ]
+        ],
+        [
+            "Head",
+            [
+                361.65,
+                371.65
+            ]
         ]
     ],
     [
@@ -417,6 +506,23 @@
         [
             "Direction",
             "In"
+        ]
+    ],
+    [
+        "Metadata",
+        "ProductionInfo",
+        "ProductionInfo_67501",
+        [
+            "Flow",
+            "Release_67501"
+        ],
+        [
+            "OutletLevel",
+            84.3
+        ],
+        [
+            "NominalHead",
+            284.0
         ]
     ]
 ]

@@ -9,6 +9,19 @@
         ]
     ],
     [
+        "Metadata",
+        "GlobalEneq",
+        "GlobalEneq_13601",
+        [
+            "Balance",
+            "HydroBalance_13601"
+        ],
+        [
+            "Value",
+            0.202
+        ]
+    ],
+    [
         "Param",
         "M3SToMM3SeriesParam",
         "InflowParam_13601",
@@ -180,12 +193,42 @@
         ]
     ],
     [
+        "Metadata",
+        "ProductionInfo",
+        "ProductionInfo_13601",
+        [
+            "Flow",
+            "Release_13601"
+        ],
+        [
+            "OutletLevel",
+            -1.0
+        ],
+        [
+            "NominalHead",
+            0.0
+        ]
+    ],
+    [
         "Balance",
         "BaseBalance",
         "HydroBalance_13602",
         [
             "Commodity",
             "Hydro"
+        ]
+    ],
+    [
+        "Metadata",
+        "GlobalEneq",
+        "GlobalEneq_13602",
+        [
+            "Balance",
+            "HydroBalance_13602"
+        ],
+        [
+            "Value",
+            0.202
         ]
     ],
     [
@@ -417,6 +460,19 @@
         [
             "Commodity",
             "Hydro"
+        ]
+    ],
+    [
+        "Metadata",
+        "GlobalEneq",
+        "GlobalEneq_13603",
+        [
+            "Balance",
+            "HydroBalance_13603"
+        ],
+        [
+            "Value",
+            0.202
         ]
     ],
     [

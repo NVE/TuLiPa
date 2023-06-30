@@ -9,6 +9,19 @@
         ]
     ],
     [
+        "Metadata",
+        "GlobalEneq",
+        "GlobalEneq_23701",
+        [
+            "Balance",
+            "HydroBalance_23701"
+        ],
+        [
+            "Value",
+            1.457
+        ]
+    ],
+    [
         "Storage",
         "BaseStorage",
         "Reservoir_23701",
@@ -36,6 +49,29 @@
         [
             "WhichConcept",
             "Storage"
+        ]
+    ],
+    [
+        "Metadata",
+        "ReservoirCurve",
+        "ResCurve_23701",
+        [
+            "Storage",
+            "Reservoir_23701"
+        ],
+        [
+            "Res",
+            [
+                0.0,
+                6.6
+            ]
+        ],
+        [
+            "Head",
+            [
+                584.2,
+                598.2
+            ]
         ]
     ],
     [
@@ -270,12 +306,42 @@
         ]
     ],
     [
+        "Metadata",
+        "ProductionInfo",
+        "ProductionInfo_23701",
+        [
+            "Flow",
+            "Release_23701"
+        ],
+        [
+            "OutletLevel",
+            7.9
+        ],
+        [
+            "NominalHead",
+            585.6
+        ]
+    ],
+    [
         "Balance",
         "BaseBalance",
         "HydroBalance_23801",
         [
             "Commodity",
             "Hydro"
+        ]
+    ],
+    [
+        "Metadata",
+        "GlobalEneq",
+        "GlobalEneq_23801",
+        [
+            "Balance",
+            "HydroBalance_23801"
+        ],
+        [
+            "Value",
+            0.379
         ]
     ],
     [
@@ -306,6 +372,29 @@
         [
             "WhichConcept",
             "Storage"
+        ]
+    ],
+    [
+        "Metadata",
+        "ReservoirCurve",
+        "ResCurve_23801",
+        [
+            "Storage",
+            "Reservoir_23801"
+        ],
+        [
+            "Res",
+            [
+                0.0,
+                5.3
+            ]
+        ],
+        [
+            "Head",
+            [
+                178.2,
+                192.7
+            ]
         ]
     ],
     [
@@ -540,12 +629,42 @@
         ]
     ],
     [
+        "Metadata",
+        "ProductionInfo",
+        "ProductionInfo_23801",
+        [
+            "Flow",
+            "Release_23801"
+        ],
+        [
+            "OutletLevel",
+            17.7
+        ],
+        [
+            "NominalHead",
+            170.2
+        ]
+    ],
+    [
         "Balance",
         "BaseBalance",
         "HydroBalance_23802",
         [
             "Commodity",
             "Hydro"
+        ]
+    ],
+    [
+        "Metadata",
+        "GlobalEneq",
+        "GlobalEneq_23802",
+        [
+            "Balance",
+            "HydroBalance_23802"
+        ],
+        [
+            "Value",
+            0.379
         ]
     ],
     [
@@ -780,6 +899,19 @@
         ]
     ],
     [
+        "Metadata",
+        "GlobalEneq",
+        "GlobalEneq_24301",
+        [
+            "Balance",
+            "HydroBalance_24301"
+        ],
+        [
+            "Value",
+            1.15
+        ]
+    ],
+    [
         "Storage",
         "BaseStorage",
         "Reservoir_24301",
@@ -807,6 +939,33 @@
         [
             "WhichConcept",
             "Storage"
+        ]
+    ],
+    [
+        "Metadata",
+        "ReservoirCurve",
+        "ResCurve_24301",
+        [
+            "Storage",
+            "Reservoir_24301"
+        ],
+        [
+            "Res",
+            [
+                0.0,
+                5.0,
+                20.5,
+                40.0
+            ]
+        ],
+        [
+            "Head",
+            [
+                482.0,
+                486.0,
+                496.0,
+                506.0
+            ]
         ]
     ],
     [
@@ -1038,6 +1197,23 @@
         [
             "Direction",
             "In"
+        ]
+    ],
+    [
+        "Metadata",
+        "ProductionInfo",
+        "ProductionInfo_24301",
+        [
+            "Flow",
+            "Release_24301"
+        ],
+        [
+            "OutletLevel",
+            0.0
+        ],
+        [
+            "NominalHead",
+            500.0
         ]
     ]
 ]

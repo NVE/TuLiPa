@@ -9,6 +9,19 @@
         ]
     ],
     [
+        "Metadata",
+        "GlobalEneq",
+        "GlobalEneq_64801",
+        [
+            "Balance",
+            "HydroBalance_64801"
+        ],
+        [
+            "Value",
+            0.611
+        ]
+    ],
+    [
         "Storage",
         "BaseStorage",
         "Reservoir_64801",
@@ -36,6 +49,29 @@
         [
             "WhichConcept",
             "Storage"
+        ]
+    ],
+    [
+        "Metadata",
+        "ReservoirCurve",
+        "ResCurve_64801",
+        [
+            "Storage",
+            "Reservoir_64801"
+        ],
+        [
+            "Res",
+            [
+                0.0,
+                19.0
+            ]
+        ],
+        [
+            "Head",
+            [
+                241.9,
+                247.9
+            ]
         ]
     ],
     [
@@ -252,12 +288,42 @@
         ]
     ],
     [
+        "Metadata",
+        "ProductionInfo",
+        "ProductionInfo_64801",
+        [
+            "Flow",
+            "Release_64801"
+        ],
+        [
+            "OutletLevel",
+            0.0
+        ],
+        [
+            "NominalHead",
+            245.9
+        ]
+    ],
+    [
         "Balance",
         "BaseBalance",
         "HydroBalance_64802",
         [
             "Commodity",
             "Hydro"
+        ]
+    ],
+    [
+        "Metadata",
+        "GlobalEneq",
+        "GlobalEneq_64802",
+        [
+            "Balance",
+            "HydroBalance_64802"
+        ],
+        [
+            "Value",
+            0.927
         ]
     ],
     [
@@ -288,6 +354,41 @@
         [
             "WhichConcept",
             "Storage"
+        ]
+    ],
+    [
+        "Metadata",
+        "ReservoirCurve",
+        "ResCurve_64802",
+        [
+            "Storage",
+            "Reservoir_64802"
+        ],
+        [
+            "Res",
+            [
+                0.0,
+                13.0,
+                173.0,
+                572.97,
+                885.99,
+                1201.77,
+                1844.77,
+                2309.0
+            ]
+        ],
+        [
+            "Head",
+            [
+                372.1,
+                372.2,
+                373.0,
+                375.0,
+                376.5,
+                378.0,
+                381.0,
+                383.4
+            ]
         ]
     ],
     [
@@ -504,12 +605,42 @@
         ]
     ],
     [
+        "Metadata",
+        "ProductionInfo",
+        "ProductionInfo_64802",
+        [
+            "Flow",
+            "Release_64802"
+        ],
+        [
+            "OutletLevel",
+            245.5
+        ],
+        [
+            "NominalHead",
+            133.7
+        ]
+    ],
+    [
         "Balance",
         "BaseBalance",
         "HydroBalance_64804",
         [
             "Commodity",
             "Hydro"
+        ]
+    ],
+    [
+        "Metadata",
+        "GlobalEneq",
+        "GlobalEneq_64804",
+        [
+            "Balance",
+            "HydroBalance_64804"
+        ],
+        [
+            "Value",
+            0.927
         ]
     ],
     [
@@ -741,6 +872,19 @@
         [
             "Commodity",
             "Hydro"
+        ]
+    ],
+    [
+        "Metadata",
+        "GlobalEneq",
+        "GlobalEneq_64805",
+        [
+            "Balance",
+            "HydroBalance_64805"
+        ],
+        [
+            "Value",
+            0.927
         ]
     ],
     [
@@ -984,6 +1128,19 @@
         ]
     ],
     [
+        "Metadata",
+        "GlobalEneq",
+        "GlobalEneq_64806",
+        [
+            "Balance",
+            "HydroBalance_64806"
+        ],
+        [
+            "Value",
+            0.927
+        ]
+    ],
+    [
         "Param",
         "M3SToMM3SeriesParam",
         "InflowParam_64806",
@@ -1221,6 +1378,19 @@
         [
             "Commodity",
             "Hydro"
+        ]
+    ],
+    [
+        "Metadata",
+        "GlobalEneq",
+        "GlobalEneq_64807",
+        [
+            "Balance",
+            "HydroBalance_64807"
+        ],
+        [
+            "Value",
+            0.0
         ]
     ],
     [

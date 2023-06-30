@@ -9,6 +9,19 @@
         ]
     ],
     [
+        "Metadata",
+        "GlobalEneq",
+        "GlobalEneq_16101",
+        [
+            "Balance",
+            "HydroBalance_16101"
+        ],
+        [
+            "Value",
+            0.33
+        ]
+    ],
+    [
         "Storage",
         "BaseStorage",
         "Reservoir_16101",
@@ -36,6 +49,29 @@
         [
             "WhichConcept",
             "Storage"
+        ]
+    ],
+    [
+        "Metadata",
+        "ReservoirCurve",
+        "ResCurve_16101",
+        [
+            "Storage",
+            "Reservoir_16101"
+        ],
+        [
+            "Res",
+            [
+                0.0,
+                0.2
+            ]
+        ],
+        [
+            "Head",
+            [
+                174.5,
+                177.0
+            ]
         ]
     ],
     [
@@ -210,12 +246,42 @@
         ]
     ],
     [
+        "Metadata",
+        "ProductionInfo",
+        "ProductionInfo_16101",
+        [
+            "Flow",
+            "Release_16101"
+        ],
+        [
+            "OutletLevel",
+            27.8
+        ],
+        [
+            "NominalHead",
+            148.3
+        ]
+    ],
+    [
         "Balance",
         "BaseBalance",
         "HydroBalance_16102",
         [
             "Commodity",
             "Hydro"
+        ]
+    ],
+    [
+        "Metadata",
+        "GlobalEneq",
+        "GlobalEneq_16102",
+        [
+            "Balance",
+            "HydroBalance_16102"
+        ],
+        [
+            "Value",
+            0.33
         ]
     ],
     [
