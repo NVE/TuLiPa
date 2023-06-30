@@ -217,7 +217,7 @@ end
 
 function getobjcoeff(p::JuMP_Prob, varid::Id, i::Int)
     var = p.model[Symbol(getname(varid))]
-    return objective_coefficient(p.model, var[i], value)
+    return get(objective_function(p.model).terms, var[i], 0.0)
 end
 
 function getrhsterm(p::JuMP_Prob, conid::Id, traitid::Id, i::Int)
