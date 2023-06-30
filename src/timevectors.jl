@@ -373,7 +373,7 @@ function searchsortedlast(v::StepRange, x)::keytype(v)
     if x > last(v)
         return lastindex(v)
     else   
-        return floor((x-v.start)/v.step) + 1
+        return max(floor((x-v.start)/v.step) + 1, 0)
     end
 end
 
