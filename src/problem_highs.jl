@@ -460,7 +460,7 @@ end
 
 function setconcoeff!(p::HiGHS_Prob, con::Id, var::Id, ci::Int, vi::Int, value::Float64)
     row = p.cons[con].start + ci # 1-based
-    col = p.vars[var].start + vi # 1-based
+    col = p.vars[var].start + vi # 1-based TODO: Check that inbounds!!!
     if !haskey(p.A, col)
         p.A[col] = Dict{Int, Float64}()
     end
