@@ -35,7 +35,12 @@ struct ConstantTimeVector <: TimeVector
     value::Float64
 end
 
-mutable struct InfiniteTimeVector{I, V} <: TimeVector
+struct InfiniteTimeVector{I, V} <: TimeVector
+    index::I
+    values::V
+end
+
+mutable struct MutableInfiniteTimeVector{I, V} <: TimeVector
     index::I
     values::V
 end
@@ -55,9 +60,11 @@ struct RotatingTimeVector{I, V} <: TimeVector
     end
 end
 
+const InfiniteTimeVectors = Union{InfiniteTimeVector, MutableInfiniteTimeVector}
+
 # ---- General functions -----------
 isconstant(::ConstantTimeVector) = true
-isconstant(::InfiniteTimeVector) = false
+isconstant(::InfiniteTimeVectors) = false
 isconstant(::RotatingTimeVector) = false
 
 getweightedaverage(x::ConstantTimeVector, ::DateTime, ::TimeDelta) = x.value
@@ -76,7 +83,7 @@ function getweightedaverage(x::TimeVector, start::DateTime, delta::UnitsTimeDelt
     return value / count
 end
 
-function getweightedaverage(x::InfiniteTimeVector, t::DateTime, delta::MsTimeDelta)
+function getweightedaverage(x::InfiniteTimeVectors, t::DateTime, delta::MsTimeDelta)
     values = x.values
     index = x.index
 
@@ -550,7 +557,7 @@ function includeOneYearTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, va
     return true
 end
 
-# --- InfiniteTimeVector ---
+# --- InfiniteTimeVectors ---
 function includeInfiniteTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
     
@@ -569,6 +576,28 @@ function includeInfiniteTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, v
     _isdifferent(index, values) || error("Different length for index and values for $elkey")
     
     lowlevel[getobjkey(elkey)] = InfiniteTimeVector(index, values)
+    
+    return true
+end
+
+function includeMutableInfiniteTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    checkkey(lowlevel, elkey)
+    
+    indexname  = getdictvalue(value, TIMEINDEX_CONCEPT,  String, elkey)
+    valuesname = getdictvalue(value, TIMEVALUES_CONCEPT, String, elkey)
+    
+    indexkey  = Id(TIMEINDEX_CONCEPT,  indexname)
+    valueskey = Id(TIMEVALUES_CONCEPT, valuesname)
+    
+    haskey(lowlevel, indexkey)   || return false
+    haskey(lowlevel, valueskey)  || return false
+    
+    index  = lowlevel[indexkey]
+    values = lowlevel[valueskey]
+
+    _isdifferent(index, values) || error("Different length for index and values for $elkey")
+    
+    lowlevel[getobjkey(elkey)] = MutableInfiniteTimeVector(index, values)
     
     return true
 end
@@ -603,6 +632,7 @@ INCLUDEELEMENT[TypeKey(TIMEVALUES_CONCEPT, "ColumnTimeValues")] = includeColumnT
 
 INCLUDEELEMENT[TypeKey(TIMEVECTOR_CONCEPT, "RotatingTimeVector")] = includeRotatingTimeVector!
 INCLUDEELEMENT[TypeKey(TIMEVECTOR_CONCEPT, "InfiniteTimeVector")] = includeInfiniteTimeVector!
+INCLUDEELEMENT[TypeKey(TIMEVECTOR_CONCEPT, "MutableInfiniteTimeVector")] = includeMutableInfiniteTimeVector!
 INCLUDEELEMENT[TypeKey(TIMEVECTOR_CONCEPT, "ConstantTimeVector")] = includeConstantTimeVector!
 INCLUDEELEMENT[TypeKey(TIMEVECTOR_CONCEPT, "OneYearTimeVector")]  = includeOneYearTimeVector!
 
