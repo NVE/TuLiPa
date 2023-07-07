@@ -7,7 +7,9 @@ First version very simple:
 - Does not support AdaptiveHorizon (see Demo 2)
 - Support PQ-curves (SegmentedArrow) and aggregated plants (BaseAggSupplyCurve)
 
-TODO: Add support for AdaptiveHorizon, customized time resolution per element and show hydro storages in TWh
+TODO: 
+- Add support for AdaptiveHorizon, customized time resolution per element and show hydro storages in TWh
+- Bugfix isexogen/pq and state dependent conversion value
 """
 
 # Initialize results objects and collect results
