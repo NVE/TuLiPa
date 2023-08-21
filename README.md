@@ -4,6 +4,50 @@ TuLiPa is a modular framework for time parameterized linear programming problems
 
 This is a prototype to test out ideas and inspire the field. Feedback, ideas and contributions are welcome.
 
+### Setup
+*  Install julia version 1.9.2:
+https://julialang.org/downloads/
+* Clone repository
+```console
+git clone https://github.com/NVE/TuLiPa.git
+``` 
+
+Enter the folder with project.toml using a terminal window and run Julia and these commands:
+
+With julia prompt change to Julias Pkg mode using ] and enter
+
+```console
+Julia> ]
+```
+With pkg prompt and while being inside the project folder, activate the project
+```console
+(@v1.9) pkg> activate .
+```
+
+Prompts shows the project is activated, then installs the libraries needed with instantiate
+```console
+(TuLiPa) pkg> instantiate
+```
+
+To start running the demos, run jupyter notebook from the terminal while being inside the TuLiPa project folder (make sure the kernel is julia 9.2)
+```console
+jupyter notebook 
+```
+
+If jupyter is not installed then it can be installed using IJulia
+```console
+Julia> using IJulia
+Julia> Julia.notebook()
+```
+
+
+
+### View demos at Github
+
+Use https://nbviewer.org/ to look at demo notebooks (with interactive plots) directly from github
+
+
+
 ### Motivation:
 With the transition towards a renewable-based power system, we need models that can represent the new technologies, markets and dynamics. One of [NVE](https://www.nve.no/english/)’s initiatives to improve our understanding of power market modelling, is the ongoing research project called “Power market modelling in Julia”. The goal of this project is to make an algorithm for simulating the Northern European power market with high temporal resolution, detailed hydropower (or any other technology), uncertainty in weather, and using only open-source software. We want to find out if decomposing the complex power market problem into many smaller subproblems, solving many of them deterministically and with open-source solvers, can give fast and good results. The simulation concept is inspired by how power dispatch is planned in real life, with longer term price prognosis, calculation of individual storage values (e.g. water, battery or gas storage values) with different models for different technologies, and at the end a market clearing algorithm that takes all the details into account. These ideas are implemented in the energy market simulation model [JulES](https://github.com/NVE/JulES/).
 

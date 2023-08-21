@@ -621,7 +621,7 @@ function runscenarios(scenarios, modelobjects, resultobjects)
         # Plot supplies and demands
         supplychart = areaplot(x1, sum(supplyvalues[:,s,:],dims=3),labels=reshape(supplynames,1,length(supplynames)),title="Supply", ylabel = "GWh/h")
         demandchart = areaplot(x1, sum(demandvalues[:,s,:],dims=3),labels=reshape(demandnames,1,length(demandnames)),title="Demand", ylabel = "GWh/h")
-        display(plot([supplychart,demandchart]...,layout=(1,2),size=(1600,500)))
+        display(plot([supplychart,demandchart]...,layout=(2,1),size=(800,1000)))
         
         # Plot storages (only TWh because of our input data)
         display(areaplot(x2, sum(hydrolevels[:,s,:],dims=3),labels=reshape(hydronames,1,length(hydronames)),size=(800,500),title="Reservoir levels", ylabel = "Gm3")) # 
