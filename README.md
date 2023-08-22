@@ -29,7 +29,7 @@ Prompts shows the project is activated, then installs the libraries needed with 
 (TuLiPa) pkg> instantiate
 ```
 
-To start running the demos, run jupyter notebook from the terminal while being inside the TuLiPa project folder (make sure the kernel is julia 9.2)
+To start running the demos, run jupyter notebook from the terminal while being inside the TuLiPa project folder (make sure the kernel is julia 1.9.2)
 ```console
 jupyter notebook 
 ```

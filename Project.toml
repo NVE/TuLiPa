@@ -1,4 +1,4 @@
-name = "TuLiPa_test"
+name = "TuLiPa"
 repo = "https://github.com/NVE/TuLiPa.jl.git"
 version = "0.1.0"
 
