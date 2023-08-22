@@ -46,15 +46,50 @@ The framework supports having state variables and setting them with boundary con
 - src/ - the rest of the source code is also commented
 
 #### See also demos (:heavy_check_mark: = open data so you can run it yourself):
-- demos/Demo 1 - Deterministic power market with dummy data :heavy_check_mark:
-- demos/Demo 2 - Deterministic power market with detailed data
-- demos/Demo 4 - Deterministic hydro :heavy_check_mark:
-- demos/Demo 5 - Two-stage stochastic hydro :heavy_check_mark:
-- demos/Demo 6 - Two-stage stochastic hydro with Benders decomposition :heavy_check_mark:
-- demos/Demo 8 - Solar & Battery subsystem simulation w Benders :heavy_check_mark:
-- demos/Demo 9 - Hydro simulation w head dependence and scenario modelling :heavy_check_mark:
+- demos/Demo 1 - [Deterministic power market with dummy data](https://nbviewer.org/github/NVE/TuLiPa/blob/master/demos/Demo%201a%20-%20Deterministic%20power%20market%20with%20dummy%20data.ipynb) :heavy_check_mark:
+- demos/Demo 2 - [Deterministic power market with detailed data](https://nbviewer.org/github/NVE/TuLiPa/blob/master/demos/Demo%202%20-%20Deterministic%20power%20market%20with%20detailed%20data.ipynb)
+- demos/Demo 4 - [Deterministic hydro](https://nbviewer.org/github/NVE/TuLiPa/blob/master/demos/Demo%204%20-%20Deterministic%20hydro.ipynb) :heavy_check_mark:
+- demos/Demo 5 - [Two-stage stochastic hydro](https://nbviewer.org/github/NVE/TuLiPa/blob/master/demos/Demo%205%20-%20Two-stage%20stochastic%20hydro.ipynb) :heavy_check_mark:
+- demos/Demo 6 - [Two-stage stochastic hydro with Benders decomposition](https://nbviewer.org/github/NVE/TuLiPa/blob/master/demos/Demo%206%20-%20Two-stage%20stochastic%20hydro%20with%20Benders%20decomposition.ipynb) :heavy_check_mark:
+- demos/Demo 8 - [Solar & Battery subsystem simulation w Benders](https://github.com/NVE/TuLiPa/blob/adding_setup_in_readme/demos/Demo%208%20-%20Solar%20%26%20Battery%20subsystem%20simulation%20w%20Benders.ipynb) :heavy_check_mark:
+- demos/Demo 9 - [Hydro simulation w head dependence and scenario modelling](https://nbviewer.org/github/NVE/TuLiPa/blob/master/demos/Demo%209%20-%20Hydro%20simulation%20w%20head%20dependence%20and%20scenario%20modelling.ipynb) :heavy_check_mark:
 - [JulES, an energy market simulation model that uses TuLiPa as building blocks](https://github.com/NVE/JulES/)
 
+### Setup
+*  Install julia version 1.9.2:
+https://julialang.org/downloads/
+* Clone repository
+```console
+git clone https://github.com/NVE/TuLiPa.git
+``` 
+
+Enter the folder with project.toml using a terminal window and run Julia and these commands:
+
+With julia prompt change to Julias Pkg mode using ] and enter
+
+```console
+Julia> ]
+```
+With pkg prompt and while being inside the project folder, activate the project
+```console
+(@v1.9) pkg> activate .
+```
+
+Prompts shows the project is activated, then installs the libraries needed with instantiate
+```console
+(TuLiPa) pkg> instantiate
+```
+
+To start running the demos, run jupyter notebook from the terminal while being inside the TuLiPa project folder (make sure the kernel is julia 1.9.2)
+```console
+jupyter notebook 
+```
+
+If jupyter is not installed then it can be installed using IJulia
+```console
+Julia> using IJulia
+Julia> Julia.notebook()
+```
 #### Possible improvements to TuLiPa:
 See file "Possible improvements to TuLiPa"
 
