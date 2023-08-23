@@ -1,4 +1,5 @@
 name = "TuLiPa"
+uuid = "970f5c25-cd7d-4f04-b50d-7a4fe2af6639"
 repo = "https://github.com/NVE/TuLiPa.jl.git"
 version = "0.1.0"
 
