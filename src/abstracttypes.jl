@@ -90,6 +90,15 @@ TODO: Add abstract type Group? Have AggSupplyCurve as subtype?
 #
 abstract type Prob end
 
+# ---- ProbMethod ----
+#
+# Represent a combination of Prob and specific solver with possible settings.
+# Most settings are in the buildprob(probmethod, modelobjects) function 
+# (for example solver type or strategy)
+# Some information can be input to the object (e.g parallel processes for the solver)
+# 
+# Interface:
+#   prob = buildprob(probmethod, modelobjects)
 
 # ---- TimeDelta ----
 #
