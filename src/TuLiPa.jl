@@ -58,6 +58,8 @@ include("reasoning_nvehydro.jl")
 # Resulthandling
 include("results.jl")
 
+_EXCLUDE_SYMBOLS = []
+
 for sym in names(@__MODULE__; all = true)
     sym_string = string(sym)
     if sym in _EXCLUDE_SYMBOLS ||
