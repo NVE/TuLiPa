@@ -1,3 +1,5 @@
+module TuLiPa
+
 # Abstract types in our modelling framework and general descriptions
 include("abstracttypes.jl")
 
@@ -55,3 +57,5 @@ include("reasoning_nvehydro.jl")
 
 # Resulthandling
 include("results.jl")
+
+end
