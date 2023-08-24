@@ -58,73 +58,70 @@ include("reasoning_nvehydro.jl")
 # Resulthandling
 include("results.jl")
 
-export 
+export update! 
+export solve!
+export getduration 
+export getrhsterm
+export getisoyear
+export getvarvalue
+export getscenariotime
+export getconcoeff
+export getobjectivevalue
+export getstartduration
+export getcondual
+export getbalance
+export getcommodity
+export getinstancename
+export getisoyearstart
+export getid 
+export getrhsterms 
+export getnumperiods 
+export getparamvalue 
+export gettimedelta
+export getstarttime 
+export getdatatime 
+export getlb
+export getub
+export getarrows
+export gethorizon
+export getmodelobjects
 
-update!, 
-solve!,
-getduration, 
-getrhsterm,
-getisoyear,
-getvarvalue,
-getscenariotime,
-getconcoeff,
-getobjectivevalue,
-getstartduration,
-getcondual,
-getbalance,
-getcommodity,
-getinstancename,
-getisoyearstart,
-getid, 
-getrhsterms, 
-getnumperiods, 
-getparamvalue, 
-gettimedelta,
-getstarttime, 
-getdatatime, 
-getlb,
-getub,
-getarrows,
-gethorizon,
-getmodelobjects,
+export hasrhsterm
+export isingoing
 
-hasrhsterm,
-isingoing,
+export Id 
+export TwoTime
+export SequentialHorizon
+export BaseStorage
+export BaseBalance
+export BaseFlow
+export JuMP_Prob
+export DataElement
 
-Id, 
-TwoTime,
-SequentialHorizon,
-BaseStorage,
-BaseBalance,
-BaseFlow,
-JuMP_Prob,
-DataElement,
-
-
-TIMEVALUES_CONCEPT,
-BALANCE_CONCEPT,
-COMMODITY_CONCEPT,
-FLOW_CONCEPT,
-TIMEINDEX_CONCEPT,
-BOUNDKEY,
-COST_CONCEPT,
-STORAGE_CONCEPT,
-TIMEVECTOR_CONCEPT,
-BOUNDUPPER,
-RHSTERM_CONCEPT,
-WHICHCONCEPT,
-WHICHINSTANCE,
-PARAM_CONCEPT,
-ARROW_CONCEPT,
-CONVERSION_CONCEPT,
-DIRECTIONKEY,
-DIRECTIONOUT,
-DIRECTIONIN,
-CAPACITY_CONCEPT,
-TABLE_CONCEPT,
-TIMEPERIOD_CONCEPT,
-HORIZON_CONCEPT,
-BOUNDARYCONDITION_CONCEPT
+export TIMEVALUES_CONCEPT
+export BALANCE_CONCEPT
+export COMMODITY_CONCEPT
+export FLOW_CONCEPT
+export TIMEINDEX_CONCEPT
+export BOUNDKEY
+export COST_CONCEPT
+export STORAGE_CONCEPT
+export TIMEVECTOR_CONCEPT
+export BOUNDUPPER
+export RHSTERM_CONCEPT
+export WHICHCONCEPT
+export WHICHINSTANCE
+export PARAM_CONCEPT
+export ARROW_CONCEPT
+export CONVERSION_CONCEPT
+export DIRECTIONKEY
+export DIRECTIONOUT
+export DIRECTIONIN
+export CAPACITY_CONCEPT
+export TABLE_CONCEPT
+export TIMEPERIOD_CONCEPT
+export HORIZON_CONCEPT
+export BOUNDARYCONDITION_CONCEPT
 
 
 
