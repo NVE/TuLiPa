@@ -3,20 +3,32 @@ We implement some concrete ProbMethod (see abstracttypes.jl)
 """
 
 # Problem method objects
-struct HighsSimplexMethod <: ProbMethod end
+struct HighsSimplexMethod <: ProbMethod
+    warmstart::Bool
+    function HighsSimplexMethod(;warmstart=true)
+        new(warmstart) 
+    end
+end
 struct HighsSimplexPAMIMethod <: ProbMethod # parallel simplex method max 8 threads
+    warmstart::Bool
     concurrency::Int64
-    function HighsSimplexPAMIMethod()
-        new(0) # sets default 8
+    function HighsSimplexPAMIMethod(;warmstart=true, concurrency=0)
+        new(warmstart, concurrency) # sets default (8)
     end
 end 
 struct HighsSimplexSIPMethod <: ProbMethod # parallel simplex method max 8 threads
+    warmstart::Bool
     concurrency::Int64
-    function HighsSimplexSIPMethod()
-        new(0) # sets default 8
+    function HighsSimplexSIPMethod(;warmstart=true, concurrency=0)
+        new(warmstart, concurrency) # sets default (8)
     end
 end
-struct HighsIPMMethod <: ProbMethod end
+struct HighsIPMMethod <: ProbMethod 
+    warmstart::Bool
+    function HighsIPMMethod(;warmstart=true)
+        new(warmstart) 
+    end
+end
 struct JuMPMethod <: ProbMethod end
 struct JuMPHiGHSMethod <: ProbMethod end
 struct JuMPClpMethod <: ProbMethod end
@@ -30,13 +42,13 @@ struct JuMPClarabelMethod <: ProbMethod end
 
 # Buildprob function
 buildprob(::ProbMethod, modelobjects) = error!("ProbMethod not implemented")
-function buildprob(::HighsSimplexMethod, modelobjects)
-    prob = HiGHS_Prob(modelobjects)
+function buildprob(probmethod::HighsSimplexMethod, modelobjects)
+    prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
     Highs_setIntOptionValue(prob, "simplex_scale_strategy", 5)
     return prob
 end
 function buildprob(probmethod::HighsSimplexPAMIMethod, modelobjects)
-    prob = HiGHS_Prob(modelobjects)
+    prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
     Highs_setIntOptionValue(prob, "simplex_strategy", 2) # parallel simplex
     Highs_setIntOptionValue(prob, "simplex_scale_strategy", 5)
     if probmethod.concurrency > 0
@@ -45,7 +57,7 @@ function buildprob(probmethod::HighsSimplexPAMIMethod, modelobjects)
     return prob
 end
 function buildprob(probmethod::HighsSimplexSIPMethod, modelobjects)
-    prob = HiGHS_Prob(modelobjects)
+    prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
     Highs_setIntOptionValue(prob, "simplex_strategy", 3) # parallel simplex
     Highs_setIntOptionValue(prob, "simplex_scale_strategy", 5)
     if probmethod.concurrency > 0
@@ -53,8 +65,8 @@ function buildprob(probmethod::HighsSimplexSIPMethod, modelobjects)
     end
     return prob
 end
-function buildprob(::HighsIPMMethod, modelobjects)
-    prob = HiGHS_Prob(modelobjects)
+function buildprob(probmethod::HighsIPMMethod, modelobjects)
+    prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
     Highs_setStringOptionValue(prob, "solver", "ipm") # interior point method
     return prob
 end
