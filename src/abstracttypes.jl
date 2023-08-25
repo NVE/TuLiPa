@@ -99,6 +99,7 @@ abstract type Prob end
 # 
 # Interface:
 #   prob = buildprob(probmethod, modelobjects)
+abstract type ProbMethod end
 
 # ---- TimeDelta ----
 #
