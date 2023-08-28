@@ -1172,7 +1172,7 @@ version = "0.9.13"
 
 [[deps.TuLiPa]]
 deps = ["CSV", "Clustering", "DataFrames", "Dates", "Distributed", "DistributedArrays", "Distributions", "HiGHS", "IJulia", "Interpolations", "JSON", "JuMP", "PlotlyJS", "Plots", "Random", "Statistics"]
-git-tree-sha1 = "3d67a73a4f898b94a92e956f2ef60a7d91b79f5f"
+git-tree-sha1 = "5af94f0c59920ed0f6edb2c0ef6d385a3bde4915"
 repo-rev = "tulipa_as_package"
 repo-url = "https://github.com/NVE/TuLiPa.git"
 uuid = "970f5c25-cd7d-4f04-b50d-7a4fe2af6639"
