@@ -136,7 +136,7 @@ mutable struct HiGHS_Prob <: Prob
         end
 
         _passLP!(p)
-        Highs_setIntOptionValue(p, "simplex_scale_strategy", 5)
+        Highs_setIntOptionValue(p, "simplex_scale_strategy", 5) # TODO: Can be removed if problems are built with buildprob()
         
         finalizer(Highs_destroy, p)
         

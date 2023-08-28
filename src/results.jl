@@ -172,7 +172,7 @@ function get_results(problem, powerbalances, rhsterms, plants, plantbalances, pl
         # For powerbalances collect prices and rhsterms (like inelastic demand, wind, solar and RoR)
         for i in 1:length(powerbalances)
             if !isexogen(powerbalances[i])
-                prices[j, i] = -getcondual(problem, getid(powerbalances[i]), j) # from €/GWh to €/MWh
+                prices[j, i] = -getcondual(problem, getid(powerbalances[i]), j)
                 for k in 1:length(rhsterms)
                     if hasrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)
                         rhstermvalues[j, k] = getrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)/timefactor
@@ -184,7 +184,7 @@ function get_results(problem, powerbalances, rhsterms, plants, plantbalances, pl
                 price = getprice(exogenbalance)
                 querytime = getstarttime(horizon, j, t)
                 querydelta = gettimedelta(horizon, j)
-                prices[j, i] = getparamvalue(price, querytime, querydelta) # from €/GWh to €/MWh
+                prices[j, i] = getparamvalue(price, querytime, querydelta)
             end
         end
 
