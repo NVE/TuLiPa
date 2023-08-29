@@ -512,13 +512,13 @@ function setrhsterm!(p::HiGHS_Prob, con::Id, trait::Id, i::Int, value::Float64)
     return
 end
 
-function _setvarvalues!(p::HiGHS_Prob)
+function setvarvalues!(p::HiGHS_Prob)
     p.isoptimal || error("No optimal solution available")
     ret = Highs_getSolution(p, p.col_values, C_NULL, C_NULL, C_NULL)
     checkret(ret)
 end
 
-function _setconduals!(p::HiGHS_Prob)
+function setconduals!(p::HiGHS_Prob)
     p.isoptimal || error("No optimal solution available") 
     ret = Highs_getSolution(p, C_NULL, C_NULL, C_NULL, p.row_duals)
     checkret(ret)
@@ -528,7 +528,7 @@ getobjectivevalue(p::HiGHS_Prob) = Highs_getObjectiveValue(p)
 
 function getvarvalue(p::HiGHS_Prob, key::Id, t::Int)
     if !p.isvarvaluesupdated
-        _setvarvalues!(p)
+        setvarvalues!(p)
         p.isvarvaluesupdated = true
     end
     info = p.vars[key]
@@ -539,7 +539,7 @@ end
 
 function getcondual(p::HiGHS_Prob, key::Id, t::Int)
     if !p.iscondualsupdated
-        _setconduals!(p)
+        setconduals!(p)
         p.iscondualsupdated = true
     end
     info = p.cons[key]
