@@ -91,8 +91,10 @@ mutable struct HiGHS_Prob <: Prob
 
     # TODO: add flag isbuilt and only allow makefixable while building
     fixable_vars::Dict{Tuple{Id, Int}, Id}
+
+    warmstart::Bool
     
-    function HiGHS_Prob(modelobjects)
+    function HiGHS_Prob(modelobjects; warmstart=true)
         if modelobjects isa Dict
             modelobjects = [o for o in values(modelobjects)]
         end
@@ -109,7 +111,8 @@ mutable struct HiGHS_Prob <: Prob
             [], [], [],
             false, false, false,
             [],
-            Dict()
+            Dict(),
+            warmstart
         )
 
         setsilent!(p)
@@ -142,7 +145,7 @@ mutable struct HiGHS_Prob <: Prob
         
         return p
     end
-    function HiGHS_Prob()
+    function HiGHS_Prob(; warmstart=true)
         p = new(
             [],
             Highs_create(), 
@@ -156,7 +159,8 @@ mutable struct HiGHS_Prob <: Prob
             [], [], [],
             false, false, false,
             [],
-            Dict()
+            Dict(),
+            warmstart
         )
         finalizer(Highs_destroy, p)
     end    
@@ -422,6 +426,7 @@ function solve!(p::HiGHS_Prob)
         end
     end
 
+    !p.warmstart && Highs_clearSolver(p) # clear solver so HiGHS presolves rather than using existing Basis
     ret = Highs_run(p)
     checkret(ret)
 
