@@ -225,7 +225,7 @@ function get_results(problem, powerbalances, rhsterms, plants, plantbalances, pl
                         # TODO: Balance and variable can have different horizons
                         arrow = plantarrows[plants[i]]
                         horizon = gethorizon(arrow)
-                        conversionparam = _getcontributionparam(arrow)
+                        conversionparam = getcontributionparam(arrow)
                         querytime = getstarttime(horizon, j, t)
                         querydelta = gettimedelta(horizon, j)
                         conversionvalue = getparamvalue(conversionparam, querytime, querydelta)
@@ -244,7 +244,7 @@ function get_results(problem, powerbalances, rhsterms, plants, plantbalances, pl
             if isexogen(modelobjects[demandbalances[i]])
                 arrow = demandarrows[demands[i]]
                 horizon = gethorizon(arrow)
-                conversionparam = _getcontributionparam(arrow)
+                conversionparam = getcontributionparam(arrow)
                 querytime = getstarttime(horizon, j, t)
                 querydelta = gettimedelta(horizon, j)
                 conversionvalue = getparamvalue(conversionparam, querytime, querydelta)

@@ -13,7 +13,7 @@ the variable this upper capacity should apply to
 (see data_elements_to_objects.jl)).
 """
 
-using CSV, Dates
+using CSV, Dates, DataFrames
 
 struct DataElement
     conceptname::String

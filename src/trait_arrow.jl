@@ -140,7 +140,7 @@ function setconstants!(p::Prob, var::Any, arrow::BaseArrow)
 
     # If the balance is exogen, the contribution of the variabe is added to the Balance
     if !isexogen(arrow.balance)
-        param = _getcontributionparam(arrow)
+        param = getcontributionparam(arrow)
 
         if isconstant(param)            
             varhorizon = gethorizon(var)
@@ -171,7 +171,7 @@ function update!(p::Prob, var::Any, arrow::BaseArrow, start::ProbTime)
     update!(p, arrow.conversion, start)
 
     if !isexogen(arrow.balance)
-        param = _getcontributionparam(arrow)
+        param = getcontributionparam(arrow)
 
         if !isconstant(param)
 
@@ -196,7 +196,7 @@ function update!(p::Prob, var::Any, arrow::BaseArrow, start::ProbTime)
 end
 
 # Internal function
-function _getcontributionparam(arrow::BaseArrow)
+function getcontributionparam(arrow::BaseArrow)
     if isnothing(arrow.loss)
         # If there is no loss the parameter only consist of the conversion
         param = arrow.conversion
