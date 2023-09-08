@@ -175,7 +175,7 @@ end
 
 # ------------------ State dependent production and pumping -------------------
 
-function statedependentprod_init!(problem::Prob, startstorage::Int, t::ProbTime)
+function statedependentprod_init!(problem::Prob, startstorage::Float64, t::ProbTime)
     dummydelta = MsTimeDelta(Millisecond(0))
     plants = gethydroplants(problem.objects)
     for plant in plants
@@ -230,7 +230,7 @@ function statedependentprod_init!(problem::Prob, startstorage::Int, t::ProbTime)
     end
 end
 
-function statedependentpump_init!(problem::Prob, startstorage::Int, t::ProbTime)
+function statedependentpump_init!(problem::Prob, startstorage::Float64, t::ProbTime)
     dummydelta = MsTimeDelta(Millisecond(0))
     
     pumps = gethydropumps(problem.objects)
