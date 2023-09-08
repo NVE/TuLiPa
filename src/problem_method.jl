@@ -9,6 +9,12 @@ struct HighsSimplexMethod <: ProbMethod
         new(warmstart) 
     end
 end
+struct HighsPrimalSimplexMethod <: ProbMethod
+    warmstart::Bool
+    function HighsPrimalSimplexMethod(;warmstart=true)
+        new(warmstart) 
+    end
+end
 struct HighsSimplexPAMIMethod <: ProbMethod # parallel simplex method max 8 threads
     warmstart::Bool
     concurrency::Int64
@@ -47,19 +53,27 @@ function buildprob(probmethod::HighsSimplexMethod, modelobjects)
     Highs_setIntOptionValue(prob, "simplex_scale_strategy", 5)
     return prob
 end
-function buildprob(probmethod::HighsSimplexPAMIMethod, modelobjects)
+function buildprob(probmethod::HighsPrimalSimplexMethod, modelobjects)
+    prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
+    Highs_setIntOptionValue(prob, "simplex_scale_strategy", 5)
+    Highs_setIntOptionValue(prob, "simplex_strategy", 4)
+    return prob
+end
+function buildprob(probmethod::HighsSimplexSIPMethod, modelobjects)
     prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
     Highs_setIntOptionValue(prob, "simplex_strategy", 2) # parallel simplex
     Highs_setIntOptionValue(prob, "simplex_scale_strategy", 5)
+    # Highs_setIntOptionValue(prob, "time_limit", 120) # two minute time limit, does not work since HiGHSRunTime is cumulative when we run several problems consecutively
     if probmethod.concurrency > 0
         Highs_setIntOptionValue(prob, "simplex_max_concurrency", probmethod.concurrency)
     end
     return prob
 end
-function buildprob(probmethod::HighsSimplexSIPMethod, modelobjects)
+function buildprob(probmethod::HighsSimplexPAMIMethod, modelobjects)
     prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
     Highs_setIntOptionValue(prob, "simplex_strategy", 3) # parallel simplex
     Highs_setIntOptionValue(prob, "simplex_scale_strategy", 5)
+    # Highs_setIntOptionValue(prob, "time_limit", 120) # two minute time limit, does not work since HiGHSRunTime is cumulative when we run several problems consecutively
     if probmethod.concurrency > 0
         Highs_setIntOptionValue(prob, "simplex_max_concurrency", probmethod.concurrency)
     end

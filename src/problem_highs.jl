@@ -145,7 +145,7 @@ mutable struct HiGHS_Prob <: Prob
         
         return p
     end
-    function HiGHS_Prob(; warmstart=true)
+    function HiGHS_Prob(; warmstart::Bool=true)
         p = new(
             [],
             Highs_create(), 
@@ -426,7 +426,10 @@ function solve!(p::HiGHS_Prob)
         end
     end
 
-    !p.warmstart && Highs_clearSolver(p) # clear solver so HiGHS presolves rather than using existing Basis
+    if !p.warmstart
+        Highs_clearSolver(p) # clear solver so HiGHS presolves rather than using existing Basis
+        # finalizer(Highs_destroy, p)
+    end
     ret = Highs_run(p)
     checkret(ret)
 
@@ -445,11 +448,29 @@ function solve!(p::HiGHS_Prob)
                 _passLP!(p)
                 ret = Highs_run(p)
                 checkret(ret)
-                scale_strategy = 5
                 reset = true
             end
         end
         Highs_setIntOptionValue(p, "simplex_scale_strategy", 5)
+    end
+
+    if !(kHighsModelStatusOptimal == Highs_getScaledModelStatus(p))
+        simplex_strategy = Ref{Int32}(0)
+        Highs_getIntOptionValue(p, "simplex_strategy", simplex_strategy)
+        if (simplex_strategy[] == Int32(2)) || (simplex_strategy[] == Int32(3)) # if paralell try dual simplex
+            println("Solving with dual simplex")
+            Highs_setIntOptionValue(p, "simplex_strategy", 1)
+            ret = Highs_run(p)
+            checkret(ret)
+            Highs_setIntOptionValue(p, "simplex_strategy", simplex_strategy[])
+        end
+        if simplex_strategy[] != Int32(4) && !(kHighsModelStatusOptimal == Highs_getScaledModelStatus(p)) # if not primal try primal
+            println("Solving with primal simplex")
+            Highs_setIntOptionValue(p, "simplex_strategy", 4)
+            ret = Highs_run(p)
+            checkret(ret)
+            Highs_setIntOptionValue(p, "simplex_strategy", simplex_strategy[])
+        end
     end
 
     p.isoptimal = kHighsModelStatusOptimal == Highs_getScaledModelStatus(p)
