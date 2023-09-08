@@ -2,7 +2,7 @@
 
 julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "d0aaff967a2e488dabd432536add1b5cfa241d0d"
+project_hash = "5f2b6c2bc70dd91f00bf2e8630671f8dfa5964a6"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra", "Requires"]
@@ -1219,8 +1219,8 @@ uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
 version = "0.9.13"
 
 [[deps.TuLiPa]]
-deps = ["CSV", "Clustering", "DataFrames", "Dates", "Distributed", "DistributedArrays", "Distributions", "HiGHS", "IJulia", "Interpolations", "JSON", "JuMP", "PlotlyJS", "Plots", "Random", "Statistics"]
-git-tree-sha1 = "0f3fdd9d4125b11612f9df31f162702cab2298fd"
+deps = ["CSV", "Clp", "Clustering", "DataFrames", "Dates", "Distributed", "DistributedArrays", "Distributions", "HiGHS", "IJulia", "Interpolations", "JSON", "JuMP", "PlotlyJS", "Plots", "Random", "Statistics", "Test"]
+git-tree-sha1 = "3b66d00470c75f50e8d112e6cb2f532a6d8348b6"
 repo-rev = "master"
 repo-url = "https://github.com/NVE/TuLiPa.git"
 uuid = "970f5c25-cd7d-4f04-b50d-7a4fe2af6639"
