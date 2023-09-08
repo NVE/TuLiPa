@@ -7,14 +7,18 @@ First version very simple:
 - Does not support AdaptiveHorizon (see Demo 2)
 - Support PQ-curves (SegmentedArrow) and aggregated plants (BaseAggSupplyCurve)
 
+Two versions, one that preallocates memory and one that does not. The latter is slower.
+
 TODO: 
 - Add support for AdaptiveHorizon, customized time resolution per element and show hydro storages in TWh
 - Bugfix isexogen/pq and state dependent conversion value
 """
 
-# Initialize results objects and collect results
-function init_results(problem, modelobjects, resultobjects, numperiods_powerhorizon, numperiods_hydrohorizon, periodduration_power, t, includeexogenprice=true)
-    # Order result objects into lists
+### Common functions -------------------------------------------------
+
+# Order result objects into lists
+function order_result_objects(resultobjects, includeexogenprice=true)
+
     powerbalances = []
     rhsterms = []
     rhstermbalances = []
@@ -105,8 +109,7 @@ function init_results(problem, modelobjects, resultobjects, numperiods_powerhori
                     end
                 end
             end
-            
-                        
+                   
             # Supplies with SegmentedArrows (hydropower with PQ-kurves)
             pqarrowbool = [arrow isa SegmentedArrow for arrow in arrows]
             pqarrows = arrows[pqarrowbool]
@@ -131,40 +134,13 @@ function init_results(problem, modelobjects, resultobjects, numperiods_powerhori
             end
         end
     end
-    
-    # Collect results
-    prices, rhstermvalues, production, consumption, hydrolevels, batterylevels = get_results(problem, powerbalances, rhsterms, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages, modelobjects, numperiods_powerhorizon, numperiods_hydrohorizon, periodduration_power, t)
-    
-    return prices, rhstermvalues, production, consumption, hydrolevels, batterylevels, powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages
-end
-
-# Append results to existing results (e.g. next time step)
-function update_results(problem, oldprices, oldrhstermvalues, oldproduction, oldconsumption, oldhydrolevels, oldbatterylevels, powerbalances, rhsterms, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages, modelobjects, numperiods_powerhorizon, numperiods_hydrohorizon, periodduration_power, t)
-
-    prices, rhstermvalues, production, consumption, hydrolevels, batterylevels = get_results(problem, powerbalances, rhsterms, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages, modelobjects, numperiods_powerhorizon, numperiods_hydrohorizon, periodduration_power, t)
-
-    prices = vcat(oldprices, prices)
-    rhstermvalues = vcat(oldrhstermvalues, rhstermvalues)
-    production = vcat(oldproduction, production)
-    consumption = vcat(oldconsumption, consumption)
-    hydrolevels = vcat(oldhydrolevels, hydrolevels)
-    batterylevels = vcat(oldbatterylevels, batterylevels)
-    
-    return prices, rhstermvalues, production, consumption, hydrolevels, batterylevels
+    return powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages
 end
 
 # Collect results for given modelobjects
-function get_results(problem, powerbalances, rhsterms, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages, modelobjects, numperiods_powerhorizon, numperiods_hydrohorizon, periodduration_power, t)
-    
-    # Matrices to store results per time period, scenario and object
-    prices = zeros(numperiods_powerhorizon, length(powerbalances))
-    rhstermvalues = zeros(numperiods_powerhorizon, length(rhsterms))
-    production = zeros(numperiods_powerhorizon, length(plants))
-    consumption = zeros(numperiods_powerhorizon, length(demands))
-    hydrolevels = zeros(numperiods_hydrohorizon, length(hydrostorages))
-    batterylevels = zeros(numperiods_powerhorizon, length(batterystorages))
-    
-    for j in 1:numperiods_powerhorizon
+function get_results!(problem, prices, rhstermvalues, production, consumption, hydrolevels, batterylevels, powerbalances, rhsterms, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages, modelobjects, powerrange, hydrorange, periodduration_power, t)
+        
+    for (j,jj) in enumerate(powerrange)
 
         # Timefactor transform results from GWh to GW/h regardless of horizon period durations
         timefactor = periodduration_power/Millisecond(3600000)
@@ -172,10 +148,10 @@ function get_results(problem, powerbalances, rhsterms, plants, plantbalances, pl
         # For powerbalances collect prices and rhsterms (like inelastic demand, wind, solar and RoR)
         for i in 1:length(powerbalances)
             if !isexogen(powerbalances[i])
-                prices[j, i] = -getcondual(problem, getid(powerbalances[i]), j)
+                prices[jj, i] = -getcondual(problem, getid(powerbalances[i]), j)
                 for k in 1:length(rhsterms)
                     if hasrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)
-                        rhstermvalues[j, k] = getrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)/timefactor
+                        rhstermvalues[jj, k] = getrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)/timefactor
                     end
                 end
             else
@@ -184,7 +160,7 @@ function get_results(problem, powerbalances, rhsterms, plants, plantbalances, pl
                 price = getprice(exogenbalance)
                 querytime = getstarttime(horizon, j, t)
                 querydelta = gettimedelta(horizon, j)
-                prices[j, i] = getparamvalue(price, querytime, querydelta)
+                prices[jj, i] = getparamvalue(price, querytime, querydelta)
             end
         end
 
@@ -197,7 +173,7 @@ function get_results(problem, powerbalances, rhsterms, plants, plantbalances, pl
                 pqarrows = arrows[pqarrowbool]                        
                 if sum(pqarrowbool) == 1
                     arrow = pqarrows[1]
-                    production[j, i] = 0
+                    production[jj, i] = 0
                     for (k, conversion) in enumerate(getconversions(arrow))
                         segmentid = getsegmentid(arrow, k)
                         if isexogen(getbalance(arrow))
@@ -215,9 +191,9 @@ function get_results(problem, powerbalances, rhsterms, plants, plantbalances, pl
                             if arrow.isingoing
                                 conversionvalue = -conversionvalue
                             end
-                            production[j, i] = getvarvalue(problem, segmentid, j)*conversionvalue/timefactor
+                            production[jj, i] = getvarvalue(problem, segmentid, j)*conversionvalue/timefactor
                         else
-                            production[j, i] += getvarvalue(problem, segmentid, j)*abs(getconcoeff(problem, plantbalances[i], segmentid, j, j))/timefactor
+                            production[jj, i] += getvarvalue(problem, segmentid, j)*abs(getconcoeff(problem, plantbalances[i], segmentid, j, j))/timefactor
                         end
                     end
                 else
@@ -229,13 +205,13 @@ function get_results(problem, powerbalances, rhsterms, plants, plantbalances, pl
                         querytime = getstarttime(horizon, j, t)
                         querydelta = gettimedelta(horizon, j)
                         conversionvalue = getparamvalue(conversionparam, querytime, querydelta)
-                        production[j, i] = getvarvalue(problem, plants[i], j)*conversionvalue/timefactor
+                        production[jj, i] = getvarvalue(problem, plants[i], j)*conversionvalue/timefactor
                     else
-                        production[j, i] = getvarvalue(problem, plants[i], j)*abs(getconcoeff(problem, plantbalances[i], plants[i], j, j))/timefactor
+                        production[jj, i] = getvarvalue(problem, plants[i], j)*abs(getconcoeff(problem, plantbalances[i], plants[i], j, j))/timefactor
                     end
                 end
             else
-                production[j, i] = getvarvalue(problem, plants[i], j)*abs(getconcoeff(problem, plantbalances[i], plants[i], j, j))/timefactor
+                production[jj, i] = getvarvalue(problem, plants[i], j)*abs(getconcoeff(problem, plantbalances[i], plants[i], j, j))/timefactor
             end
         end
 
@@ -248,24 +224,96 @@ function get_results(problem, powerbalances, rhsterms, plants, plantbalances, pl
                 querytime = getstarttime(horizon, j, t)
                 querydelta = gettimedelta(horizon, j)
                 conversionvalue = getparamvalue(conversionparam, querytime, querydelta)
-                consumption[j, i] = getvarvalue(problem, demands[i], j)*conversionvalue/timefactor
+                consumption[jj, i] = getvarvalue(problem, demands[i], j)*conversionvalue/timefactor
             else
-                consumption[j, i] = getvarvalue(problem, demands[i], j)*abs(getconcoeff(problem, demandbalances[i], demands[i], j, j))/timefactor
+                consumption[jj, i] = getvarvalue(problem, demands[i], j)*abs(getconcoeff(problem, demandbalances[i], demands[i], j, j))/timefactor
             end
         end
         
         # Collect battery storage levels
         for i in 1:length(batterystorages)
-            batterylevels[j, i] = getvarvalue(problem, batterystorages[i], j)
+            batterylevels[jj, i] = getvarvalue(problem, batterystorages[i], j)
         end
     end
     
     # Collect hydro storage levels
-    for j in 1:numperiods_hydrohorizon
+    for (j,jj) in enumerate(hydrorange)
         for i in 1:length(hydrostorages)
-            hydrolevels[j, i] = getvarvalue(problem, hydrostorages[i], j)/1000 # Gm3 TODO: convert to TWh with global energy equivalents of each storage
+            hydrolevels[jj, i] = getvarvalue(problem, hydrostorages[i], j)/1000 # Gm3 TODO: convert to TWh with global energy equivalents of each storage
         end
     end
+end
+
+### Preallocation version -----------------------------------------------------------
+
+# Initialize results objects and collect results
+function init_results(steps, problem, modelobjects, resultobjects, numperiods_powerhorizon, numperiods_hydrohorizon, periodduration_power, t, includeexogenprice=true)
+    
+    powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages = order_result_objects(resultobjects, includeexogenprice)
+    
+    # Matrices to store results per time period, scenario and object
+    prices = zeros(Int(numperiods_powerhorizon*steps), length(powerbalances))
+    rhstermvalues = zeros(Int(numperiods_powerhorizon*steps), length(rhsterms))
+    production = zeros(Int(numperiods_powerhorizon*steps), length(plants))
+    consumption = zeros(Int(numperiods_powerhorizon*steps), length(demands))
+    hydrolevels = zeros(Int(numperiods_hydrohorizon*steps), length(hydrostorages))
+    batterylevels = zeros(Int(numperiods_powerhorizon*steps), length(batterystorages))
+
+    # Collect results
+    get_results!(problem, prices, rhstermvalues, production, consumption, hydrolevels, batterylevels, powerbalances, rhsterms, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages, modelobjects, 1:numperiods_powerhorizon, 1:numperiods_hydrohorizon, periodduration_power, t)
+    
+    return prices, rhstermvalues, production, consumption, hydrolevels, batterylevels, powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages
+end
+
+# Append results to existing results (e.g. next time step)
+function update_results!(step, problem, prices, rhstermvalues, production, consumption, hydrolevels, batterylevels, powerbalances, rhsterms, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages, modelobjects, numperiods_powerhorizon, numperiods_hydrohorizon, periodduration_power, t)
+
+    powerrange = Int(numperiods_powerhorizon*(step-1)+1):Int(numperiods_powerhorizon*(step))
+    hydrorange = Int(numperiods_hydrohorizon*(step-1)+1):Int(numperiods_hydrohorizon*(step))
+    get_results!(problem, prices, rhstermvalues, production, consumption, hydrolevels, batterylevels, powerbalances, rhsterms, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages, modelobjects, powerrange, hydrorange, periodduration_power, t)
+end
+
+### Append version (slow and lots of garbage collection) -----------------------------------------------------------
+# TODO: Remove and from TuLiPa-demos
+
+# Initialize results objects and collect results
+function init_results(problem, modelobjects, resultobjects, numperiods_powerhorizon, numperiods_hydrohorizon, periodduration_power, t, includeexogenprice=true)
+    
+    powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages = order_result_objects(resultobjects, includeexogenprice)
+    
+    # Matrices to store results per time period, scenario and object
+    prices = zeros(numperiods_powerhorizon, length(powerbalances))
+    rhstermvalues = zeros(numperiods_powerhorizon, length(rhsterms))
+    production = zeros(numperiods_powerhorizon, length(plants))
+    consumption = zeros(numperiods_powerhorizon, length(demands))
+    hydrolevels = zeros(numperiods_hydrohorizon, length(hydrostorages))
+    batterylevels = zeros(numperiods_powerhorizon, length(batterystorages))
+
+    # Collect results
+    get_results!(problem, prices, rhstermvalues, production, consumption, hydrolevels, batterylevels, powerbalances, rhsterms, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages, modelobjects, 1:numperiods_powerhorizon, 1:numperiods_hydrohorizon, periodduration_power, t)
+    
+    return prices, rhstermvalues, production, consumption, hydrolevels, batterylevels, powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages
+end
+
+# Append results to existing results (e.g. next time step)
+function update_results(problem, oldprices, oldrhstermvalues, oldproduction, oldconsumption, oldhydrolevels, oldbatterylevels, powerbalances, rhsterms, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages, modelobjects, numperiods_powerhorizon, numperiods_hydrohorizon, periodduration_power, t)
+
+    # Matrices to store results per time period, scenario and object
+    prices = zeros(numperiods_powerhorizon, length(powerbalances))
+    rhstermvalues = zeros(numperiods_powerhorizon, length(rhsterms))
+    production = zeros(numperiods_powerhorizon, length(plants))
+    consumption = zeros(numperiods_powerhorizon, length(demands))
+    hydrolevels = zeros(numperiods_hydrohorizon, length(hydrostorages))
+    batterylevels = zeros(numperiods_powerhorizon, length(batterystorages))
+
+    get_results!(problem, prices, rhstermvalues, production, consumption, hydrolevels, batterylevels, powerbalances, rhsterms, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages, modelobjects, 1:numperiods_powerhorizon, 1:numperiods_hydrohorizon, periodduration_power, t)
+
+    prices = vcat(oldprices, prices)
+    rhstermvalues = vcat(oldrhstermvalues, rhstermvalues)
+    production = vcat(oldproduction, production)
+    consumption = vcat(oldconsumption, consumption)
+    hydrolevels = vcat(oldhydrolevels, hydrolevels)
+    batterylevels = vcat(oldbatterylevels, batterylevels)
     
     return prices, rhstermvalues, production, consumption, hydrolevels, batterylevels
 end
