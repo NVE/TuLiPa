@@ -247,7 +247,7 @@ end
 ### Preallocation version -----------------------------------------------------------
 
 # Initialize results objects and collect results
-function init_results(steps, problem, modelobjects, resultobjects, numperiods_powerhorizon, numperiods_hydrohorizon, periodduration_power, t, includeexogenprice=true)
+function init_results(steps::Int, problem::Prob, modelobjects, resultobjects, numperiods_powerhorizon, numperiods_hydrohorizon, periodduration_power, t, includeexogenprice=true)
     
     powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages = order_result_objects(resultobjects, includeexogenprice)
     
@@ -277,7 +277,7 @@ end
 # TODO: Remove and from TuLiPa-demos
 
 # Initialize results objects and collect results
-function init_results(problem, modelobjects, resultobjects, numperiods_powerhorizon, numperiods_hydrohorizon, periodduration_power, t, includeexogenprice=true)
+function init_results(problem::Prob, modelobjects, resultobjects, numperiods_powerhorizon, numperiods_hydrohorizon, periodduration_power, t, includeexogenprice=true)
     
     powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages = order_result_objects(resultobjects, includeexogenprice)
     
