@@ -74,7 +74,7 @@ end
 
 # -------------- Upper and lower reservoir of plants and pumps ---------------------
 
-function getupperreservoirplant(plant::Flow, balanceflows::Dict{Balance, Set{Flow}}, storages::Vector)
+function getupperreservoirplant(plant::Flow, balanceflows::Dict, storages::Vector)
     for arrow in getarrows(plant)
         if !isingoing(arrow)
             prodbalance = getbalance(arrow) # first identify water balance over plant
@@ -110,7 +110,7 @@ function getupperreservoirplant(plant::Flow, balanceflows::Dict{Balance, Set{Flo
     return
 end
 
-function getlowerreservoirplant(plant::Flow, balanceflows::Dict{Balance, Set{Flow}}, storages::Vector)
+function getlowerreservoirplant(plant::Flow, balanceflows::Dict, storages::Vector)
     for arrow in getarrows(plant)
         if isingoing(arrow) && (getinstancename(getid(getcommodity(getbalance(arrow)))) == "Hydro")
             prodbalance = getbalance(arrow) # first identify water balance under plant
