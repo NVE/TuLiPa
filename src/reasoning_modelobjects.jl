@@ -116,7 +116,7 @@ function getstorages(modelobjects::Vector)
 end
 
 function getbalanceflows(modelobjects::Dict)
-    d = Dict()
+    d = Dict{Balance, Set{Flow}}()
     for obj in values(modelobjects)
         if obj isa Flow 
             for a in getarrows(obj)
@@ -132,7 +132,7 @@ function getbalanceflows(modelobjects::Dict)
 end
 
 function getbalanceflows(modelobjects::Vector)
-    d = Dict()
+    d = Dict{Balance, Set{Flow}}()
     for obj in modelobjects
         if obj isa Flow 
             for a in getarrows(obj)
@@ -356,7 +356,7 @@ function getpowersystems(modelobjects::Dict)
 
         commodity = getcommodity(balance)
 
-        remaining = Set(balanceflows[balance])
+        remaining = Set{Any}(balanceflows[balance])
 
         while length(remaining) > 0
             obj = pop!(remaining)

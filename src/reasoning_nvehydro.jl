@@ -74,27 +74,27 @@ end
 
 # -------------- Upper and lower reservoir of plants and pumps ---------------------
 
-function getupperreservoirplant(plant::Flow, objects::Vector)
+function getupperreservoirplant(plant::Flow, balanceflows::Dict{Balance, Set{Flow}}, storages::Vector)
     for arrow in getarrows(plant)
         if !isingoing(arrow)
             prodbalance = getbalance(arrow) # first identify water balance over plant
             
             # plants with only regulated inflow have one storage directly over plant / water balance (dependant on dataset)
-            for storage in getstorages(objects)
+            for storage in storages
                 if getbalance(storage) == prodbalance
                     return storage
                 end
             end
 
             # plants with unregulated and regulated inflow have one storage two waterbalances up (dependant on dataset)
-            for flow in getbalanceflows(objects)[prodbalance]
+            for flow in balanceflows[prodbalance]
                 if split(getinstancename(getid(flow)),"r")[1] == split(getinstancename(getid(plant)),"u")[1] # only difference in instancename is "r" and "u"
                     for arrow in getarrows(flow)
                         if isingoing(arrow) & (getbalance(arrow) == prodbalance)
                             for arrow1 in getarrows(flow)
                                 if !isingoing(arrow1)
                                     storagebalance = getbalance(arrow1)
-                                    for storage in getstorages(objects)
+                                    for storage in storages
                                         if getbalance(storage) == storagebalance
                                             return storage
                                         end
@@ -110,13 +110,13 @@ function getupperreservoirplant(plant::Flow, objects::Vector)
     return
 end
 
-function getlowerreservoirplant(plant::Flow, objects::Vector)
+function getlowerreservoirplant(plant::Flow, balanceflows::Dict{Balance, Set{Flow}}, storages::Vector)
     for arrow in getarrows(plant)
         if isingoing(arrow) && (getinstancename(getid(getcommodity(getbalance(arrow)))) == "Hydro")
             prodbalance = getbalance(arrow) # first identify water balance under plant
             
             # most plants will send water directly to underlying reservoir
-            for storage in getstorages(objects)
+            for storage in storages
                 if getbalance(storage) == prodbalance
                     return storage
                 end
@@ -124,11 +124,11 @@ function getlowerreservoirplant(plant::Flow, objects::Vector)
 
             # plants with hydraulic coupling will send water through a water balance, and then to underlying reservoir
             if haskey(prodbalance.metadata, HYDRAULICHINTKEY)
-                for flow in getbalanceflows(objects)[prodbalance]
+                for flow in balanceflows[prodbalance]
                     for arrow1 in getarrows(flow)
                         if isingoing(arrow1)
                             resbalance = getbalance(arrow1)
-                            for storage in getstorages(objects)
+                            for storage in storages
                                 if getbalance(storage) == resbalance
                                     return storage
                                 end
@@ -141,13 +141,13 @@ function getlowerreservoirplant(plant::Flow, objects::Vector)
     end
 end
 
-function getlowerreservoirpump(pump::Flow, objects::Vector)
+function getlowerreservoirpump(pump::Flow, storages::Vector)
     for arrow in getarrows(pump)
         if !isingoing(arrow) && (getinstancename(getid(getcommodity(getbalance(arrow)))) == "Hydro") # not power market arrow
             prodbalance = getbalance(arrow) # first identify water balance under pump
             
             # find storage connected to balance
-            for storage in getstorages(objects)
+            for storage in storages
                 if getbalance(storage) == prodbalance
                     return storage
                 end
@@ -157,13 +157,13 @@ function getlowerreservoirpump(pump::Flow, objects::Vector)
     return
 end
 
-function getupperreservoirpump(pump::Flow, objects::Vector)
+function getupperreservoirpump(pump::Flow, storages::Vector)
     for arrow in getarrows(pump)
         if isingoing(arrow)
             prodbalance = getbalance(arrow) # first identify water balance over pump
             
             # find storage connected to balance
-            for storage in getstorages(objects)
+            for storage in storages
                 if getbalance(storage) == prodbalance
                     return storage
                 end
@@ -178,9 +178,11 @@ end
 function statedependentprod_init!(problem::Prob, startstorage::Float64, t::ProbTime)
     dummydelta = MsTimeDelta(Millisecond(0))
     plants = gethydroplants(problem.objects)
+    storages = getstorages(problem.objects)
+    balanceflows = getbalanceflows(problem.objects)
     for plant in plants
         lowerheight = 0.0 # preallocate
-        upperstorage = getupperreservoirplant(plant, problem.objects)
+        upperstorage = getupperreservoirplant(plant, balanceflows, storages)
         # Only for plants with upper storages with reservoir curves
         if upperstorage isa Storage
             if haskey(upperstorage.metadata, RESERVOIRCURVEKEY)
@@ -191,7 +193,7 @@ function statedependentprod_init!(problem::Prob, startstorage::Float64, t::ProbT
                 nominalhead = plant.metadata[NOMINALHEADKEY]
                 outletlevel = plant.metadata[OUTLETLEVELKEY]
 
-                lowerstorage = getlowerreservoirplant(plant, problem.objects)
+                lowerstorage = getlowerreservoirplant(plant, balanceflows, storages)
                 if lowerstorage isa Storage
                     # If has lower storage and has reservoir curve
                     if haskey(lowerstorage.metadata, RESERVOIRCURVEKEY)
@@ -234,6 +236,7 @@ function statedependentpump_init!(problem::Prob, startstorage::Float64, t::ProbT
     dummydelta = MsTimeDelta(Millisecond(0))
     
     pumps = gethydropumps(problem.objects)
+    storages = getstorages(problem.objects)
     for pump in pumps
         for arrow in getarrows(pump)
             conversion = arrow.conversion
@@ -241,7 +244,7 @@ function statedependentpump_init!(problem::Prob, startstorage::Float64, t::ProbT
                 pumpname = getinstancename(getid(pump))
                 
                 # Lower storage
-                lowerstorage = getlowerreservoirpump(pump, problem.objects)
+                lowerstorage = getlowerreservoirpump(pump, storages)
                 lowerstorage isa Storage || error(string("No lower storage found for ", pumpname))
                 haskey(lowerstorage.metadata, RESERVOIRCURVEKEY) || error("No reservoir curve for lower pump storage ", getinstancename(getid(lowerstorage)))
 
@@ -256,7 +259,7 @@ function statedependentpump_init!(problem::Prob, startstorage::Float64, t::ProbT
                 end
 
                 # Upper storage
-                upperstorage = getupperreservoirpump(pump, problem.objects)
+                upperstorage = getupperreservoirpump(pump, storages)
                 upperstorage isa Storage || error(string("No upper storage found for ", pumpname))
                 haskey(upperstorage.metadata, RESERVOIRCURVEKEY) || error("No reservoir curve for upper pump storage ", getinstancename(getid(upperstorage)))
 
@@ -280,9 +283,11 @@ end
 
 function statedependentprod!(problem::Prob, startstates::Dict{String, Float64})
     plants = gethydroplants(problem.objects)
+    storages = getstorages(problem.objects)
+    balanceflows = getbalanceflows(problem.objects)
     for plant in plants
         lowerheight = 0.0 # preallocate
-        upperstorage = getupperreservoirplant(plant, problem.objects)
+        upperstorage = getupperreservoirplant(plant, balanceflows, storages)
         # Only for plants with upper storages with reservoir curves
         if upperstorage isa Storage
             if haskey(upperstorage.metadata, RESERVOIRCURVEKEY)
@@ -293,7 +298,7 @@ function statedependentprod!(problem::Prob, startstates::Dict{String, Float64})
                 nominalhead = plant.metadata[NOMINALHEADKEY]
                 outletlevel = plant.metadata[OUTLETLEVELKEY]
 
-                lowerstorage = getlowerreservoirplant(plant, problem.objects)
+                lowerstorage = getlowerreservoirplant(plant, balanceflows, storages)
                 if lowerstorage isa Storage
                     # If has lower storage and has reservoir curve
                     if haskey(lowerstorage.metadata, RESERVOIRCURVEKEY)
@@ -334,6 +339,7 @@ end
 
 function statedependentpump!(problem::Prob, startstates::Dict{String, Float64})
     pumps = gethydropumps(problem.objects)
+    storages = getstorages(problem.objects)
     for pump in pumps
         for arrow in getarrows(pump)
             conversion = arrow.conversion
@@ -341,7 +347,7 @@ function statedependentpump!(problem::Prob, startstates::Dict{String, Float64})
                 pumpname = getinstancename(getid(pump))
                 
                 # Lower storage
-                lowerstorage = getlowerreservoirpump(pump, problem.objects)
+                lowerstorage = getlowerreservoirpump(pump, storages)
                 lowerstorage isa Storage || error(string("No lower storage found for ", pumpname))
                 haskey(lowerstorage.metadata, RESERVOIRCURVEKEY) || error("No reservoir curve for lower pump storage ", getinstancename(getid(lowerstorage)))
 
@@ -356,7 +362,7 @@ function statedependentpump!(problem::Prob, startstates::Dict{String, Float64})
                 end
 
                 # Upper storage
-                upperstorage = getupperreservoirpump(pump, problem.objects)
+                upperstorage = getupperreservoirpump(pump, storages)
                 upperstorage isa Storage || error(string("No upper storage found for ", pumpname))
                 haskey(upperstorage.metadata, RESERVOIRCURVEKEY) || error("No reservoir curve for upper pump storage ", getinstancename(getid(upperstorage)))
 
