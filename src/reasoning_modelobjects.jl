@@ -116,7 +116,7 @@ function getstorages(modelobjects::Vector)
 end
 
 function getbalanceflows(modelobjects::Dict)
-    d = Dict{Balance, Set{Flow}}()
+    d = Dict()
     for obj in values(modelobjects)
         if obj isa Flow 
             for a in getarrows(obj)
@@ -132,7 +132,7 @@ function getbalanceflows(modelobjects::Dict)
 end
 
 function getbalanceflows(modelobjects::Vector)
-    d = Dict{Balance, Set{Flow}}()
+    d = Dict()
     for obj in modelobjects
         if obj isa Flow 
             for a in getarrows(obj)
