@@ -91,7 +91,7 @@ Julia> using IJulia
 Julia> Julia.notebook()
 ```
 #### Possible improvements to TuLiPa:
-See file "Possible improvements to TuLiPa"
+File "Possible improvements to TuLiPa" is temporarly removed
 
 ### Why Julia:
 Julia is a modern and growing language made for scientific computing. It has a flexible type-hierarchy which is perfect for our modular framework. Together with “multiple dispatch” it is easy to make a general framework that works for different concrete types and methods/functions. It also makes it easy to add new concrete types or methods without having to change much of the existing code. 
