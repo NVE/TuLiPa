@@ -533,6 +533,7 @@ function _get_residual_load(rhs_terms::Vector, datatime::DateTime, start::DateTi
 end
 
 # StaticRHSData -------------
+# NB! Only makes sense to use StaticRHSData with FixedDataTwoTime
 mutable struct StaticRHSAHData <: AdaptiveHorizonData
     commodity::String
     datatime::DateTime
