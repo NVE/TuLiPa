@@ -266,7 +266,7 @@ function getparamvalue(param::CostPerMWToGWhParam, start::ProbTime, d::TimeDelta
 end
 
 # Calculate the parameter value if the start value is a PhaseinTwoTime
-function getparamvalue(param::FossilMCParam, start::PhaseinTwoTime, d::TimeDelta)
+function getparamvalue(param::FossilMCParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime}, d::TimeDelta)
     fl = getweightedaverage(param.fuellevel,   start.datatime, d)
     cf = getweightedaverage(param.co2factor,   start.datatime, d)
     cl = getweightedaverage(param.co2level,    start.datatime, d)
@@ -296,7 +296,7 @@ function getparamvalue(param::FossilMCParam, start::PhaseinTwoTime, d::TimeDelta
     return (fl * fp + cf * cl * cp) / ef + vo
 end
 
-function getparamvalue(param::MeanSeriesParam, start::PhaseinTwoTime, d::TimeDelta)
+function getparamvalue(param::MeanSeriesParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime}, d::TimeDelta)
     phasein = getweightedaverage(start.phaseinvector, start.scenariotime1, d)
 
     local profile::Float64
@@ -316,7 +316,7 @@ function getparamvalue(param::MeanSeriesParam, start::PhaseinTwoTime, d::TimeDel
     return value
 end
 
-function getparamvalue(param::M3SToMM3SeriesParam, start::PhaseinTwoTime, d::TimeDelta)
+function getparamvalue(param::M3SToMM3SeriesParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime}, d::TimeDelta)
     phasein = getweightedaverage(start.phaseinvector, start.scenariotime1, d)
 
     local profile::Float64
@@ -337,7 +337,7 @@ function getparamvalue(param::M3SToMM3SeriesParam, start::PhaseinTwoTime, d::Tim
     return m3s * seconds / 1e6
 end
 
-function getparamvalue(param::MWToGWhSeriesParam, start::PhaseinTwoTime, d::TimeDelta)
+function getparamvalue(param::MWToGWhSeriesParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime}, d::TimeDelta)
     phasein = getweightedaverage(start.phaseinvector, start.scenariotime1, d)
 
     local profile::Float64
