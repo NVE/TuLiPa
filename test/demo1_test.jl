@@ -1,4 +1,4 @@
-using Dates, TuLiPa, CSV, DataFrames, Statistics, JuMP, Clp, Test
+using Dates, TuLiPa, CSV, DataFrames, Statistics, JuMP, Test, HiGHS
 include("../demos/Demo 1a - Deterministic power market with dummy data.jl");
 
 elements = gettestdataset();
@@ -23,7 +23,7 @@ push!(elements, getelement(BOUNDARYCONDITION_CONCEPT, "StartEqualStop", "StartEq
 
 modelobjects = getmodelobjects(elements);
 
-mymodel = JuMP.Model(Clp.Optimizer)
+mymodel = JuMP.Model(HiGHS.Optimizer)
 set_silent(mymodel)
 prob = JuMP_Prob(modelobjects, mymodel)
 prob.model
