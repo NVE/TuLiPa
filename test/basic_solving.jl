@@ -5,22 +5,13 @@ elements = gettestdataset();
 scenarioyearstart = 1981
 scenarioyearstop = 1983
 addscenariotimeperiod!(elements, "ScenarioTimePeriod", getisoyearstart(scenarioyearstart), getisoyearstart(scenarioyearstop));
-
-# We choose the horizon (time-resolution) of the commodities. We set the duration of the horizons to 3 years
-# We want the variables connected to power (daily) to be more detailed than the hydro variables (weekly)
-power_horizon = SequentialHorizon(364*3, Day(1))
-hydro_horizon = SequentialHorizon(52*3, Week(1))
+power_horizon = SequentialHorizon(364 * 3, Day(1))
+hydro_horizon = SequentialHorizon(52 * 3, Week(1))
 set_horizon!(elements, "Power", power_horizon)
 set_horizon!(elements, "Hydro", hydro_horizon);
-
-
-# Storages have state-dependant variables that need a boundary condition
-# We set the starting storage to be equal to the ending storage, x[0] = x[T] (for horizon where t in 1:T)
 push!(elements, getelement(BOUNDARYCONDITION_CONCEPT, "StartEqualStop", "StartEqualStop_StorageResNO2",
         (WHICHINSTANCE, "StorageResNO2"),
         (WHICHCONCEPT, STORAGE_CONCEPT)));
-
-
 modelobjects = getmodelobjects(elements);
 
 mymodel = JuMP.Model(HiGHS.Optimizer)
