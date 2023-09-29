@@ -1,3 +1,5 @@
+using DataFrames, Statistics, JSON, Dates, CSV
+
 # Read DataElement from a tuple
 function getelement(concept, concrete, instance, pairs...) 
     d = Dict()
@@ -373,7 +375,9 @@ end
 function gettestprofiles()
     
     # Profiles from https://www.nve.no/energi/analyser-og-statistikk/vaerdatasett-for-kraftsystemmodellene/
-    path = joinpath(dirname(pwd()), "data/testprofiles_1981_2010.csv")
+    path = joinpath(dirname(pathof(TuLiPa)), "..", "data/testprofiles_1981_2010.csv")
+	
+	#joinpath(dirname(pwd()), "data/testprofiles_1981_2010.csv")
     dfmt = dateformat"yyyy-mm-dd HH:MM:SS"
     df = CSV.read(path, DataFrame)
     df.Timestamp = DateTime.(df.Timestamp, dfmt)
