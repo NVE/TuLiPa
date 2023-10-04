@@ -1,5 +1,5 @@
 using TuLiPa, CSV, DataFrames, Statistics, JuMP, Test, HiGHS, Dates
-include("../demos/Demo 1a - Deterministic power market with dummy data.jl");
+include("utils_dummy_data.jl");
 
 elements = gettestdataset();
 scenarioyearstart = 1981
