@@ -151,7 +151,7 @@ mutable struct _CPLEXConInfo
 end
 
 # Modification of Env struct from: https://github.com/jump-dev/CPLEX.jl/blob/master/src/MOI/MOI_wrapper.jl
-struct _CPLEXEnv
+mutable struct _CPLEXEnv
     ptr::Ptr{Cvoid}    # (same as CPLEX.CPXENVptr)
 
     function _CPLEXEnv()
@@ -225,7 +225,7 @@ mutable struct CPLEX_Prob <: Prob
     
     vars::Dict{Id, _CPLEXVarInfo}
     cons::Dict{Id, _CPLEXConInfo}
-    fixable_vars::Dict{Tuple{Id, Int}, Id}
+    fixable_vars::Dict{Tuple{Id, Int}, Int}
     
     lb_updater::Union{Nothing, _CPLEXBoundsUpdater}
     ub_updater::Union{Nothing, _CPLEXBoundsUpdater}
@@ -253,11 +253,11 @@ mutable struct CPLEX_Prob <: Prob
         # Create data structures
         vars = Dict{Id, _CPLEXVarInfo}()
         cons = Dict{Id, _CPLEXConInfo}()
-        fixable_vars = Dict{Tuple{Id, Int}, Id}()
+        fixable_vars = Dict{Tuple{Id, Int}, Int}()
 
         # Create CPLEX_Prob instance
-        prob = new(modelobjects, [], env, lp, 0, 0, vars, cols, fixable_vars, 
-                   nothing, nothing, nothing, nothing, nothing, nothing, nothing)
+        prob = new(modelobjects, [], env, lp, 0, 0, vars, cons, fixable_vars, 
+                   nothing, nothing, nothing, nothing, nothing, [], [], false, false)
 
         # --- Initialize data in the prob object -----
         CPLEX.CPXchgobjsen(prob.env, prob.lp, CPLEX.CPX_MIN)
@@ -293,8 +293,18 @@ mutable struct CPLEX_Prob <: Prob
         prob.varvalues = zeros(Float64, prob.num_col)
         prob.conduals = zeros(Float64, prob.num_row)
 
-        prob.isvarvaluesupdated = false
-        prob.iscondualsupdated = false
+        # Update fixable vars
+        for ((varid, varix), ix_le) in prob.fixable_vars
+            ix_ge = ix_le + 1
+            concept = getconceptname(varid)
+            name = getinstancename(varid)
+            leid = Id(concept, string("FixLe", name, varix))
+            geid = Id(concept, string("FixGe", name, varix))
+            setconcoeff!(prob, leid, varid, 1, varix, 1.0)
+            setconcoeff!(prob, geid, varid, 1, varix, 1.0)
+            _update!(prob.rhs_updater, ix_le, Inf)
+            _update!(prob.rhs_updater, ix_ge, -Inf)  
+         end
 
         # add vars and cols in prob
         _cplex_add_vars!(prob)
@@ -324,6 +334,16 @@ end
 Base.cconvert(::Type{Ptr{Cvoid}}, prob::CPLEX_Prob) = prob
 Base.unsafe_convert(::Type{Ptr{Cvoid}}, prob::CPLEX_Prob) = prob.lp::Ptr{Cvoid}
 
+# ----- Update problem ----------
+function update!(p::CPLEX_Prob, start::ProbTime)
+    for horizon in gethorizons(p)
+        update!(horizon, start)
+    end
+    for obj in getobjects(p)
+        update!(p, obj, start)
+    end
+end
+
 # ---- Definition of Prob interface functions for CPLEX_Prob --------
 
 getobjects(p::CPLEX_Prob) = p.objects
@@ -342,9 +362,9 @@ end
 # function body copied from https://github.com/jump-dev/CPLEX.jl/blob/master/src/MOI/MOI_wrapper.jl
 function setparam!(p::CPLEX_Prob, paramname::String, value)
     numP, typeP = Ref{Cint}(), Ref{Cint}()
-    ret = CPLEX.CPXgetparamnum(model.env, paramname, numP)
+    ret = CPLEX.CPXgetparamnum(p.env, paramname, numP)
     _cplex_check_ret(p.env, ret)
-    ret = CPLEX.CPXgetparamtype(model.env, numP[], typeP)
+    ret = CPLEX.CPXgetparamtype(p.env, numP[], typeP)
     _cplex_check_ret(p.env, ret)
     ret = if typeP[] == CPLEX.CPX_PARAMTYPE_NONE
         Cint(0)
@@ -411,7 +431,7 @@ end
 
 function setlb!(p::CPLEX_Prob, var::Id, i::Int, value::Float64)
     col = p.vars[var].start + i
-    update!(p.lb_updater, col, value)
+    _update!(p.lb_updater, col, value)
     return
 end
 
@@ -539,8 +559,7 @@ function getfixvardual(p::CPLEX_Prob, varid::Id, varix::Int)
 end
 
 function makefixable!(p::CPLEX_Prob, varid::Id, varix::Int)
-    ix_le = p.num_rows + 1
-    ix_ge = p.num_rows + 2
+    ix_le = p.num_row + 1 # ix_ge = p.num_row + 2
     p.fixable_vars[(varid, varix)] = ix_le
     concept = getconceptname(varid)
     name = getinstancename(varid)
@@ -548,10 +567,6 @@ function makefixable!(p::CPLEX_Prob, varid::Id, varix::Int)
     geid = Id(concept, string("FixGe", name, varix))
     addle!(p, leid, 1)
     addge!(p, geid, 1)
-    setconcoeff!(p, leid, varid, 1, varix, 1.0)
-    setconcoeff!(p, geid, varid, 1, varix, 1.0)
-    _update!(p.rhs_updater, ix_le, Inf)
-    _update!(p.rhs_updater, ix_ge, -Inf)
     return
 end
 
@@ -611,7 +626,7 @@ end
 function _cplex_update_rhs!(p::CPLEX_Prob, u::_CPLEXVectorUpdater)
     for info in values(p.cons)
         length(info.rhsterms) > 0 || continue
-        for (t, row_ix) in enumerate((info.start + 1):(info.start + info.num))
+        for (t, rowix) in enumerate((info.start + 1):(info.start + info.num))
             _update!(u, rowix, sum(values(info.rhsterms[t])))
         end
     end
@@ -659,17 +674,17 @@ function _cplex_add_cons!(p::CPLEX_Prob)
     for info in values(p.cons)
         for j in (info.start + 1):(info.start + info.num)
             senses[j] = info.contype
-            if info.contype == 'E'
+            if info.contype == Cchar('E')
                 rhs[j] = 0.0
-            elseif info.contype == 'G'
+            elseif info.contype == Cchar('G')
                 rhs[j] = -Inf
             else
-                @assert info.contype == 'L'
+                @assert info.contype == Cchar('L')
                 rhs[j] = Inf
             end
         end
     end
-    ret = CPLEX.CPXaddrows(p.env, p.lp, 0, p.num_row, 0, rhs, sense, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL)
+    ret = CPLEX.CPXaddrows(p.env, p.lp, 0, p.num_row, 0, rhs, senses, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL)
     _cplex_check_ret(p.env, ret)
     return
 end
