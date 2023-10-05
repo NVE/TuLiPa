@@ -51,11 +51,11 @@ function changeendtoinsidestates!(p::Prob, states::Dict{StateVariableInfo, Float
     for var in keys(states)
         (id, ix) = getvarout(var)
         newvar = StateVariableInfo(getvarin(var), (id, t))
-        states[newvar] = getvarvalue(p, id, t)
 
         delete!(states, var)
+        states[newvar] = getvarvalue(p, id, t)
     end
-    return states
+    return
 end
 
 function setingoingstates!(p::Prob, states::Dict{StateVariableInfo, Float64})
