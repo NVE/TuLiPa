@@ -48,7 +48,7 @@ function getinsidestates!(p::Prob, states::Dict{StateVariableInfo, Float64}, t::
 end
 
 function changeendtoinsidestates!(p::Prob, states::Dict{StateVariableInfo, Float64}, t::Int) # TODO: Make compatible with variables with multiple state variables
-    for var in keys(states)
+    for var in keys(states) # safer with collect, but allocates. Necessary if states[newvar] comes before delete!
         (id, ix) = getvarout(var)
         newvar = StateVariableInfo(getvarin(var), (id, t))
 
