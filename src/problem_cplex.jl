@@ -633,7 +633,7 @@ end
 function fix!(p::CPLEX_Prob, varid::Id, varix::Int, value::Float64)
     (leid, geid) = p.fixable_vars[(varid, varix)]
     ix_le = p.cons[leid].start + 1
-    ix_ge = ix_le + 1
+    ix_ge = p.cons[geid].start + 1
     _update!(p.rhs_updater, ix_le, value)
     _update!(p.rhs_updater, ix_ge, value)
     return
@@ -642,7 +642,7 @@ end
 function unfix!(p::CPLEX_Prob, varid::Id, varix::Int)
     (leid, geid) = p.fixable_vars[(varid, varix)]
     ix_le = p.cons[leid].start + 1
-    ix_ge = ix_le + 1
+    ix_ge = p.cons[geid].start + 1
     _update!(p.rhs_updater, ix_le, Inf)
     _update!(p.rhs_updater, ix_ge, -Inf)
     return
