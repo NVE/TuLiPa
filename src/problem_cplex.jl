@@ -256,6 +256,16 @@ function _cplex_create_lp(env::_CPLEXEnv)
     return ptr
 end
 
+# inspiration from https://github.com/jump-dev/CPLEX.jl/blob/master/src/MOI/MOI_wrapper.jl
+@inline function _cplex_returnfloat(f::Float64)
+    if f >= CPLEX.CPX_INFBOUND
+        return Inf
+    elseif f <= -CPLEX.CPX_INFBOUND
+        return -Inf
+    end
+    return f
+ end
+
 # ---- Definition of CPLEX_Prob (the exported object of this file) -----------
 
 mutable struct CPLEX_Prob <: Prob
@@ -506,14 +516,19 @@ end
 # Not part of Prob interface (only helper)
 function _setvarvalues!(p::CPLEX_Prob)
     ret = CPLEX.CPXgetx(p.env, p.lp, p.varvalues, 0, length(p.varvalues) - 1)
+    for i in 1:length(p.varvalues)
+        p.varvalues[i] = _cplex_returnfloat(p.varvalues[i])
+    end
     _cplex_check_ret(p.env, ret)
     return
 end
 
 # Not part of Prob interface (only helper)
 function _setconduals!(p::CPLEX_Prob)
-    proof_p = C_NULL
     ret = CPLEX.CPXgetpi(p.env, p.lp, p.conduals, 0, length(p.conduals) - 1)
+    for i in 1:length(p.conduals)
+        p.conduals[i] = _cplex_returnfloat(p.conduals[i])
+    end
     _cplex_check_ret(p.env, ret)
     return
 end
@@ -541,7 +556,7 @@ function getcondual(p::CPLEX_Prob, key::Id, t::Int)
 end
 
 function getrhsterm(p::CPLEX_Prob, con::Id, trait::Id, i::Int)
-    return p.cons[con].rhsterms[i][trait]
+    return _cplex_returnfloat(p.cons[con].rhsterms[i][trait])
 end
 
 function hasrhsterm(p::CPLEX_Prob, con::Id, trait::Id, i::Int)
@@ -556,7 +571,7 @@ function getlb(p::CPLEX_Prob, var::Id, i::Int)
     ix = col - 1
     ret = CPLEX.CPXgetlb(p.env, p.lp, out_p, ix, ix)
     _cplex_check_ret(p.env, ret)
-    return out_p[]
+    return _cplex_returnfloat(out_p[])
 end
 
 
@@ -568,7 +583,7 @@ function getub!(p::CPLEX_Prob, var::Id, i::Int)
     ix = col - 1
     ret = CPLEX.CPXgetub(p.env, p.lp, out_p, ix, ix)
     _cplex_check_ret(p.env, ret)
-    return out_p[]
+    return _cplex_returnfloat(out_p[])
 end
 
 function getconcoeff(p::CPLEX_Prob, con::Id, var::Id, ci::Int, vi::Int)
@@ -581,7 +596,7 @@ function getconcoeff(p::CPLEX_Prob, con::Id, var::Id, ci::Int, vi::Int)
     out_p = Ref{Cdouble}()
     ret = CPLEX.CPXgetcoef(p.env, p.lp, row - 1, col - 1, out_p)
     _cplex_check_ret(p.env, ret)
-    return out_p[]
+    return _cplex_returnfloat(out_p[])
 end
 
 function getobjcoeff(p::CPLEX_Prob, var::Id, i::Int)
@@ -592,7 +607,7 @@ function getobjcoeff(p::CPLEX_Prob, var::Id, i::Int)
     ix = col - i
     ret = CPLEX.CPXgetobj(p.env, p.lp, obj, ix, ix)
     _cplex_check_ret(p.env, ret)
-    return obj[]
+    return _cplex_returnfloat(obj[])
 end
 
 function getfixvardual(p::CPLEX_Prob, varid::Id, varix::Int)
@@ -601,7 +616,7 @@ function getfixvardual(p::CPLEX_Prob, varid::Id, varix::Int)
         p.iscondualsupdated = true
     end
     ix_le = p.fixable_vars[(varid, varix)]
-    return p.conduals[ix_le]    
+    return _cplex_returnfloat(p.conduals[ix_le])    
 end
 
 function makefixable!(p::CPLEX_Prob, varid::Id, varix::Int)
