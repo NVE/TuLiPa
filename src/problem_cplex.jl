@@ -225,7 +225,7 @@ mutable struct CPLEX_Prob <: Prob
     
     vars::Dict{Id, _CPLEXVarInfo}
     cons::Dict{Id, _CPLEXConInfo}
-    fixable_vars::Dict{Tuple{Id, Int}, Int}
+    fixable_vars::Dict{Tuple{Id, Int}, Tuple{Id, Id}}
     
     lb_updater::Union{Nothing, _CPLEXBoundsUpdater}
     ub_updater::Union{Nothing, _CPLEXBoundsUpdater}
@@ -253,7 +253,7 @@ mutable struct CPLEX_Prob <: Prob
         # Create data structures
         vars = Dict{Id, _CPLEXVarInfo}()
         cons = Dict{Id, _CPLEXConInfo}()
-        fixable_vars = Dict{Tuple{Id, Int}, Int}()
+        fixable_vars = Dict{Tuple{Id, Int}, Tuple{Id, Id}}()
 
         # Create CPLEX_Prob instance
         prob = new(modelobjects, [], env, lp, 0, 0, vars, cons, fixable_vars, 
@@ -261,7 +261,7 @@ mutable struct CPLEX_Prob <: Prob
 
         # --- Initialize data in the prob object -----
         CPLEX.CPXchgobjsen(prob.env, prob.lp, CPLEX.CPX_MIN)
-        setsilent!(prob)
+        # setsilent!(prob) # already default
 
         # TODO: set objective offset to 0
 
@@ -280,7 +280,7 @@ mutable struct CPLEX_Prob <: Prob
 
         lb = Vector{Cchar}(undef, prob.num_col)
         ub = Vector{Cchar}(undef, prob.num_col)
-        fill!(lb, 'C')
+        fill!(lb, 'L')
         fill!(ub, 'U')
         prob.lb_updater = _CPLEXBoundsUpdater(prob.num_col, lb)
         prob.ub_updater = _CPLEXBoundsUpdater(prob.num_col, ub)
@@ -294,12 +294,9 @@ mutable struct CPLEX_Prob <: Prob
         prob.conduals = zeros(Float64, prob.num_row)
 
         # Update fixable vars
-        for ((varid, varix), ix_le) in prob.fixable_vars
+        for ((varid, varix), (leid, geid)) in prob.fixable_vars
+            ix_le = prob.cons[leid].start + 1
             ix_ge = ix_le + 1
-            concept = getconceptname(varid)
-            name = getinstancename(varid)
-            leid = Id(concept, string("FixLe", name, varix))
-            geid = Id(concept, string("FixGe", name, varix))
             setconcoeff!(prob, leid, varid, 1, varix, 1.0)
             setconcoeff!(prob, geid, varid, 1, varix, 1.0)
             _update!(prob.rhs_updater, ix_le, Inf)
@@ -454,7 +451,7 @@ function getobjectivevalue(p::CPLEX_Prob)
     objval_p = Ref{Cdouble}()
     ret = CPLEX.CPXgetobjval(p.env, p.lp, objval_p)
     _cplex_check_ret(p.env, ret)
-    return objval_p[]
+    return Float64(objval_p[])
 end
 
 # Not part of Prob interface (only helper)
@@ -467,7 +464,7 @@ end
 # Not part of Prob interface (only helper)
 function _setconduals!(p::CPLEX_Prob)
     proof_p = C_NULL
-    ret = CPLEX.CPXdualfarkas(p.env, p.lp, p.conduals, proof_p)
+    ret = CPLEX.CPXgetpi(p.env, p.lp, p.conduals, 0, length(p.conduals) - 1)
     _cplex_check_ret(p.env, ret)
     return
 end
@@ -559,19 +556,19 @@ function getfixvardual(p::CPLEX_Prob, varid::Id, varix::Int)
 end
 
 function makefixable!(p::CPLEX_Prob, varid::Id, varix::Int)
-    ix_le = p.num_row + 1 # ix_ge = p.num_row + 2
-    p.fixable_vars[(varid, varix)] = ix_le
     concept = getconceptname(varid)
     name = getinstancename(varid)
     leid = Id(concept, string("FixLe", name, varix))
     geid = Id(concept, string("FixGe", name, varix))
+    p.fixable_vars[(varid, varix)] = (leid, geid)
     addle!(p, leid, 1)
     addge!(p, geid, 1)
     return
 end
 
 function fix!(p::CPLEX_Prob, varid::Id, varix::Int, value::Float64)
-    ix_le = p.fixable_vars[(varid, varix)]
+    (leid, geid) = p.fixable_vars[(varid, varix)]
+    ix_le = p.cons[leid].start + 1
     ix_ge = ix_le + 1
     _update!(p.rhs_updater, ix_le, value)
     _update!(p.rhs_updater, ix_ge, value)
@@ -579,7 +576,8 @@ function fix!(p::CPLEX_Prob, varid::Id, varix::Int, value::Float64)
 end
 
 function unfix!(p::CPLEX_Prob, varid::Id, varix::Int)
-    ix_le = p.fixable_vars[(varid, varix)]
+    (leid, geid) = p.fixable_vars[(varid, varix)]
+    ix_le = p.cons[leid].start + 1
     ix_ge = ix_le + 1
     _update!(p.rhs_updater, ix_le, Inf)
     _update!(p.rhs_updater, ix_ge, -Inf)
@@ -592,7 +590,7 @@ function setsilent!(p::CPLEX_Prob)
 end
 
 function setunsilent!(p::CPLEX_Prob)
-    setparam!(p::CPLEX_Prob, "CPXPARAM_ScreenOutput", 1) # TODO: Check that this is correct
+    setparam!(p::CPLEX_Prob, "CPXPARAM_ScreenOutput", 1)
     return
 end
 
@@ -651,6 +649,12 @@ function _cplex_solve_lp!(p::CPLEX_Prob)
     ret = CPLEX.CPXlpopt(p.env, p.lp)    
     # TODO: Maybe use different function to check ret here
     _cplex_check_ret(p.env, ret)
+
+    # Had to do this check to get objective value
+    status_p = Ref{Cint}()
+    ret = CPLEX.CPXchecksoln(p.env, p.lp, status_p)
+    _cplex_check_ret(p.env, ret)
+    @assert status_p[] == 1 # https://www.tu-chemnitz.de/mathematik/discrete/manuals/cplex/doc/refman/html/appendixB.html
 end
 
 function _cplex_postsolve_reset_updaters!(p::CPLEX_Prob)
@@ -677,10 +681,10 @@ function _cplex_add_cons!(p::CPLEX_Prob)
             if info.contype == Cchar('E')
                 rhs[j] = 0.0
             elseif info.contype == Cchar('G')
-                rhs[j] = -Inf
+                rhs[j] = 0.0
             else
                 @assert info.contype == Cchar('L')
-                rhs[j] = Inf
+                rhs[j] = 0.0
             end
         end
     end
