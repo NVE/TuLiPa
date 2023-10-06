@@ -54,6 +54,52 @@ function _update!(x::_CPLEXVectorUpdater, object_index::Int, value::Float64)
     return
 end
 
+mutable struct _CPLEXRHSUpdater
+    count::Int
+    updates::Vector{Int}
+    indices::Vector{Cint}
+    values::Vector{Cdouble}
+    updated_rhs_mask::Vector{Int}
+
+    function _CPLEXRHSUpdater(num_objects::Int)
+        @assert num_objects > 0
+        upd = Vector{Int}(undef, num_objects)
+        fill!(upd, _CPLEX_NOT_UPDATED)
+        ind = Vector{Cint}(undef, num_objects)
+        val = Vector{Cdouble}(undef, num_objects)
+        mask = Vector{Int}(undef, num_objects)
+        return new(0, upd, ind, val, mask)
+    end    
+end
+
+function _postsolve_reset!(x::_CPLEXRHSUpdater)
+    x.count = 0
+    fill!(x.updates, _CPLEX_NOT_UPDATED)
+    fill!(x.updated_rhs_mask, _CPLEX_NOT_UPDATED)
+    return
+end
+
+function _update!(x::_CPLEXRHSUpdater, object_index::Int, value::Float64)
+    @assert 1 <= object_index <= length(x.updates)
+    
+    updated = @inbounds x.updates[object_index]
+
+    if updated == _CPLEX_NOT_UPDATED
+        x.count += 1
+        
+        # Check bounds in case caller have forgotten to reset between solves
+        @assert 1 <= x.count <= length(x.indices)
+        
+        @inbounds x.updates[object_index] = x.count
+        @inbounds x.indices[x.count] = object_index - 1
+        @inbounds x.values[x.count] = value
+    else
+        @inbounds x.values[updated] = value
+    end
+    
+    return
+end
+
 mutable struct _CPLEXBoundsUpdater
     updater::_CPLEXVectorUpdater
     lu::Vector{Cchar}
@@ -231,7 +277,7 @@ mutable struct CPLEX_Prob <: Prob
     ub_updater::Union{Nothing, _CPLEXBoundsUpdater}
 
     obj_updater::Union{Nothing, _CPLEXVectorUpdater}
-    rhs_updater::Union{Nothing, _CPLEXVectorUpdater}
+    rhs_updater::Union{Nothing, _CPLEXRHSUpdater}
     
     A_updater::Union{Nothing, _CPLEXMatrixUpdater}
 
@@ -286,7 +332,7 @@ mutable struct CPLEX_Prob <: Prob
         prob.ub_updater = _CPLEXBoundsUpdater(prob.num_col, ub)
 
         prob.obj_updater = _CPLEXVectorUpdater(prob.num_col)
-        prob.rhs_updater = _CPLEXVectorUpdater(prob.num_row)
+        prob.rhs_updater = _CPLEXRHSUpdater(prob.num_row)
         
         prob.A_updater = _CPLEXMatrixUpdater()
 
@@ -296,7 +342,7 @@ mutable struct CPLEX_Prob <: Prob
         # Update fixable vars
         for ((varid, varix), (leid, geid)) in prob.fixable_vars
             ix_le = prob.cons[leid].start + 1
-            ix_ge = ix_le + 1
+            ix_ge = prob.cons[geid].start + 1
             setconcoeff!(prob, leid, varid, 1, varix, 1.0)
             setconcoeff!(prob, geid, varid, 1, varix, 1.0)
             _update!(prob.rhs_updater, ix_le, Inf)
@@ -444,6 +490,9 @@ function setrhsterm!(p::CPLEX_Prob, con::Id, trait::Id, i::Int, value::Float64)
         info.rhsterms = [Dict() for __ in 1:info.num]
     end
     info.rhsterms[i][trait] = value
+
+    row = p.cons[con].start + i  # 1-based
+    p.rhs_updater.updated_rhs_mask[row] = 1
     return
 end
 
@@ -621,11 +670,13 @@ function _cplex_update_obj!(p::CPLEX_Prob, u::_CPLEXVectorUpdater)
     return
 end
 
-function _cplex_update_rhs!(p::CPLEX_Prob, u::_CPLEXVectorUpdater)
+function _cplex_update_rhs!(p::CPLEX_Prob, u::_CPLEXRHSUpdater)
     for info in values(p.cons)
         length(info.rhsterms) > 0 || continue
         for (t, rowix) in enumerate((info.start + 1):(info.start + info.num))
-            _update!(u, rowix, sum(values(info.rhsterms[t])))
+            if u.updated_rhs_mask[rowix] == 1
+                _update!(u, rowix, sum(values(info.rhsterms[t])))
+            end
         end
     end
     if u.count > 0
@@ -675,17 +726,10 @@ end
 function _cplex_add_cons!(p::CPLEX_Prob)
     senses = Vector{Cchar}(undef, p.num_row)
     rhs = Vector{Cdouble}(undef, p.num_row)
+    fill!(rhs, 0.0)
     for info in values(p.cons)
         for j in (info.start + 1):(info.start + info.num)
             senses[j] = info.contype
-            if info.contype == Cchar('E')
-                rhs[j] = 0.0
-            elseif info.contype == Cchar('G')
-                rhs[j] = 0.0
-            else
-                @assert info.contype == Cchar('L')
-                rhs[j] = 0.0
-            end
         end
     end
     ret = CPLEX.CPXaddrows(p.env, p.lp, 0, p.num_row, 0, rhs, senses, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL)
