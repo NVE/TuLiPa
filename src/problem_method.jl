@@ -36,7 +36,19 @@ struct HighsIPMMethod <: ProbMethod
     end
 end
 
-struct CPLEXMethod <: ProbMethod end
+struct CPLEXSimplexMethod <: ProbMethod
+    warmstart::Bool
+    function CPLEXSimplexMethod(;warmstart=true)
+        new(warmstart) 
+    end
+end
+struct CPLEXIPMMethod <: ProbMethod 
+    warmstart::Bool
+    concurrency::Int64
+    function CPLEXIPMMethod(;warmstart=true, concurrency=0)
+        new(warmstart, concurrency) 
+    end
+end
 
 struct JuMPMethod <: ProbMethod end
 struct JuMPHiGHSMethod <: ProbMethod end
@@ -94,7 +106,23 @@ function buildprob(probmethod::HighsIPMMethod, modelobjects)
     return prob
 end
 
-buildprob(::CPLEXMethod, modelobjects) = CPLEX_Prob(modelobjects)
+function buildprob(probmethod::CPLEXSimplexMethod, modelobjects)
+    prob = CPLEX_Prob(modelobjects)
+    setparam!(prob, "CPXPARAM_LPMethod", 2)
+    !probmethod.warmstart && setparam!(prob, "CPXPARAM_Advance", 0) # or CPXPARAM_ADVIND?
+    return prob
+end
+function buildprob(probmethod::CPLEXIPMMethod, modelobjects)
+    prob = CPLEX_Prob(modelobjects)
+    setparam!(prob, "CPXPARAM_LPMethod", 4)
+    setparam!(prob, "CPXPARAM_SolutionType", 2)
+    setparam!(prob, "CPXPARAM_Barrier_StartAlg", 4)
+    if probmethod.concurrency > 0
+        setparam!(prob, "CPXPARAM_Threads", probmethod.concurrency)
+    end
+    !probmethod.warmstart && setparam!(prob, "CPXPARAM_Advance", 0)
+    return prob
+end
 
 buildprob(::JuMPHiGHSMethod, modelobjects) = JuMP_Prob(modelobjects, Model(optimizer_with_attributes(HiGHS.Optimizer, "simplex_scale_strategy" => 5)))
 buildprob(::JuMPClpMethod, modelobjects) = JuMP_Prob(modelobjects, Model(Clp.Optimizer))
