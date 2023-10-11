@@ -217,6 +217,10 @@ mutable struct _CPLEXEnv
         
         return env    
     end
+
+    function _CPLEXEnv(ptr)
+        return new(ptr)
+    end
 end
 
 Base.cconvert(::Type{Ptr{Cvoid}}, x::_CPLEXEnv) = x
@@ -355,8 +359,8 @@ mutable struct CPLEX_Prob <: Prob
             ix_ge = prob.cons[geid].start + 1
             setconcoeff!(prob, leid, varid, 1, varix, 1.0)
             setconcoeff!(prob, geid, varid, 1, varix, 1.0)
-            _update!(prob.rhs_updater, ix_le, Inf)
-            _update!(prob.rhs_updater, ix_ge, -Inf)  
+            _update!(prob.rhs_updater, ix_le, CPLEX.CPX_INFBOUND)
+            _update!(prob.rhs_updater, ix_ge, -CPLEX.CPX_INFBOUND)  
          end
 
         # add vars and cols in prob
@@ -380,6 +384,16 @@ mutable struct CPLEX_Prob <: Prob
             @assert p.env.ptr == C_NULL
         end        
         
+        return prob
+    end
+    function CPLEX_Prob()
+        env = _CPLEXEnv(C_NULL)
+        vars = Dict{Id, _CPLEXVarInfo}()
+        cons = Dict{Id, _CPLEXConInfo}()
+        fixable_vars = Dict{Tuple{Id, Int}, Tuple{Id, Id}}()
+
+        prob = new([], [], env, C_NULL, 0, 0, vars, cons, fixable_vars, 
+            nothing, nothing, nothing, nothing, nothing, [], [], false, false)     
         return prob
     end
 end
@@ -433,6 +447,42 @@ function setparam!(p::CPLEX_Prob, paramname::String, value)
     end
     _cplex_check_ret(p.env, ret)
     return
+end
+
+# function body copied from https://github.com/jump-dev/CPLEX.jl/blob/master/src/MOI/MOI_wrapper.jl
+function getparam(p::CPLEX_Prob, paramname::String)
+    numP, typeP = Ref{Cint}(), Ref{Cint}()
+    ret = CPLEX.CPXgetparamnum(p.env, paramname, numP)
+    _cplex_check_ret(p.env, ret)
+    ret = CPLEX.CPXgetparamtype(p.env, numP[], typeP)
+    _cplex_check_ret(p.env, ret)
+    ret = if typeP[] == CPLEX.CPX_PARAMTYPE_NONE
+        return Cint(0)
+    elseif typeP[] == CPLEX.CPX_PARAMTYPE_INT
+        valueP = Ref{Cint}()
+        ret = CPLEX.CPXgetintparam(p.env, numP[], valueP)
+        _cplex_check_ret(p.env, ret)
+        return valueP[]
+    elseif typeP[] == CPLEX.CPX_PARAMTYPE_DOUBLE
+        valueP = Ref{Cdouble}()
+        ret = CPLEX.CPXgetdblparam(p.env, numP[], valueP)
+        _cplex_check_ret(p.env, ret)
+        return valueP[]
+    elseif typeP[] == CPLEX.CPX_PARAMTYPE_STRING
+        buffer = Array{Cchar}(undef, CPLEX.CPXMESSAGEBUFSIZE)
+        valueP = pointer(buffer)
+        GC.@preserve buffer begin
+            ret = CPXgetstrparam(p.env, numP[], valueP)
+            _cplex_check_ret(p.env, ret)
+            return unsafe_string(valueP)
+        end
+    else
+        @assert typeP[] == CPLEX.CPX_PARAMTYPE_LONG
+        valueP = Ref{CPXLONG}()
+        ret = CPLEX.CPXgetlongparam(p.env, numP[], valueP)
+        _cplex_check_ret(p.env, ret)
+        return valueP[]
+    end
 end
 
 # Not part of Prob interface (only helper)
@@ -514,7 +564,7 @@ function getobjectivevalue(p::CPLEX_Prob)
 end
 
 # Not part of Prob interface (only helper)
-function _setvarvalues!(p::CPLEX_Prob)
+function setvarvalues!(p::CPLEX_Prob)
     ret = CPLEX.CPXgetx(p.env, p.lp, p.varvalues, 0, length(p.varvalues) - 1)
     for i in 1:length(p.varvalues)
         p.varvalues[i] = _cplex_returnfloat(p.varvalues[i])
@@ -524,7 +574,7 @@ function _setvarvalues!(p::CPLEX_Prob)
 end
 
 # Not part of Prob interface (only helper)
-function _setconduals!(p::CPLEX_Prob)
+function setconduals!(p::CPLEX_Prob)
     ret = CPLEX.CPXgetpi(p.env, p.lp, p.conduals, 0, length(p.conduals) - 1)
     for i in 1:length(p.conduals)
         p.conduals[i] = _cplex_returnfloat(p.conduals[i])
@@ -535,7 +585,7 @@ end
 
 function getvarvalue(p::CPLEX_Prob, key::Id, t::Int)
     if !p.isvarvaluesupdated
-        _setvarvalues!(p)
+        setvarvalues!(p)
         p.isvarvaluesupdated = true
     end
     info = p.vars[key]
@@ -546,7 +596,7 @@ end
 
 function getcondual(p::CPLEX_Prob, key::Id, t::Int)
     if !p.iscondualsupdated
-        _setconduals!(p)
+        setconduals!(p)
         p.iscondualsupdated = true
     end
     info = p.cons[key]
@@ -611,13 +661,9 @@ function getobjcoeff(p::CPLEX_Prob, var::Id, i::Int)
 end
 
 function getfixvardual(p::CPLEX_Prob, varid::Id, varix::Int)
-    if !p.iscondualsupdated
-        _setconduals!(p)
-        p.iscondualsupdated = true
-    end
-    ix_le = p.fixable_vars[(varid, varix)]
-    return _cplex_returnfloat(p.conduals[ix_le])    
-end
+    (leid, __) = p.fixable_vars[(varid, varix)]
+    return getcondual(p, leid, 1)
+ end
 
 function makefixable!(p::CPLEX_Prob, varid::Id, varix::Int)
     concept = getconceptname(varid)
@@ -643,8 +689,8 @@ function unfix!(p::CPLEX_Prob, varid::Id, varix::Int)
     (leid, geid) = p.fixable_vars[(varid, varix)]
     ix_le = p.cons[leid].start + 1
     ix_ge = p.cons[geid].start + 1
-    _update!(p.rhs_updater, ix_le, Inf)
-    _update!(p.rhs_updater, ix_ge, -Inf)
+    _update!(p.rhs_updater, ix_le, CPLEX.CPX_INFBOUND)
+    _update!(p.rhs_updater, ix_ge, -CPLEX.CPX_INFBOUND)
     return
 end
 
@@ -709,18 +755,41 @@ function _cplex_update_A!(p::CPLEX_Prob, u::_CPLEXMatrixUpdater)
     return
 end
 
+function _cplex_non_optimal_try_param(p::CPLEX_Prob, paramname::String, newparam::Any, message::String)
+    if CPXgetstat(p.env, p.lp) != CPLEX.CPX_STAT_OPTIMAL
+        oldparam = getparam(p, paramname)
+        if oldparam != newparam
+            println(message)
+            setparam!(p, paramname, newparam)
+            ret = CPLEX.CPXlpopt(p.env, p.lp) 
+            _cplex_check_ret(p.env, ret)
+            setparam!(p, paramname, oldparam)
+        end
+    end
+end
+
 function _cplex_solve_lp!(p::CPLEX_Prob)
     prob_type = CPLEX.CPXgetprobtype(p.env, p.lp)
     @assert prob_type == CPLEX.CPXPROB_LP
     ret = CPLEX.CPXlpopt(p.env, p.lp)    
-    # TODO: Maybe use different function to check ret here
     _cplex_check_ret(p.env, ret)
 
-    # Had to do this check to get objective value
-    status_p = Ref{Cint}()
-    ret = CPLEX.CPXchecksoln(p.env, p.lp, status_p)
-    _cplex_check_ret(p.env, ret)
-    @assert status_p[] == 1 # https://www.tu-chemnitz.de/mathematik/discrete/manuals/cplex/doc/refman/html/appendixB.html
+    _cplex_non_optimal_try_param(p, "CPXPARAM_Read_Scale", 1, "Trying with more aggressive scaling")
+    _cplex_non_optimal_try_param(p, "CPXPARAM_LPMethod", 2, "Solving with dual simplex")
+    _cplex_non_optimal_try_param(p, "CPXPARAM_LPMethod", 1, "Solving with primal simplex")
+    _cplex_non_optimal_try_param(p, "CPXPARAM_LPMethod", 4, "Solving with IPM/Barrier")
+
+    stat = CPXgetstat(p.env, p.lp)
+    if stat != 1
+        CPLEX.CPXwriteprob(p.env, p.lp, "failed_model.mps", "MPS")
+        error("Solve failed with termination status $stat")
+        # NB! Read with CPLEX to reproduce error and keep original row/col order
+        # env = _CPLEXEnv()
+        # lp = _cplex_create_lp(env)
+        # CPLEX.CPXreadcopyprob(env, lp, "failed_model.mps", "MPS")
+        # CPLEX.CPXsetintparam(env, 1035, 1) # unset silent
+        # CPLEX.CPXlpopt(env, lp)  
+    end
 end
 
 function _cplex_postsolve_reset_updaters!(p::CPLEX_Prob)
@@ -733,7 +802,7 @@ function _cplex_postsolve_reset_updaters!(p::CPLEX_Prob)
 end
 
 function _cplex_add_vars!(p::CPLEX_Prob)
-    ret = CPLEX.CPXnewcols(p.env, p.lp, p.num_col, C_NULL,  fill(-Inf, p.num_col), C_NULL, C_NULL, C_NULL)
+    ret = CPLEX.CPXnewcols(p.env, p.lp, p.num_col, C_NULL,  fill(-CPLEX.CPX_INFBOUND, p.num_col), C_NULL, C_NULL, C_NULL)
     _cplex_check_ret(p.env, ret)
     return
 end
