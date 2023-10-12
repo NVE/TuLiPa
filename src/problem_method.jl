@@ -42,6 +42,18 @@ struct CPLEXSimplexMethod <: ProbMethod
         new(warmstart) 
     end
 end
+struct CPLEXPrimalSimplexMethod <: ProbMethod
+    warmstart::Bool
+    function CPLEXPrimalSimplexMethod(;warmstart=true)
+        new(warmstart) 
+    end
+end
+struct CPLEXNetworkMethod <: ProbMethod
+    warmstart::Bool
+    function CPLEXNetworkMethod(;warmstart=true)
+        new(warmstart) 
+    end
+end
 struct CPLEXIPMMethod <: ProbMethod 
     warmstart::Bool
     concurrency::Int64
@@ -109,6 +121,18 @@ end
 function buildprob(probmethod::CPLEXSimplexMethod, modelobjects)
     prob = CPLEX_Prob(modelobjects)
     setparam!(prob, "CPXPARAM_LPMethod", 2)
+    !probmethod.warmstart && setparam!(prob, "CPXPARAM_Advance", 0) # or CPXPARAM_ADVIND?
+    return prob
+end
+function buildprob(probmethod::CPLEXPrimalSimplexMethod, modelobjects)
+    prob = CPLEX_Prob(modelobjects)
+    setparam!(prob, "CPXPARAM_LPMethod", 1)
+    !probmethod.warmstart && setparam!(prob, "CPXPARAM_Advance", 0) # or CPXPARAM_ADVIND?
+    return prob
+end
+function buildprob(probmethod::CPLEXNetworkMethod, modelobjects)
+    prob = CPLEX_Prob(modelobjects)
+    setparam!(prob, "CPXPARAM_LPMethod", 3)
     !probmethod.warmstart && setparam!(prob, "CPXPARAM_Advance", 0) # or CPXPARAM_ADVIND?
     return prob
 end
