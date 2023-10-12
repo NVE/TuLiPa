@@ -82,16 +82,20 @@ function getelement(concept, concrete, instance, pairs...; path="") # should be 
             v = DateTime(v,dateformat"yyyy-mm-dd HH:MM:SS")
         elseif concrete == "VectorTimeValues"
             v = v |> Vector{Float64}
+            ~all(isfinite, v) && error("Nonfinite values in type $concrete with name $instance") # move these checks to includeelement?
         elseif (concrete == "BaseTable") & (k == "Matrix")
             v = CSV.read(joinpath(path, v), header=0, DataFrame) |> Matrix{Float64} # read csv
+            ~all(isfinite, v) && error("Nonfinite values in type $concrete with name $instance")
         elseif (concrete == "BaseTable") & (k == "Names")
             v = v |> Vector{String}
         elseif (k == "Period") | (k == "NumPeriods") | (k == "Steps") # BaseHorizon and MsTimeDelta and RangeTimeIndex and storagehint
             v = v |> Int64    
         elseif v isa Int
             v = v |> Float64
+            ~isfinite(v) && error("Nonfinite values in type $concrete with name $instance")
         elseif concrete == "ReservoirCurve" && ((k == "Res") || (k == "Head"))
             v = v |> Vector{Float64}
+            ~all(isfinite, v) && error("Nonfinite values in type $concrete with name $instance")
         end
         d[k] = v
     end

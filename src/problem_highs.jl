@@ -148,7 +148,7 @@ mutable struct HiGHS_Prob <: Prob
     function HiGHS_Prob(; warmstart::Bool=true)
         p = new(
             [],
-            Highs_create(), 
+            C_NULL, 
             Dict{Any, HiGHSVarInfo}(),
             Dict{Any, HiGHSConInfo}(),
             0, 0,
@@ -162,7 +162,6 @@ mutable struct HiGHS_Prob <: Prob
             Dict(),
             warmstart
         )
-        finalizer(Highs_destroy, p)
     end    
 end
 
