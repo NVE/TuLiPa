@@ -87,6 +87,7 @@ TODO: Add abstract type Group? Have AggSupplyCurve as subtype?
 #   makefixable!(prob, varid, varix)
 #   fix!(prob, varid, varix)
 #   unfix!(prob, varid, varix)
+#   getfixvardual(prob, varid, varix)
 #
 abstract type Prob end
 
@@ -248,6 +249,7 @@ abstract type Storage end
 # Interface:
 #    getid(balance)
 #    gethorzion(balance)
+#    getcommodity(balance)
 #    assemble!(balance)
 #    build!(prob, balance)
 #    setconstants!(prob, balance)
