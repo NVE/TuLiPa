@@ -55,48 +55,24 @@ function _update!(x::_CPLEXVectorUpdater, object_index::Int, value::Float64)
 end
 
 mutable struct _CPLEXRHSUpdater
-    count::Int
-    updates::Vector{Int}
-    indices::Vector{Cint}
-    values::Vector{Cdouble}
-    updated_rhs_mask::Vector{Int}
+    updater::_CPLEXVectorUpdater
+    updated_rhs_mask::Vector{Bool}
 
     function _CPLEXRHSUpdater(num_objects::Int)
-        @assert num_objects > 0
-        upd = Vector{Int}(undef, num_objects)
-        fill!(upd, _CPLEX_NOT_UPDATED)
-        ind = Vector{Cint}(undef, num_objects)
-        val = Vector{Cdouble}(undef, num_objects)
-        mask = Vector{Int}(undef, num_objects)
-        return new(0, upd, ind, val, mask)
+        mask = Vector{Bool}(undef, num_objects)
+        fill!(mask, false)
+        return new(_CPLEXVectorUpdater(num_objects), mask)
     end    
 end
 
 function _postsolve_reset!(x::_CPLEXRHSUpdater)
-    x.count = 0
-    fill!(x.updates, _CPLEX_NOT_UPDATED)
-    fill!(x.updated_rhs_mask, _CPLEX_NOT_UPDATED)
+    _postsolve_reset!(x.updater)
+    fill!(x.updated_rhs_mask, false)
     return
 end
 
 function _update!(x::_CPLEXRHSUpdater, object_index::Int, value::Float64)
-    @assert 1 <= object_index <= length(x.updates)
-    
-    updated = @inbounds x.updates[object_index]
-
-    if updated == _CPLEX_NOT_UPDATED
-        x.count += 1
-        
-        # Check bounds in case caller have forgotten to reset between solves
-        @assert 1 <= x.count <= length(x.indices)
-        
-        @inbounds x.updates[object_index] = x.count
-        @inbounds x.indices[x.count] = object_index - 1
-        @inbounds x.values[x.count] = value
-    else
-        @inbounds x.values[updated] = value
-    end
-    
+    _update!(x.updater, object_index, value)
     return
 end
 
@@ -472,13 +448,13 @@ function getparam(p::CPLEX_Prob, paramname::String)
         buffer = Array{Cchar}(undef, CPLEX.CPXMESSAGEBUFSIZE)
         valueP = pointer(buffer)
         GC.@preserve buffer begin
-            ret = CPXgetstrparam(p.env, numP[], valueP)
+            ret = CPLEX.CPXgetstrparam(p.env, numP[], valueP)
             _cplex_check_ret(p.env, ret)
             return unsafe_string(valueP)
         end
     else
         @assert typeP[] == CPLEX.CPX_PARAMTYPE_LONG
-        valueP = Ref{CPXLONG}()
+        valueP = Ref{CPLEX.CPXLONG}()
         ret = CPLEX.CPXgetlongparam(p.env, numP[], valueP)
         _cplex_check_ret(p.env, ret)
         return valueP[]
@@ -552,7 +528,7 @@ function setrhsterm!(p::CPLEX_Prob, con::Id, trait::Id, i::Int, value::Float64)
     info.rhsterms[i][trait] = value
 
     row = p.cons[con].start + i  # 1-based
-    p.rhs_updater.updated_rhs_mask[row] = 1
+    p.rhs_updater.updated_rhs_mask[row] = true
     return
 end
 
@@ -699,7 +675,7 @@ function setsilent!(p::CPLEX_Prob)
     return
 end
 
-function setunsilent!(p::CPLEX_Prob)
+function unsetsilent!(p::CPLEX_Prob)
     setparam!(p::CPLEX_Prob, "CPXPARAM_ScreenOutput", 1)
     return
 end
@@ -735,13 +711,13 @@ function _cplex_update_rhs!(p::CPLEX_Prob, u::_CPLEXRHSUpdater)
     for info in values(p.cons)
         length(info.rhsterms) > 0 || continue
         for (t, rowix) in enumerate((info.start + 1):(info.start + info.num))
-            if u.updated_rhs_mask[rowix] == 1
+            if u.updated_rhs_mask[rowix] == true
                 _update!(u, rowix, sum(values(info.rhsterms[t])))
             end
         end
     end
-    if u.count > 0
-        ret = CPLEX.CPXchgrhs(p.env, p.lp, u.count, u.indices, u.values)
+    if u.updater.count > 0
+        ret = CPLEX.CPXchgrhs(p.env, p.lp, u.updater.count, u.updater.indices, u.updater.values)
         _cplex_check_ret(p.env, ret)
     end
     return
@@ -756,7 +732,7 @@ function _cplex_update_A!(p::CPLEX_Prob, u::_CPLEXMatrixUpdater)
 end
 
 function _cplex_non_optimal_try_param(p::CPLEX_Prob, paramname::String, newparam::Any, message::String)
-    if CPXgetstat(p.env, p.lp) != CPLEX.CPX_STAT_OPTIMAL
+    if CPLEX.CPXgetstat(p.env, p.lp) != CPLEX.CPX_STAT_OPTIMAL
         oldparam = getparam(p, paramname)
         if oldparam != newparam
             println(message)
@@ -779,15 +755,15 @@ function _cplex_solve_lp!(p::CPLEX_Prob)
     _cplex_non_optimal_try_param(p, "CPXPARAM_LPMethod", 1, "Solving with primal simplex")
     _cplex_non_optimal_try_param(p, "CPXPARAM_LPMethod", 4, "Solving with IPM/Barrier")
 
-    stat = CPXgetstat(p.env, p.lp)
-    if stat != 1
+    stat = CPLEX.CPXgetstat(p.env, p.lp)
+    if stat != CPLEX.CPX_STAT_OPTIMAL
         CPLEX.CPXwriteprob(p.env, p.lp, "failed_model.mps", "MPS")
         error("Solve failed with termination status $stat")
         # NB! Read with CPLEX to reproduce error and keep original row/col order
         # env = _CPLEXEnv()
         # lp = _cplex_create_lp(env)
         # CPLEX.CPXreadcopyprob(env, lp, "failed_model.mps", "MPS")
-        # CPLEX.CPXsetintparam(env, 1035, 1) # unset silent
+        # CPLEX.CPXsetintparam(env, CPLEX.CPXPARAM_ScreenOutput , 1) # unset silent
         # CPLEX.CPXlpopt(env, lp)  
     end
 end
