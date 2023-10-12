@@ -690,24 +690,7 @@ function assign_blocks!(method::KMeansAHMethod, X::Vector{Float64})
 end
 
 # ------ Include dataelements -------
-function includeBaseHorizon!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
-    checkkey(lowlevel, elkey)
-    
-    numperiods = getdictvalue(value, "NumPeriods",      Int,                      elkey)
-    timedelta  = getdictvalue(value, TIMEDELTA_CONCEPT, Union{String, TimeDelta}, elkey)
-    
-    if timedelta isa String
-        timedeltakey = BaseId(TIMEDELTA_CONCEPT, timedelta)
-        haskey(lowlevel, timedeltakey) || return false
-        timedelta = lowlevel[timedelta]
-    end
-    
-    lowlevel[getobjkey(elkey)] = BaseHorizon(numperiods, timedelta)
-    return true
-end
-
-INCLUDEELEMENT[TypeKey(HORIZON_CONCEPT, "BaseHorizon")] = includeBaseHorizon!
-
+# TODO
 
 
 
