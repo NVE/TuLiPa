@@ -1,4 +1,5 @@
 include("basic_solving.jl")
 include("timeoffset.jl")
 include("highs_equals_jump_results.jl")
+include("rotating_time_vector.jl")
 include("umm.jl")
