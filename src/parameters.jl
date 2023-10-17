@@ -620,7 +620,6 @@ function includeUMMSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value
 end
 
 function includeMWtoGWhparam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
-    #param = getdictvalue(value, "param", PARAMPARSETYPES, elkey)
     (param, ok) = getdictparamvalue(lowlevel, elkey, value)
 
     if !ok
