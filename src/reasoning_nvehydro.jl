@@ -232,56 +232,7 @@ function statedependentprod_init!(problem::Prob, startstorage::Float64, t::ProbT
     end
 end
 
-function statedependentpump_init!(problem::Prob, startstorage::Float64, t::ProbTime)
-    dummydelta = MsTimeDelta(Millisecond(0))
-    
-    pumps = gethydropumps(problem.objects)
-    storages = getstorages(problem.objects)
-    for pump in pumps
-        for arrow in getarrows(pump)
-            conversion = arrow.conversion
-            if conversion isa PumpConversion
-                pumpname = getinstancename(getid(pump))
-                
-                # Lower storage
-                lowerstorage = getlowerreservoirpump(pump, storages)
-                lowerstorage isa Storage || error(string("No lower storage found for ", pumpname))
-                haskey(lowerstorage.metadata, RESERVOIRCURVEKEY) || error("No reservoir curve for lower pump storage ", getinstancename(getid(lowerstorage)))
-
-                rescurve = lowerstorage.metadata[RESERVOIRCURVEKEY]
-                startlowerstorage = getparamvalue(getub(lowerstorage), t, dummydelta)*startstorage/100
-                lowerheight = yvalue(rescurve, startlowerstorage)
-
-                # If lower height is lower than intake level there should be no pump capacity
-                if lowerheight < conversion.intakelevel
-                    pump.ub.param = ConstantParam(0.0)
-                    @goto exit_pump # Break nested for loop
-                end
-
-                # Upper storage
-                upperstorage = getupperreservoirpump(pump, storages)
-                upperstorage isa Storage || error(string("No upper storage found for ", pumpname))
-                haskey(upperstorage.metadata, RESERVOIRCURVEKEY) || error("No reservoir curve for upper pump storage ", getinstancename(getid(upperstorage)))
-
-                rescurve = upperstorage.metadata[RESERVOIRCURVEKEY]
-                startupperstorage = getparamvalue(getub(upperstorage), t, dummydelta)*startstorage/100
-                upperheight = yvalue(rescurve, startupperstorage)
-                
-                # Calculate actual head, energy equivalent and pump capacity
-                actualhead = upperheight - lowerheight
-                pumpcapacity = yvalue(conversion.releaseheightcurve, actualhead) # Interpolation handles that conversion.hmin < actalhead < conversion.hmax
-                energyequivalent = conversion.pumppower/pumpcapacity/3.6
-
-                # Set pump capacity and energy equivalent
-                pump.ub.param = ConstantParam(pumpcapacity)
-                conversion.param = ConstantParam(energyequivalent)
-            end
-        end
-        @label exit_pump
-    end
-end
-
-function statedependentprod!(problem::Prob, startstates::Dict{String, Float64})
+function statedependentprod!(problem::Prob, startstates::Dict{String, Float64}; init::Bool=false)
     plants = gethydroplants(problem.objects)
     storages = getstorages(problem.objects)
     balanceflows = getbalanceflows(problem.objects)
@@ -324,10 +275,18 @@ function statedependentprod!(problem::Prob, startstates::Dict{String, Float64})
                 for arrow in getarrows(plant)
                     if getinstancename(getid(getcommodity(getbalance(arrow)))) == "Power"
                         if arrow isa BaseArrow # if standard arrow
-                            arrow.conversion.param = TwoProductParam(arrow.conversion.param.param1, ConstantParam(factor))
+                            if init
+                                arrow.conversion.param = TwoProductParam(arrow.conversion.param, ConstantParam(factor))
+                            else
+                                arrow.conversion.param = TwoProductParam(arrow.conversion.param.param1, ConstantParam(factor))
+                            end
                         elseif arrow isa SegmentedArrow # if pq-curve, adjust all points
                             for conversion in arrow.conversions
-                                conversion.param = TwoProductParam(conversion.param.param1, ConstantParam(factor))
+                                if init
+                                    conversion.param = TwoProductParam(conversion.param, ConstantParam(factor))
+                                else
+                                    conversion.param = TwoProductParam(conversion.param.param1, ConstantParam(factor))
+                                end
                             end
                         end
                     end
