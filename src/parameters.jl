@@ -619,6 +619,19 @@ function includeUMMSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value
     return true
 end
 
+function includeMWtoGWhparam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    #param = getdictvalue(value, "param", PARAMPARSETYPES, elkey)
+    (param, ok) = getdictparamvalue(lowlevel, elkey, value)
+
+    if !ok
+        return false
+    end
+
+    lowlevel[getobjkey(elkey)] = MWtoGWhparam(param)
+    return true
+end
+
+INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MWtoGWhparam")] = includeMWtoGWhparam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "UMMSeriesParam")] = includeUMMSeriesParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "FossilMCParam")] = includeFossilMCParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "M3SToMM3SeriesParam")] = includeM3SToMM3SeriesParam!
