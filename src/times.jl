@@ -64,7 +64,6 @@ getconstanttime(x::ConstantTime) = x.value
 getdatatime(x::ConstantTime) = x.value
 getscenariotime(x::ConstantTime) = x.value
 
-
 # --- TwoTime ---
 struct TwoTime <: ProbTime
     datatime::DateTime
@@ -73,7 +72,6 @@ end
 
 getdatatime(x::TwoTime) = x.datatime
 getscenariotime(x::TwoTime) = x.scenariotime
-
 
 # --- FixedDataTwoTime ---
 struct FixedDataTwoTime <: ProbTime
@@ -163,3 +161,53 @@ getphaseinvector(x::PhaseinFixedDataTwoTime) = x.phaseinvector
 
 +(t::PhaseinFixedDataTwoTime, d::TimeDelta) = PhaseinFixedDataTwoTime(getdatatime(t), getscenariotime1(t) + getduration(d), getscenariotime2(t) + getduration(d), getphaseinvector(t))
 -(t::PhaseinFixedDataTwoTime, d::TimeDelta) = PhaseinFixedDataTwoTime(getdatatime(t), getscenariotime1(t) - getduration(d), getscenariotime2(t) - getduration(d), getphaseinvector(t))
+
+# --- PrognosisTime ---
+struct PrognosisTime <: ProbTime
+    datatime::DateTime
+    prognosisdatatime::DateTime
+    scenariotime::DateTime
+end
+
+getprognosisdatatime(x::PrognosisTime) = x.datatime
+getscenariotime(x::PrognosisTime) = x.scenariotime
+getdatatime(x::PrognosisTime) = x.datatime
+
+# --- PhaseinPrognosisTime ---
+struct PhaseinPrognosisTime <: ProbTime
+    datatime::DateTime
+    prognosisdatatime::DateTime
+    scenariotime1::DateTime
+    scenariotime2::DateTime
+    phaseinvector::InfiniteTimeVector
+    
+    function PhaseinPrognosisTime(datatime, prognosisdatatime, scenariotime1, scenariotime2, phaseinvector)
+        new(datatime, prognosisdatatime, scenariotime1, scenariotime2, phaseinvector)
+    end
+
+    function PhaseinPrognosisTime(datatime, prognosisdatatime, scenariotime1, scenariotime2, 
+        phaseinoffset, phaseindelta, phaseinsteps)
+        
+        index = Vector{DateTime}(undef, phaseinsteps+1)
+        values = Vector{Float64}(undef, phaseinsteps+1)
+        for i in 0:phaseinsteps
+            index[i+1] = scenariotime1 + phaseinoffset + Millisecond(round(Int, phaseindelta.value*(i-1)/phaseinsteps))
+            values[i+1] = round(i/phaseinsteps,digits=3)
+        end
+        phaseinvector = InfiniteTimeVector(index, values)
+        new(datatime, prognosisdatatime, scenariotime1, scenariotime2, phaseinvector)
+    end
+end
+
+getdatatime(x::PhaseinPrognosisTime) = x.datatime
+getprognosisdatatime(x::PhaseinPrognosisTime) = x.prognosisdatatime
+getscenariotime(x::PhaseinPrognosisTime) = x.scenariotime2 # used if Phasein should be ignored
+getscenariotime1(x::PhaseinPrognosisTime) = x.scenariotime1
+getscenariotime2(x::PhaseinPrognosisTime) = x.scenariotime2
+getphaseinvector(x::PhaseinPrognosisTime) = x.phaseinvector
+
++(t::PhaseinPrognosisTime, d::Period) = PhaseinPrognosisTime(getdatatime(t) + d, getprognosisdatatime(t) + d, getscenariotime1(t) + d, getscenariotime2(t) + d, getphaseinvector(t))
+-(t::PhaseinPrognosisTime, d::Period) = PhaseinPrognosisTime(getdatatime(t) - d, getprognosisdatatime(t) - d, getscenariotime1(t) - d, getscenariotime2(t) - d, getphaseinvector(t))
+
++(t::PhaseinPrognosisTime, d::TimeDelta) = PhaseinPrognosisTime(getdatatime(t) + getduration(d), getprognosisdatatime(t) + getduration(d), getscenariotime1(t) + getduration(d), getscenariotime2(t) + getduration(d), getphaseinvector(t))
+-(t::PhaseinPrognosisTime, d::TimeDelta) = PhaseinPrognosisTime(getdatatime(t) - getduration(d), getprognosisdatatime(t) - getduration(d), getscenariotime1(t) - getduration(d), getscenariotime2(t) - getduration(d), getphaseinvector(t))
