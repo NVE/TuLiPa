@@ -80,6 +80,16 @@ struct MeanSeriesIgnorePhaseinParam{L <: TimeVector, P <: TimeVector} <: Param #
     profile::P
 end
 
+struct UMMSeriesParam{L<:TimeVector,U<:TimeVector,P<:TimeVector} <: Param
+    level::L
+    ummprofile::U
+    profile::P
+end
+
+struct MWtoGWhparam{P<:Param} <: Param
+    param::P
+end
+
 # These concrete types uses Price, Conversion, Loss and Capacity types
 struct ExogenCostParam{P <: Price, C <: Conversion, L <: Loss} <: Param
     price::P
@@ -191,6 +201,7 @@ isdurational(param::ExogenIncomeParam) = isdurational(param.price) && isduration
 isdurational(param::InConversionLossParam) = isdurational(param.conversion) && isdurational(param.loss)
 isdurational(param::OutConversionLossParam) = isdurational(param.conversion) && isdurational(param.loss)
 isdurational(param::TransmissionLossRHSParam) = isdurational(param.capacity)
+isdurational(param::MWtoGWhparam) = true
 
 # Calculate the parameter value for a given parameter, problem time and timedelta duration
 getparamvalue(::ZeroParam,     ::ProbTime, ::TimeDelta) =  0.0
@@ -499,16 +510,6 @@ end
 function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MeanSeriesIgnorePhaseinParam)::Bool
     lowlevel[getobjkey(elkey)] = value
     return true
-end
-
-struct UMMSeriesParam{L<:TimeVector,U<:TimeVector,P<:TimeVector} <: Param
-    level::L
-    ummprofile::U
-    profile::P
-end
-
-struct MWtoGWhparam{P<:Param} <: Param
-    param::P
 end
 
 function getparamvalue(param::MWtoGWhparam, start::ProbTime, d::TimeDelta)
