@@ -197,7 +197,7 @@ isdurational(param::TwoProductParam) = isdurational(param.param1) && isdurationa
 isdurational(param::FossilMCParam) = false
 isdurational(param::M3SToMM3SeriesParam) = true
 isdurational(param::MWToGWhSeriesParam) = true
-isdurational(param::CostPerMWToGWhParam) = isdurational(param.param)
+isdurational(param::CostPerMWToGWhParam) = true
 isdurational(param::MeanSeriesParam) = false
 isdurational(param::MeanSeriesIgnorePhaseinParam) = false
 isdurational(param::ExogenCostParam) = isdurational(param.price) && isdurational(param.conversion) && isdurational(param.loss)
@@ -205,8 +205,8 @@ isdurational(param::ExogenIncomeParam) = isdurational(param.price) && isduration
 isdurational(param::InConversionLossParam) = isdurational(param.conversion) && isdurational(param.loss)
 isdurational(param::OutConversionLossParam) = isdurational(param.conversion) && isdurational(param.loss)
 isdurational(param::TransmissionLossRHSParam) = isdurational(param.capacity)
-isdurational(param::MWToGWhParam) = true
 isdurational(param::UMMSeriesParam) = false
+isdurational(param::MWToGWhParam) = true
 
 # Calculate the parameter value for a given parameter, problem time and timedelta duration
 getparamvalue(::ZeroParam,     ::ProbTime, ::TimeDelta) =  0.0
@@ -374,12 +374,6 @@ function getparamvalue(param::MWToGWhSeriesParam, start::Union{PhaseinTwoTime,Ph
     return mw * hours / 1e3
 end
 
-function getparamvalue(param::MWToGWhParam, start::ProbTime, d::TimeDelta)
-    mw = getparamvalue(param.param, start, d)
-    hours = float(getduration(d).value / 3600000)
-    return mw * hours / 1e3
-end
-
 function _phaseinLogic(phaseinvector, param, d, scenariotime1, scenariotime2)
     phasein = getweightedaverage(phaseinvector, scenariotime1, d)
     profile1 = getweightedaverage(param.profile, scenariotime1, d)
@@ -464,6 +458,12 @@ function getparamvalue(param::UMMSeriesParam, start::ProbTime, d::TimeDelta)
     end
     mw = level_mw * ummprofile
     return mw
+end
+
+function getparamvalue(param::MWToGWhParam, start::ProbTime, d::TimeDelta)
+    mw = getparamvalue(param.param, start, d)
+    hours = float(getduration(d).value / 3600000)
+    return mw * hours / 1e3
 end
 
 # ------ Include dataelements -------
@@ -627,17 +627,14 @@ end
 
 function includeMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     (param, ok) = getdictparamvalue(lowlevel, elkey, value)
-
-    if !ok
-        return false
-    end
+    ok || return false
 
     lowlevel[getobjkey(elkey)] = MWToGWhParam(param)
     return true
 end
 
-INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MWToGWhParam")] = includeMWToGWhParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "UMMSeriesParam")] = includeUMMSeriesParam!
+INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MWToGWhParam")] = includeMWToGWhParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "FossilMCParam")] = includeFossilMCParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "M3SToMM3SeriesParam")] = includeM3SToMM3SeriesParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MWToGWhSeriesParam")] = includeMWToGWhSeriesParam!
