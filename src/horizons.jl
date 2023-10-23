@@ -487,7 +487,7 @@ function getstarttime(h::SequentialHorizon, t::Int, start::Union{PrognosisTime, 
         offsetstart = start
     end
     starttime = offsetstart + getstartduration(h, t)
-    if start isa PrognosisTwoTime
+    if start isa PrognosisTime
         return PrognosisTime(getdatatime(starttime), getprognosisdatatime(offsetstart), getscenariotime(starttime))
     else
         return PhaseinPrognosisTime(getdatatime(starttime), getprognosisdatatime(offsetstart), getscenariotime1(starttime), getscenariotime2(starttime), getphaseinvector(starttime))

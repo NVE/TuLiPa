@@ -90,7 +90,7 @@ struct PrognosisSeriesParam{L <: TimeVector, P <: TimeVector, Prog <: TimeVector
     prognosis::Prog
     confidence::C
 
-    function PrognosisSeriesParam(level, profile, prognosis, confidencesteps)
+    function PrognosisSeriesParam(level, profile, prognosis, confidencesteps) # TODO: Add interface for confidencevector
         index = Vector{DateTime}(undef, confidencesteps+1)
         values = Vector{Float64}(undef, confidencesteps+1)
         confidencedelta = last(prognosis.index) - first(prognosis.index)
@@ -100,7 +100,7 @@ struct PrognosisSeriesParam{L <: TimeVector, P <: TimeVector, Prog <: TimeVector
         end
         confidence = InfiniteTimeVector(index, values)
 
-        new(level, profile, prognosis, confidence)
+        new{typeof(level),typeof(profile),typeof(prognosis),typeof(confidence)}(level, profile, prognosis, confidence)
     end
 end
 
@@ -305,17 +305,17 @@ function _prognosislogic(param::PrognosisSeriesParam, datatime::DateTime, scenar
 
     if (confidence == 0.0) || (datatime > last_prognosis_time) # Only use profile
         profile = getweightedaverage(param.profile, scenariotime, d)
-    elseif (confidence == 1.0) && (datatime + d <= last_prognosis_time) # Only use prognosis
-        profile = getweightedaverage(param.prognosis, start.datatime, d)
+    elseif (confidence == 1.0) && (datatime + getduration(d) <= last_prognosis_time) # Only use prognosis
+        profile = getweightedaverage(param.prognosis, datatime, d)
     else # Combine profile and prognosis 
-        if datatime + d <= last_prognosis_time # Combine prognosis and profile at a confidence (weighting)
+        if datatime + getduration(d) <= last_prognosis_time # Combine prognosis and profile at a confidence (weighting)
             prognosispart = getweightedaverage(param.prognosis, datatime, d)
             profilepart = getweightedaverage(param.profile, scenariotime, d)
 
             profile = profilepart*(1-confidence) + prognosispart*confidence
         else # Similar to previous, but with a part that is fully from the profile due to end of prognosis timevector
-            new_delta =  last_prognosis_time - datatime
-            fullyprofilepart = getweightedaverage(param.profile, scenariotime + new_delta, d - new_delta)
+            new_delta = MsTimeDelta(last_prognosis_time - datatime)
+            fullyprofilepart = getweightedaverage(param.profile, scenariotime + getduration(new_delta), d - new_delta)
             prognosispart = getweightedaverage(param.prognosis, datatime, new_delta)
             profilepart = getweightedaverage(param.profile, scenariotime, new_delta)
 
@@ -327,7 +327,7 @@ end
 
 function getparamvalue(param::PrognosisSeriesParam, start::PrognosisTime, d::TimeDelta)
 
-    confidence = getweightedaverage(start.phaseinvector, start.progdatatime, d)
+    confidence = getweightedaverage(param.confidence, start.prognosisdatatime, d)
     last_prognosis_time = last(param.prognosis.index)
     
     profile = _prognosislogic(param, start.datatime, start.scenariotime, d, confidence, last_prognosis_time)

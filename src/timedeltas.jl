@@ -9,7 +9,7 @@ The units are a list of time periods with unit_duration
 See AdaptiveHorizon in horizons.jl
 """
 
-import Base.:/, Base.:*
+import Base.:/, Base.:*, Base.:+, Base.:-
 
 # ----- Concrete types ----------
 struct MsTimeDelta <: TimeDelta
@@ -44,6 +44,10 @@ function getlength(x::UnitsTimeDelta)
     return sum(length(r) for r in x.units)
 end
 
++(d::MsTimeDelta, duration::Millisecond) = MsTimeDelta(getduration(d) + duration)
+-(d::MsTimeDelta, duration::Millisecond) = MsTimeDelta(getduration(d) - duration)
++(d::MsTimeDelta, d1::MsTimeDelta) = MsTimeDelta(getduration(d) + getduration(d1))
+-(d::MsTimeDelta, d1::MsTimeDelta) = MsTimeDelta(getduration(d) - getduration(d1))
 /(d::MsTimeDelta, i::Int) = MsTimeDelta(getduration(d)/i)
 *(d::MsTimeDelta, i::Int) = MsTimeDelta(getduration(d)*i)
 
