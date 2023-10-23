@@ -71,6 +71,10 @@ struct MWToGWhSeriesParam{L <: TimeVector, P <: TimeVector} <: Param
     profile::P
 end
 
+struct MWToGWhParam{P<:Param} <: Param
+    param::P
+end
+
 struct CostPerMWToGWhParam{P <: Param} <: Param
     param::P
 end
@@ -84,10 +88,6 @@ struct UMMSeriesParam{L<:TimeVector,U<:TimeVector,P<:TimeVector} <: Param
     level::L
     ummprofile::U
     profile::P
-end
-
-struct MWToGWhParam{P<:Param} <: Param
-    param::P
 end
 
 # These concrete types uses Price, Conversion, Loss and Capacity types
@@ -148,6 +148,7 @@ iszero(param::TwoProductParam) = iszero(param.param1) && iszero(param.param2)
 iszero(param::FossilMCParam) = false
 iszero(param::M3SToMM3SeriesParam) = false
 iszero(param::MWToGWhSeriesParam) = false
+iszero(param::MWToGWhParam) = false
 iszero(param::CostPerMWToGWhParam) = false
 iszero(param::MeanSeriesParam) = false
 iszero(param::MeanSeriesIgnorePhaseinParam) = false
@@ -157,7 +158,6 @@ iszero(param::InConversionLossParam) = iszero(param.conversion)
 iszero(param::OutConversionLossParam) = iszero(param.conversion)
 iszero(param::TransmissionLossRHSParam) = iszero(param.capacity)
 iszero(param::UMMSeriesParam) = false
-iszero(param::MWToGWhParam) = false
 
 isone(param::FlipSignParam) = false
 isone(param::ZeroParam) = false
@@ -168,6 +168,7 @@ isone(param::TwoProductParam) = iszero(param.param1) && iszero(param.param2)
 isone(param::FossilMCParam) = false
 isone(param::M3SToMM3SeriesParam) = false
 isone(param::MWToGWhSeriesParam) = false
+isone(param::MWToGWhParam) = false
 isone(param::CostPerMWToGWhParam) = false
 isone(param::MeanSeriesParam) = false
 isone(param::MeanSeriesIgnorePhaseinParam) = false
@@ -177,7 +178,6 @@ isone(param::InConversionLossParam) = false
 isone(param::OutConversionLossParam) = false
 isone(param::TransmissionLossRHSParam) = false
 isone(param::UMMSeriesParam) = false
-isone(param::MWToGWhParam) = false
 
 isconstant(::ConstantParam) = true
 isconstant(::ZeroParam) = true
@@ -197,6 +197,7 @@ isdurational(param::TwoProductParam) = isdurational(param.param1) && isdurationa
 isdurational(param::FossilMCParam) = false
 isdurational(param::M3SToMM3SeriesParam) = true
 isdurational(param::MWToGWhSeriesParam) = true
+isdurational(param::MWToGWhParam) = true
 isdurational(param::CostPerMWToGWhParam) = true
 isdurational(param::MeanSeriesParam) = false
 isdurational(param::MeanSeriesIgnorePhaseinParam) = false
@@ -206,7 +207,6 @@ isdurational(param::InConversionLossParam) = isdurational(param.conversion) && i
 isdurational(param::OutConversionLossParam) = isdurational(param.conversion) && isdurational(param.loss)
 isdurational(param::TransmissionLossRHSParam) = isdurational(param.capacity)
 isdurational(param::UMMSeriesParam) = false
-isdurational(param::MWToGWhParam) = true
 
 # Calculate the parameter value for a given parameter, problem time and timedelta duration
 getparamvalue(::ZeroParam,     ::ProbTime, ::TimeDelta) =  0.0
@@ -542,6 +542,14 @@ function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, v
     return true
 end
 
+function includeMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    (param, ok) = getdictparamvalue(lowlevel, elkey, value)
+    ok || return false
+
+    lowlevel[getobjkey(elkey)] = MWToGWhParam(param)
+    return true
+end
+
 function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
 
@@ -625,19 +633,11 @@ function includeUMMSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value
     return true
 end
 
-function includeMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
-    (param, ok) = getdictparamvalue(lowlevel, elkey, value)
-    ok || return false
-
-    lowlevel[getobjkey(elkey)] = MWToGWhParam(param)
-    return true
-end
-
-INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "UMMSeriesParam")] = includeUMMSeriesParam!
-INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MWToGWhParam")] = includeMWToGWhParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "FossilMCParam")] = includeFossilMCParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "M3SToMM3SeriesParam")] = includeM3SToMM3SeriesParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MWToGWhSeriesParam")] = includeMWToGWhSeriesParam!
+INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MWToGWhParam")] = includeMWToGWhParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "CostPerMWToGWhParam")] = includeCostPerMWToGWhParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MeanSeriesParam")] = includeMeanSeriesParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MeanSeriesIgnorePhaseinParam")] = includeMeanSeriesIgnorePhaseinParam!
+INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "UMMSeriesParam")] = includeUMMSeriesParam!
