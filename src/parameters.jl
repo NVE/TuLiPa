@@ -71,6 +71,10 @@ struct MWToGWhSeriesParam{L <: TimeVector, P <: TimeVector} <: Param
     profile::P
 end
 
+struct MWToGWhParam{P<:Param} <: Param
+    param::P
+end
+
 struct CostPerMWToGWhParam{P <: Param} <: Param
     param::P
 end
@@ -84,10 +88,6 @@ struct UMMSeriesParam{L<:TimeVector,U<:TimeVector,P<:TimeVector} <: Param
     level::L
     ummprofile::U
     profile::P
-end
-
-struct MWtoGWhparam{P<:Param} <: Param
-    param::P
 end
 
 # These concrete types uses Price, Conversion, Loss and Capacity types
@@ -148,6 +148,7 @@ iszero(param::TwoProductParam) = iszero(param.param1) && iszero(param.param2)
 iszero(param::FossilMCParam) = false
 iszero(param::M3SToMM3SeriesParam) = false
 iszero(param::MWToGWhSeriesParam) = false
+iszero(param::MWToGWhParam) = false
 iszero(param::CostPerMWToGWhParam) = false
 iszero(param::MeanSeriesParam) = false
 iszero(param::MeanSeriesIgnorePhaseinParam) = false
@@ -156,6 +157,7 @@ iszero(param::ExogenIncomeParam) = iszero(param.price) && iszero(param.conversio
 iszero(param::InConversionLossParam) = iszero(param.conversion)
 iszero(param::OutConversionLossParam) = iszero(param.conversion)
 iszero(param::TransmissionLossRHSParam) = iszero(param.capacity)
+iszero(param::UMMSeriesParam) = false
 
 isone(param::FlipSignParam) = false
 isone(param::ZeroParam) = false
@@ -166,6 +168,7 @@ isone(param::TwoProductParam) = iszero(param.param1) && iszero(param.param2)
 isone(param::FossilMCParam) = false
 isone(param::M3SToMM3SeriesParam) = false
 isone(param::MWToGWhSeriesParam) = false
+isone(param::MWToGWhParam) = false
 isone(param::CostPerMWToGWhParam) = false
 isone(param::MeanSeriesParam) = false
 isone(param::MeanSeriesIgnorePhaseinParam) = false
@@ -174,6 +177,7 @@ isone(param::ExogenIncomeParam) = false
 isone(param::InConversionLossParam) = false
 isone(param::OutConversionLossParam) = false
 isone(param::TransmissionLossRHSParam) = false
+isone(param::UMMSeriesParam) = false
 
 isconstant(::ConstantParam) = true
 isconstant(::ZeroParam) = true
@@ -193,7 +197,8 @@ isdurational(param::TwoProductParam) = isdurational(param.param1) && isdurationa
 isdurational(param::FossilMCParam) = false
 isdurational(param::M3SToMM3SeriesParam) = true
 isdurational(param::MWToGWhSeriesParam) = true
-isdurational(param::CostPerMWToGWhParam) = isdurational(param.param)
+isdurational(param::MWToGWhParam) = true
+isdurational(param::CostPerMWToGWhParam) = true
 isdurational(param::MeanSeriesParam) = false
 isdurational(param::MeanSeriesIgnorePhaseinParam) = false
 isdurational(param::ExogenCostParam) = isdurational(param.price) && isdurational(param.conversion) && isdurational(param.loss)
@@ -201,7 +206,7 @@ isdurational(param::ExogenIncomeParam) = isdurational(param.price) && isduration
 isdurational(param::InConversionLossParam) = isdurational(param.conversion) && isdurational(param.loss)
 isdurational(param::OutConversionLossParam) = isdurational(param.conversion) && isdurational(param.loss)
 isdurational(param::TransmissionLossRHSParam) = isdurational(param.capacity)
-isdurational(param::MWtoGWhparam) = true
+isdurational(param::UMMSeriesParam) = false
 
 # Calculate the parameter value for a given parameter, problem time and timedelta duration
 getparamvalue(::ZeroParam,     ::ProbTime, ::TimeDelta) =  0.0
@@ -369,155 +374,6 @@ function getparamvalue(param::MWToGWhSeriesParam, start::Union{PhaseinTwoTime,Ph
     return mw * hours / 1e3
 end
 
-# ------ Include dataelements -------
-function includeFossilMCParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
-    checkkey(lowlevel, elkey)
-
-    fuellevel   = getdictvalue(value, "FuelLevel",   TIMEVECTORPARSETYPES, elkey)
-    fuelprofile = getdictvalue(value, "FuelProfile", TIMEVECTORPARSETYPES, elkey)
-    co2factor   = getdictvalue(value, "CO2Factor",   TIMEVECTORPARSETYPES, elkey)
-    co2level    = getdictvalue(value, "CO2Level",    TIMEVECTORPARSETYPES, elkey)
-    co2profile  = getdictvalue(value, "CO2Profile",  TIMEVECTORPARSETYPES, elkey)
-    efficiency  = getdictvalue(value, "Efficiency",  TIMEVECTORPARSETYPES, elkey)
-    voc         = getdictvalue(value, "VOC",         TIMEVECTORPARSETYPES, elkey)
-    
-    (fuellevel,   ok) = getdicttimevectorvalue(lowlevel, fuellevel)   ;  ok || return false
-    (fuelprofile, ok) = getdicttimevectorvalue(lowlevel, fuelprofile) ;  ok || return false
-    (co2factor,   ok) = getdicttimevectorvalue(lowlevel, co2factor)   ;  ok || return false
-    (co2level,    ok) = getdicttimevectorvalue(lowlevel, co2level)    ;  ok || return false
-    (co2profile,  ok) = getdicttimevectorvalue(lowlevel, co2profile)  ;  ok || return false
-    (efficiency,  ok) = getdicttimevectorvalue(lowlevel, efficiency)  ;  ok || return false
-    (voc,         ok) = getdicttimevectorvalue(lowlevel, voc)         ;  ok || return false
-    
-    obj = FossilMCParam(fuellevel, fuelprofile, co2factor, co2level, co2profile, efficiency, voc)
-    
-    lowlevel[getobjkey(elkey)] = obj
-    return true
-end
-
-function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
-    checkkey(lowlevel, elkey)
-    
-    level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
-    profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
-    
-    (level,   ok) = getdicttimevectorvalue(lowlevel, level)   ;  ok || return false
-    (profile, ok) = getdicttimevectorvalue(lowlevel, profile) ;  ok || return false
-    
-    lowlevel[getobjkey(elkey)] = M3SToMM3SeriesParam(level, profile)
-    return true
-end
-
-function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::M3SToMM3SeriesParam)::Bool
-    lowlevel[getobjkey(elkey)] = value
-    return true
-end
-
-function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)::Bool
-    level = ConstantTimeVector(value)
-    profile = ConstantTimeVector(one(typeof(value)))
-    lowlevel[getobjkey(elkey)] = M3SToMM3SeriesParam(level, profile)
-    return true
-end
-
-function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
-    checkkey(lowlevel, elkey)
-    
-    level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
-    profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
-    
-    (level,   ok) = getdicttimevectorvalue(lowlevel, level)    ;  ok || return false
-    (profile, ok) = getdicttimevectorvalue(lowlevel, profile)  ;  ok || return false
-    
-    lowlevel[getobjkey(elkey)] = MWToGWhSeriesParam(level, profile)
-    return true
-end
-
-function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MWToGWhSeriesParam)::Bool
-    lowlevel[getobjkey(elkey)] = value
-    return true
-end
-
-function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)::Bool
-    level = ConstantTimeVector(value)
-    profile = ConstantTimeVector(one(typeof(value)))
-    lowlevel[getobjkey(elkey)] = MWToGWhSeriesParam(level, profile)
-    return true
-end
-
-function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
-    checkkey(lowlevel, elkey)
-
-    if haskey(value, STARTCOSTKEY)
-        (startcost, ok) = getdictparamvalue(lowlevel, elkey, value, STARTCOSTKEY)   ;  ok || return false
-        lowlevel[getobjkey(elkey)] = CostPerMWToGWhParam(startcost)
-    elseif haskey(value, "Level") && haskey(value, "Profile")
-        level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
-        profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
-        
-        (level,   ok) = getdicttimevectorvalue(lowlevel, level)    ;  ok || return false
-        (profile, ok) = getdicttimevectorvalue(lowlevel, profile)  ;  ok || return false
-        
-        lowlevel[getobjkey(elkey)] = CostPerMWToGWhParam(MeanSeriesParam(level, profile))
-    else
-        return false
-    end
-
-    return true
-end
-
-function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::CostPerMWToGWhParam)::Bool
-    lowlevel[getobjkey(elkey)] = value
-    return true
-end
-
-function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)::Bool
-    lowlevel[getobjkey(elkey)] = CostPerMWToGWhParam(ConstantParam(value))
-    return true
-end
-
-function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
-    checkkey(lowlevel, elkey)
-    
-    level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
-    profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
-    
-    (level,   ok) = getdicttimevectorvalue(lowlevel, level)   ;  ok || return false
-    (profile, ok) = getdicttimevectorvalue(lowlevel, profile) ;  ok || return false
-    
-    lowlevel[getobjkey(elkey)] = MeanSeriesParam(level, profile)
-    return true
-end
-
-function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MeanSeriesParam)::Bool
-    lowlevel[getobjkey(elkey)] = value
-    return true
-end
-
-function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
-    checkkey(lowlevel, elkey)
-    
-    level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
-    profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
-    
-    (level,   ok) = getdicttimevectorvalue(lowlevel, level)   ;  ok || return false
-    (profile, ok) = getdicttimevectorvalue(lowlevel, profile) ;  ok || return false
-    
-    lowlevel[getobjkey(elkey)] = MeanSeriesIgnorePhaseinParam(level, profile)
-    return true
-end
-
-function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MeanSeriesIgnorePhaseinParam)::Bool
-    lowlevel[getobjkey(elkey)] = value
-    return true
-end
-
-function getparamvalue(param::MWtoGWhparam, start::ProbTime, d::TimeDelta)
-    mw = getparamvalue(param.param, start, d)
-    hours = float(getduration(d).value / 3600000)
-    return mw * hours / 1e3
-end
-
 function _phaseinLogic(phaseinvector, param, d, scenariotime1, scenariotime2)
     phasein = getweightedaverage(phaseinvector, scenariotime1, d)
     profile1 = getweightedaverage(param.profile, scenariotime1, d)
@@ -604,6 +460,163 @@ function getparamvalue(param::UMMSeriesParam, start::ProbTime, d::TimeDelta)
     return mw
 end
 
+function getparamvalue(param::MWToGWhParam, start::ProbTime, d::TimeDelta)
+    mw = getparamvalue(param.param, start, d)
+    hours = float(getduration(d).value / 3600000)
+    return mw * hours / 1e3
+end
+
+# ------ Include dataelements -------
+function includeFossilMCParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    checkkey(lowlevel, elkey)
+
+    fuellevel   = getdictvalue(value, "FuelLevel",   TIMEVECTORPARSETYPES, elkey)
+    fuelprofile = getdictvalue(value, "FuelProfile", TIMEVECTORPARSETYPES, elkey)
+    co2factor   = getdictvalue(value, "CO2Factor",   TIMEVECTORPARSETYPES, elkey)
+    co2level    = getdictvalue(value, "CO2Level",    TIMEVECTORPARSETYPES, elkey)
+    co2profile  = getdictvalue(value, "CO2Profile",  TIMEVECTORPARSETYPES, elkey)
+    efficiency  = getdictvalue(value, "Efficiency",  TIMEVECTORPARSETYPES, elkey)
+    voc         = getdictvalue(value, "VOC",         TIMEVECTORPARSETYPES, elkey)
+    
+    (fuellevel,   ok) = getdicttimevectorvalue(lowlevel, fuellevel)   ;  ok || return false
+    (fuelprofile, ok) = getdicttimevectorvalue(lowlevel, fuelprofile) ;  ok || return false
+    (co2factor,   ok) = getdicttimevectorvalue(lowlevel, co2factor)   ;  ok || return false
+    (co2level,    ok) = getdicttimevectorvalue(lowlevel, co2level)    ;  ok || return false
+    (co2profile,  ok) = getdicttimevectorvalue(lowlevel, co2profile)  ;  ok || return false
+    (efficiency,  ok) = getdicttimevectorvalue(lowlevel, efficiency)  ;  ok || return false
+    (voc,         ok) = getdicttimevectorvalue(lowlevel, voc)         ;  ok || return false
+    
+    obj = FossilMCParam(fuellevel, fuelprofile, co2factor, co2level, co2profile, efficiency, voc)
+    
+    lowlevel[getobjkey(elkey)] = obj
+    return true
+end
+
+function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    checkkey(lowlevel, elkey)
+    
+    level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
+    profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
+    
+    (level,   ok) = getdicttimevectorvalue(lowlevel, level)   ;  ok || return false
+    (profile, ok) = getdicttimevectorvalue(lowlevel, profile) ;  ok || return false
+    
+    lowlevel[getobjkey(elkey)] = M3SToMM3SeriesParam(level, profile)
+    return true
+end
+
+function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::M3SToMM3SeriesParam)::Bool
+    lowlevel[getobjkey(elkey)] = value
+    return true
+end
+
+function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)::Bool
+    level = ConstantTimeVector(value)
+    profile = ConstantTimeVector(one(typeof(value)))
+    lowlevel[getobjkey(elkey)] = M3SToMM3SeriesParam(level, profile)
+    return true
+end
+
+function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    checkkey(lowlevel, elkey)
+    
+    level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
+    profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
+    
+    (level,   ok) = getdicttimevectorvalue(lowlevel, level)    ;  ok || return false
+    (profile, ok) = getdicttimevectorvalue(lowlevel, profile)  ;  ok || return false
+    
+    lowlevel[getobjkey(elkey)] = MWToGWhSeriesParam(level, profile)
+    return true
+end
+
+function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MWToGWhSeriesParam)::Bool
+    lowlevel[getobjkey(elkey)] = value
+    return true
+end
+
+function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)::Bool
+    level = ConstantTimeVector(value)
+    profile = ConstantTimeVector(one(typeof(value)))
+    lowlevel[getobjkey(elkey)] = MWToGWhSeriesParam(level, profile)
+    return true
+end
+
+function includeMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    (param, ok) = getdictparamvalue(lowlevel, elkey, value)
+    ok || return false
+
+    lowlevel[getobjkey(elkey)] = MWToGWhParam(param)
+    return true
+end
+
+function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    checkkey(lowlevel, elkey)
+
+    if haskey(value, STARTCOSTKEY)
+        (startcost, ok) = getdictparamvalue(lowlevel, elkey, value, STARTCOSTKEY)   ;  ok || return false
+        lowlevel[getobjkey(elkey)] = CostPerMWToGWhParam(startcost)
+    elseif haskey(value, "Level") && haskey(value, "Profile")
+        level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
+        profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
+        
+        (level,   ok) = getdicttimevectorvalue(lowlevel, level)    ;  ok || return false
+        (profile, ok) = getdicttimevectorvalue(lowlevel, profile)  ;  ok || return false
+        
+        lowlevel[getobjkey(elkey)] = CostPerMWToGWhParam(MeanSeriesParam(level, profile))
+    else
+        return false
+    end
+
+    return true
+end
+
+function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::CostPerMWToGWhParam)::Bool
+    lowlevel[getobjkey(elkey)] = value
+    return true
+end
+
+function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)::Bool
+    lowlevel[getobjkey(elkey)] = CostPerMWToGWhParam(ConstantParam(value))
+    return true
+end
+
+function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    checkkey(lowlevel, elkey)
+    
+    level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
+    profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
+    
+    (level,   ok) = getdicttimevectorvalue(lowlevel, level)   ;  ok || return false
+    (profile, ok) = getdicttimevectorvalue(lowlevel, profile) ;  ok || return false
+    
+    lowlevel[getobjkey(elkey)] = MeanSeriesParam(level, profile)
+    return true
+end
+
+function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MeanSeriesParam)::Bool
+    lowlevel[getobjkey(elkey)] = value
+    return true
+end
+
+function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    checkkey(lowlevel, elkey)
+    
+    level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
+    profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
+    
+    (level,   ok) = getdicttimevectorvalue(lowlevel, level)   ;  ok || return false
+    (profile, ok) = getdicttimevectorvalue(lowlevel, profile) ;  ok || return false
+    
+    lowlevel[getobjkey(elkey)] = MeanSeriesIgnorePhaseinParam(level, profile)
+    return true
+end
+
+function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MeanSeriesIgnorePhaseinParam)::Bool
+    lowlevel[getobjkey(elkey)] = value
+    return true
+end
+
 function includeUMMSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     level = getdictvalue(value, "Level", TIMEVECTORPARSETYPES, elkey)
     ummprofile = getdictvalue(value, "Ummprofile", TIMEVECTORPARSETYPES, elkey)
@@ -620,22 +633,11 @@ function includeUMMSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value
     return true
 end
 
-function includeMWtoGWhparam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
-    (param, ok) = getdictparamvalue(lowlevel, elkey, value)
-
-    if !ok
-        return false
-    end
-
-    lowlevel[getobjkey(elkey)] = MWtoGWhparam(param)
-    return true
-end
-
-INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MWtoGWhparam")] = includeMWtoGWhparam!
-INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "UMMSeriesParam")] = includeUMMSeriesParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "FossilMCParam")] = includeFossilMCParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "M3SToMM3SeriesParam")] = includeM3SToMM3SeriesParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MWToGWhSeriesParam")] = includeMWToGWhSeriesParam!
+INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MWToGWhParam")] = includeMWToGWhParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "CostPerMWToGWhParam")] = includeCostPerMWToGWhParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MeanSeriesParam")] = includeMeanSeriesParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MeanSeriesIgnorePhaseinParam")] = includeMeanSeriesIgnorePhaseinParam!
+INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "UMMSeriesParam")] = includeUMMSeriesParam!
