@@ -1,5 +1,3 @@
-using DataFrames, Plots, Statistics, JSON, Clp, TuLiPa, Dates, CSV, JuMP, HiGHS
-
 function get_dummy_data()
     
     elements_bio = [
