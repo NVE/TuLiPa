@@ -480,7 +480,6 @@ function getstarttime(h::AdaptiveHorizon, t::Int, start::ProbTime)
 end
 
 function getstarttime(h::AdaptiveHorizon, t::Int, start::Union{PrognosisTime, PhaseinPrognosisTime})
-    
     if hasoffset(h)
         offsetstart = getoffsettime(start, getoffset(h))
     else
