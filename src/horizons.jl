@@ -333,6 +333,20 @@ function getstarttime(h::SequentialHorizon, t::Int, start::ProbTime)
     return starttime
 end
 
+function getstarttime(h::SequentialHorizon, t::Int, start::Union{PrognosisTime, PhaseinPrognosisTime})
+    if hasoffset(h)
+        offsetstart = getoffsettime(start, getoffset(h))
+    else
+        offsetstart = start
+    end
+    starttime += getstartduration(h.periods, t)
+    if start isa PrognosisTime
+        return PrognosisTime(getdatatime(starttime), getprognosisdatatime(offsetstart), getscenariotime(starttime))
+    else
+        return PhaseinPrognosisTime(getdatatime(starttime), getprognosisdatatime(offsetstart), getscenariotime1(starttime), getscenariotime2(starttime), getphaseinvector(starttime))
+    end
+end
+
 function getsubperiods(coarse::SequentialHorizon, fine::SequentialHorizon, coarse_t::Int)
     return getsubperiods(coarse.periods, fine.periods, coarse_t)
 end
@@ -463,6 +477,21 @@ function getstarttime(h::AdaptiveHorizon, t::Int, start::ProbTime)
         starttime = start + getstartduration(h, t)
     end
     return starttime
+end
+
+function getstarttime(h::SequentialHorizon, t::Int, start::Union{PrognosisTime, PhaseinPrognosisTime})
+    
+    if hasoffset(h)
+        offsetstart = getoffsettime(start, getoffset(h))
+    else
+        offsetstart = start
+    end
+    starttime = offsetstart + getstartduration(h, t)
+    if start isa PrognosisTime
+        return PrognosisTime(getdatatime(starttime), getprognosisdatatime(offsetstart), getscenariotime(starttime))
+    else
+        return PhaseinPrognosisTime(getdatatime(starttime), getprognosisdatatime(offsetstart), getscenariotime1(starttime), getscenariotime2(starttime), getphaseinvector(starttime))
+    end
 end
 
 getstartduration(h::AdaptiveHorizon, t::Int) = getstartduration(h.macro_periods, (t-1) ÷ h.num_block + 1)
