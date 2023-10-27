@@ -339,7 +339,7 @@ function getstarttime(h::SequentialHorizon, t::Int, start::Union{PrognosisTime, 
     else
         offsetstart = start
     end
-    starttime += getstartduration(h.periods, t)
+    starttime = offsetstart +  getstartduration(h.periods, t)
     if start isa PrognosisTime
         return PrognosisTime(getdatatime(starttime), getprognosisdatatime(offsetstart), getscenariotime(starttime))
     else
