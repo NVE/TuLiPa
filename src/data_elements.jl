@@ -88,7 +88,7 @@ function getelement(concept, concrete, instance, pairs...; path="") # should be 
             ~all(isfinite, v) && error("Nonfinite values in type $concrete with name $instance")
         elseif (concrete == "BaseTable") & (k == "Names")
             v = v |> Vector{String}
-        elseif (k == "Period") | (k == "NumPeriods") | (k == "Steps") # BaseHorizon and MsTimeDelta and RangeTimeIndex and storagehint
+        elseif (k == "Period") | (k == "NumPeriods") | (k == "Steps") # BaseHorizon and MsTimeDelta and RangeTimeIndex and storagehint and PrognosisMeanSeries
             v = v |> Int64    
         elseif v isa Int
             v = v |> Float64
