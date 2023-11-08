@@ -100,7 +100,7 @@ struct PrognosisSeriesParam{L <: TimeVector, P <: TimeVector, Prog <: TimeVector
         confidencedelta = last(prognosis.index) - first(prognosis.index)
         for i in 0:confidencesteps
             index[i+1] = first(prognosis.index) + Millisecond(round(Int, confidencedelta.value*(i-1)/confidencesteps))
-            values[i+1] = round(i/confidencesteps,digits=3)
+            values[i+1] = round((confidencesteps-i)/confidencesteps,digits=3)
         end
         confidence = InfiniteTimeVector(index, values)
 
@@ -318,7 +318,6 @@ function getparamvalue(param::CostPerMWToGWhParam, start::ProbTime, d::TimeDelta
 end
 
 function _prognosislogic(param::PrognosisSeriesParam, datatime::DateTime, scenariotime::DateTime, d::TimeDelta, confidence::Float64, last_prognosis_time::DateTime)
-
     if (confidence == 0.0) || (datatime > last_prognosis_time) # Only use profile
         profile = getweightedaverage(param.profile, scenariotime, d)
     elseif (confidence == 1.0) && (datatime + getduration(d) <= last_prognosis_time) # Only use prognosis
@@ -342,7 +341,6 @@ function _prognosislogic(param::PrognosisSeriesParam, datatime::DateTime, scenar
 end
 
 function getparamvalue(param::PrognosisSeriesParam, start::PrognosisTime, d::TimeDelta)
-
     confidence = getweightedaverage(param.confidence, start.prognosisdatatime, d)
     last_prognosis_time = last(param.prognosis.index)
     
