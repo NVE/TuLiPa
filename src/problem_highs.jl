@@ -54,6 +54,8 @@ end
 # --- Main type ----
 
 mutable struct HiGHS_Prob <: Prob
+    is_cplex::Bool
+
     objects::Vector
     
     inner::Ptr{Cvoid}
@@ -93,12 +95,16 @@ mutable struct HiGHS_Prob <: Prob
     fixable_vars::Dict{Tuple{Id, Int}, Id}
 
     warmstart::Bool
+
+    function HiGHS_Prob(args...)
+        return new(false, args...)
+    end
     
     function HiGHS_Prob(modelobjects; warmstart=true)
         if modelobjects isa Dict
             modelobjects = [o for o in values(modelobjects)]
         end
-        p = new(
+        p = HiGHS_Prob(
             modelobjects,
             Highs_create(),
             Dict{Any, HiGHSVarInfo}(),
@@ -146,7 +152,7 @@ mutable struct HiGHS_Prob <: Prob
         return p
     end
     function HiGHS_Prob(; warmstart::Bool=true)
-        p = new(
+        p = HiGHS_Prob(
             [],
             C_NULL, 
             Dict{Any, HiGHSVarInfo}(),

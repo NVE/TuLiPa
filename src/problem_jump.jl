@@ -26,6 +26,7 @@ using JuMP
 
 # ------- Concrete type and constructor ----------------
 mutable struct JuMP_Prob <: Prob
+    is_cplex::Bool
     model::JuMP.Model
     objects::Vector
     horizons::Vector{Horizon}
@@ -71,7 +72,7 @@ mutable struct JuMP_Prob <: Prob
         return p
     end
     function JuMP_Prob()
-        new(JuMP.Model(), [], [], Dict(), false)
+        new(false, JuMP.Model(), [], [], Dict(), false)
     end
 end
 

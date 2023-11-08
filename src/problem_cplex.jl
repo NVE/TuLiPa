@@ -5,7 +5,11 @@ with non-allocating update functions
 # TODO: Add better docs
 # TODO: Make into module
 
+
+module ProblemCplex
+
 using CPLEX
+
 
 const _CPLEX_NOT_UPDATED = 0
 
@@ -249,6 +253,9 @@ end
 # ---- Definition of CPLEX_Prob (the exported object of this file) -----------
 
 mutable struct CPLEX_Prob <: Prob
+
+    is_cplex::Bool
+
     objects::Vector{Any}
     
     horizons::Vector{Horizon}
@@ -277,6 +284,11 @@ mutable struct CPLEX_Prob <: Prob
     isvarvaluesupdated::Bool
     iscondualsupdated::Bool
 
+
+    function CPLEX_Prob(args...)
+        return new(true, args...)
+    end
+
     function CPLEX_Prob(modelobjects::Dict)
         CPLEX_Prob(collect(values(modelobjects)))
     end
@@ -292,7 +304,7 @@ mutable struct CPLEX_Prob <: Prob
         fixable_vars = Dict{Tuple{Id, Int}, Tuple{Id, Id}}()
 
         # Create CPLEX_Prob instance
-        prob = new(modelobjects, [], env, lp, 0, 0, vars, cons, fixable_vars, 
+        prob = CPLEX_Prob(modelobjects, [], env, lp, 0, 0, vars, cons, fixable_vars, 
                    nothing, nothing, nothing, nothing, nothing, [], [], false, false)
 
         # --- Initialize data in the prob object -----
@@ -368,7 +380,7 @@ mutable struct CPLEX_Prob <: Prob
         cons = Dict{Id, _CPLEXConInfo}()
         fixable_vars = Dict{Tuple{Id, Int}, Tuple{Id, Id}}()
 
-        prob = new([], [], env, C_NULL, 0, 0, vars, cons, fixable_vars, 
+        prob = CPLEX_Prob([], [], env, C_NULL, 0, 0, vars, cons, fixable_vars, 
             nothing, nothing, nothing, nothing, nothing, [], [], false, false)     
         return prob
     end
@@ -795,4 +807,6 @@ function _cplex_add_cons!(p::CPLEX_Prob)
     ret = CPLEX.CPXaddrows(p.env, p.lp, 0, p.num_row, 0, rhs, senses, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL)
     _cplex_check_ret(p.env, ret)
     return
+end
+
 end
