@@ -479,7 +479,7 @@ end
 function _umm_logic(param, start, d, new_profile_start, new_start_delta)
     datatime = getdatatime(start)
     scenariotime = getscenariotime(start)
-    delta = d.ms
+    delta = getduration(d)
     over = scenariotime + delta - new_profile_start
     start_to_lastdate = new_profile_start - scenariotime
     @assert start_to_lastdate >= Millisecond(0)
@@ -534,7 +534,7 @@ function getparamvalue(param::UMMSeriesParam, start::ProbTime, d::TimeDelta)
         return level_mw * profile
     end
 
-    delta = d.ms
+    delta = getduration(d)
     over = scenariotime + delta - new_profile_start
     start_to_lastdate = new_profile_start - scenariotime
     @assert start_to_lastdate >= Millisecond(0)
