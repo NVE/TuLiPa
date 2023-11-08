@@ -39,7 +39,7 @@ mutable struct JuMP_Prob <: Prob
             objects = [o for o in collect(values(objects))]
         end
 
-        p = new(model, objects, [], Dict(), false)
+        p = new(false, model, objects, [], Dict(), false)
 
         setsilent!(p)
 
