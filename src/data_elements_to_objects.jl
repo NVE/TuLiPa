@@ -295,6 +295,7 @@ end
 
 function validate_elements(elements)
     df = elements_to_df(elements)
+    df = df[typeof.(df.value) .== Dict{Any, Any}, :]
     df[!, "value"] = _remove_non_string_dict_values.(df.value)
     df[!, "value_type"] = join.(sort.(collect.((keys.(df.value)))))
     checks = validate_refrences(df)
