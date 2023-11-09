@@ -233,10 +233,14 @@ function add_extra_col(df)
 end
 
 function check_ref(main_df, df_type, col)
-    if ~(col in ["Param", "WhichInstance", "Level", "Profile", "Commodity", "Balance", "Flow"])
+    # fields that are strings but not reference
+    if (col in ["conceptname", "instancename", 
+                "typename", "Residualhint", 
+                "Name", "Direction", 
+                "WhichConcept", "value_type", 
+                "Bound"])
         return
     end
-    df_type = df_type[typeof.(df_type[!, col]).==String, :]
     query = antijoin(df_type, main_df, on=[
             Symbol(col) => :instancename], makeunique=true)
     if ~isempty(query)
@@ -247,12 +251,9 @@ end
 
 function validate_refrences(df)
     missing_refs = []
-    for typename in unique(df.typename)
-        if typename in ["VectorTimeIndex", "VectorTimeValues", "BaseTable"]
-            continue
-        end
-        df_type = add_extra_col(df[df.typename.==typename, :])
-        main_df = df[df.typename.!=typename, :]
+    for value_type in unique(df.value_type)
+        df_type = add_extra_col(df[df.value_type.==value_type, :])
+        main_df = df[df.value_type.!=value_type, :]
         for col in names(df_type)
             refs = check_ref(main_df, df_type, col)
             if !isnothing(refs)
@@ -267,8 +268,20 @@ function non_unique_instancenames(df)
     return df[findall(nonunique(df[!, ["instancename"]])), :]
 end
 
+function _remove_non_string_dict_values(element_value::Dict)
+    value = copy(element_value)
+    for (key, val) in value
+        if typeof(val) != String
+            delete!(value, key)
+        end
+    end
+    return value
+end
+
 function validate_elements(elements)
     df = elements_to_df(elements)
+    df[!, "value"] = _remove_non_string_dict_values.(df.value)
+    df[!, "value_type"] = join.(sort.(collect.((keys.(df.value)))))
     checks = validate_refrences(df)
     errors = false
     for check in checks
@@ -277,7 +290,7 @@ function validate_elements(elements)
         end
         for element in eachrow(check[2])
             println("Missing instancename referenced by $(element["instancename"])($(element["conceptname"]))")
-            println("\t $(element[check[1]]) was not found in data elements\n")
+            println("$(element[check[1]]) was not found in data elements\n")
             errors = true
         end
     end
