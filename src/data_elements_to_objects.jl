@@ -42,9 +42,6 @@ TODO: Better error messages
 TODO: This description is messy?
 """
 
-using UUIDs
-using CSV
-
 
 INCLUDEELEMENT = Dict()
 
@@ -304,10 +301,6 @@ end
 
 function validate_elements(elements)
     df = elements_to_df(elements)
-
-    df_tmp = df[df.typename .!= "BaseTable", :]
-    CSV.write("$(string(uuid4())).csv", df_tmp)
-
     checks = validate_refrences(df)
     errors = false
     for check in checks
