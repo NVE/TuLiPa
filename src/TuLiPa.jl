@@ -12,8 +12,8 @@ include("data_utils.jl")
 # Problem implementation around JuMP framework and HiGHS package
 include("problem_jump.jl") # with description of general problem framework
 include("problem_highs.jl")
-#include("problem_cplex.jl")
 include("problem_method.jl")
+include("problem_common.jl")
 
 # Time, time-series and horizons (based on Dates.jl)
 include("utils_datetime.jl") # functions for datetime
