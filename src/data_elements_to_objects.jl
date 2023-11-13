@@ -42,6 +42,10 @@ TODO: Better error messages
 TODO: This description is messy?
 """
 
+using UUIDs
+using CSV
+
+
 INCLUDEELEMENT = Dict()
 
 # TODO: Complete
@@ -247,7 +251,7 @@ function add_extra_col(df)
     return select!(df_extra, Not(:value))
 end
 
-function check_ref(main_df, df_type, col)
+function check_ref(all_instancenames, type_df, col)
     # fields that are strings but not reference
     if (col in ["conceptname", "instancename", 
                 "typename", "Residualhint", 
@@ -256,31 +260,36 @@ function check_ref(main_df, df_type, col)
                 "Bound"])
         return
     end
-    query = antijoin(df_type, main_df, on=[
-            Symbol(col) => :instancename], makeunique=true)
-    if ~isempty(query)
-        return (col, query)
+    reference_does_not_exist = .!in.(type_df[!, col], Ref(all_instancenames))
+    no_refs = type_df[reference_does_not_exist, :]
+    
+    # since instancename is not unique at this point (should be?) 
+    # some dataelements could reference elements with same name
+    # this prevents it to be validated if it references itself
+    no_refs = no_refs[no_refs[!, col] .!= no_refs.instancename, :]
+    
+    if ~isempty(no_refs)
+        return (col, no_refs)
     end
     return nothing
 end
 
 function validate_refrences(df)
+    all_instancenames = Set(df.instancename)
+    df = df[typeof.(df.value) .== Dict{Any, Any}, :]
+    df[!, "value"] = _remove_non_string_dict_values.(df.value)
+    df[!, "value_type"] = join.(sort.(collect.((keys.(df.value)))))
     missing_refs = []
     for value_type in unique(df.value_type)
-        df_type = add_extra_col(df[df.value_type.==value_type, :])
-        main_df = df[df.value_type.!=value_type, :]
-        for col in names(df_type)
-            refs = check_ref(main_df, df_type, col)
+        type_df = add_extra_col(df[df.value_type.==value_type, :])
+        for col in names(type_df)
+            refs = check_ref(all_instancenames, type_df, col)
             if !isnothing(refs)
                 push!(missing_refs, refs)
             end
         end
     end
     return missing_refs
-end
-
-function non_unique_instancenames(df)
-    return df[findall(nonunique(df[!, ["instancename"]])), :]
 end
 
 function _remove_non_string_dict_values(element_value::Dict)
@@ -295,9 +304,10 @@ end
 
 function validate_elements(elements)
     df = elements_to_df(elements)
-    df = df[typeof.(df.value) .== Dict{Any, Any}, :]
-    df[!, "value"] = _remove_non_string_dict_values.(df.value)
-    df[!, "value_type"] = join.(sort.(collect.((keys.(df.value)))))
+
+    df_tmp = df[df.typename .!= "BaseTable", :]
+    CSV.write("$(string(uuid4())).csv", df_tmp)
+
     checks = validate_refrences(df)
     errors = false
     for check in checks
@@ -306,7 +316,7 @@ function validate_elements(elements)
         end
         for element in eachrow(check[2])
             println("Missing instancename referenced by $(element["instancename"])($(element["conceptname"]))")
-            println("$(element[check[1]]) was not found in data elements\n")
+            println("$(element[check[1]]) was not found in data elements")
             errors = true
         end
     end
