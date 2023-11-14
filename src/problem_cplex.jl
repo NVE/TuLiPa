@@ -389,6 +389,7 @@ end
 
 # ---- Definition of Prob interface functions for CPLEX_Prob --------
 
+is_CPLEX_Prob(p::CPLEX_Prob) = true  # Used to check if the problem type is cplex without having the cplex package
 getobjects(p::CPLEX_Prob) = p.objects
 gethorizons(p::CPLEX_Prob) = p.horizons
 
