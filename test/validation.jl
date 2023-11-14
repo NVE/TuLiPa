@@ -7,7 +7,6 @@ scenarioyearstop = 1983
 addscenariotimeperiod!(elements, "ScenarioTimePeriod", getisoyearstart(scenarioyearstart), getisoyearstart(scenarioyearstop));
 
 # Removes power to create reference errors
-#power_horizon = SequentialHorizon(364 * 3, Day(1))
 
 hydro_horizon = SequentialHorizon(52 * 3, Week(1))
 set_horizon!(elements, "Hydro", hydro_horizon);
