@@ -477,7 +477,14 @@ function solve!(p::HiGHS_Prob)
     p.isvarvaluesupdated = false
     p.iscondualsupdated = false
 
-    !p.isoptimal && Highs_writeModel(p, "failed_model.mps")
+    if p.isoptimal == false
+        try
+            threadid = myid()
+            Highs_writeModel(p, "failed_model_$threadid.mps")
+        catch
+            Highs_writeModel(p, "failed_model.mps")
+        end
+    end
     @assert p.isoptimal
 
     return

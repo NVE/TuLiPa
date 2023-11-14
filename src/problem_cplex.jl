@@ -757,7 +757,12 @@ function _cplex_solve_lp!(p::CPLEX_Prob)
 
     stat = CPLEX.CPXgetstat(p.env, p.lp)
     if stat != CPLEX.CPX_STAT_OPTIMAL
-        CPLEX.CPXwriteprob(p.env, p.lp, "failed_model.mps", "MPS")
+        try
+            threadid = myid()
+            CPLEX.CPXwriteprob(p.env, p.lp, "failed_model_$threadid.mps", "MPS")
+        catch
+            CPLEX.CPXwriteprob(p.env, p.lp, "failed_model.mps", "MPS")
+        end
         error("Solve failed with termination status $stat")
         # NB! Read with CPLEX to reproduce error and keep original row/col order
         # env = _CPLEXEnv()
