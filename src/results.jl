@@ -149,9 +149,11 @@ function get_results!(problem, prices, rhstermvalues, production, consumption, h
         for i in 1:length(powerbalances)
             if !isexogen(powerbalances[i])
                 prices[jj, i] = -getcondual(problem, getid(powerbalances[i]), j)
-                for k in 1:length(rhsterms)
-                    if hasrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)
-                        rhstermvalues[jj, k] = getrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)/timefactor
+                if length(getrhsterms(powerbalances[i])) > 0
+                    for k in 1:length(rhsterms)
+                        if hasrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)
+                            rhstermvalues[jj, k] = getrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)/timefactor
+                        end
                     end
                 end
             else
