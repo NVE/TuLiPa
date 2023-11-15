@@ -25,7 +25,7 @@ with similar residual load). Every block is a period of
 AdaptiveHorizon consisting of a UnitsTimeDelta.
 
 AdaptiveHorizon is built based on a dataset. We implement 
-StaticRHSAHData and DynamicRHSAHData.
+StaticRHSAHData, DynamicRHSAHData and DynamicExogenPriceAHData.
 AdaptiveHorizon can be built with different methods. We implement 
 PercentilesAHMethod and KMeansAHMethod
 
@@ -560,6 +560,13 @@ function _get_residual_load(rhs_terms::Vector, datatime::DateTime, start::DateTi
     return residual_load
 end
 
+function _get_price_from_prob(prob::Prob, balanceid::Id)
+    for obj in getobjects(prob)
+        getid(obj) == balanceid && return getprice(obj)
+    end
+    error("Exogen balance $balanceid not found in modelobjects")
+end
+
 # StaticRHSData -------------
 # NB! Only makes sense to use StaticRHSData with FixedDataTwoTime
 mutable struct StaticRHSAHData <: AdaptiveHorizonData
@@ -633,6 +640,32 @@ function update_X!(X::Vector{Float64}, data::DynamicRHSAHData, start::ProbTime,
             end
             X[col] += value
         end
+    end
+    return
+end
+
+# ------- DynamicExogenPriceAHData
+mutable struct DynamicExogenPriceAHData <: AdaptiveHorizonData
+    balanceid::Id
+    price::Union{Price, Nothing}
+    DynamicExogenPriceAHData(balanceid) = new(balanceid, nothing)
+end
+
+init!(::DynamicExogenPriceAHData, ::SequentialPeriods, ::Int, ::Millisecond) = nothing
+
+function build!(data::DynamicExogenPriceAHData, prob::Prob)
+    data.price = _get_price_from_prob(prob, data.balanceid)
+    return
+end
+
+function update_X!(X::Vector{Float64}, data::DynamicExogenPriceAHData, start::ProbTime, 
+                   acc::Millisecond, unit_duration::Millisecond)
+    fill!(X, 0.0)
+    unit_delta = MsTimeDelta(unit_duration)
+
+    for col in eachindex(X)
+        querystart = start + acc + (col - 1) * unit_duration
+        X[col] = getparamvalue(data.price, querystart, unit_delta)::Float64
     end
     return
 end
