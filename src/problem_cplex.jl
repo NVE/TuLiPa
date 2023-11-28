@@ -186,12 +186,12 @@ mutable struct _CPLEXEnv
         
         env = new(ptr)
         
-        finalizer(env) do e
-            CPLEX.CPXcloseCPLEX(Ref(e.ptr))
-            e.ptr = C_NULL
-        end
+        # finalizer(env) do e
+        #     CPLEX.CPXcloseCPLEX(Ref(e.ptr))
+        #     e.ptr = C_NULL
+        # end
         
-        return env    
+        return env
     end
 
     function _CPLEXEnv(ptr)
@@ -278,7 +278,7 @@ mutable struct CPLEX_Prob <: Prob
     iscondualsupdated::Bool
 
     function CPLEX_Prob(modelobjects::Dict)
-        CPLEX_Prob(collect(values(modelobjects)))
+        return CPLEX_Prob(collect(values(modelobjects)))
     end
     
     function CPLEX_Prob(modelobjects::Vector{Any})
@@ -353,11 +353,10 @@ mutable struct CPLEX_Prob <: Prob
         _cplex_postsolve_reset_updaters!(prob)
         
         finalizer(prob) do p
-            ret = CPLEX.CPXfreeprob(p.env, p.lp)
-            _cplex_check_ret(p, ret)
-            ret = CPLEX.CPXcloseCPLEX(p.env)
-            _cplex_check_ret(p, ret)
-            @assert p.env.ptr == C_NULL
+            ret = CPLEX.CPXfreeprob(p.env, Ref(p.lp))
+            _cplex_check_ret(p.env, ret)
+            CPLEX.CPXcloseCPLEX(Ref(p.env.ptr))
+            p.env.ptr = C_NULL
         end        
         
         return prob
@@ -743,6 +742,24 @@ function _cplex_non_optimal_try_param(p::CPLEX_Prob, paramname::String, newparam
             setparam!(p, paramname, oldparam)
         end
     end
+    return
+end
+
+function _cplex_non_optimal_try_barrier(p::CPLEX_Prob, paramname::String, newparam::Any, message::String) # avoids CPX_STAT_OPTIMAL_INFEAS 
+    if CPLEX.CPXgetstat(p.env, p.lp) != CPLEX.CPX_STAT_OPTIMAL
+        oldparam = getparam(p, paramname)
+        if oldparam != newparam
+            println(message)
+            setparam!(p, paramname, newparam)
+            setparam!(prob, "CPXPARAM_SolutionType", 2)
+            setparam!(prob, "CPXPARAM_Barrier_StartAlg", 4)
+            ret = CPLEX.CPXlpopt(p.env, p.lp)
+            _cplex_check_ret(p.env, ret)
+            setparam!(p, paramname, oldparam)
+            setparam!(prob, "CPXPARAM_SolutionType", 0)
+        end
+    end
+    return
 end
 
 function _cplex_solve_lp!(p::CPLEX_Prob)
@@ -754,7 +771,7 @@ function _cplex_solve_lp!(p::CPLEX_Prob)
     _cplex_non_optimal_try_param(p, "CPXPARAM_Read_Scale", 1, "Trying with more aggressive scaling")
     _cplex_non_optimal_try_param(p, "CPXPARAM_LPMethod", 2, "Solving with dual simplex")
     _cplex_non_optimal_try_param(p, "CPXPARAM_LPMethod", 1, "Solving with primal simplex")
-    _cplex_non_optimal_try_param(p, "CPXPARAM_LPMethod", 4, "Solving with IPM/Barrier")
+    _cplex_non_optimal_try_barrier(p, "CPXPARAM_LPMethod", 4, "Solving with IPM/Barrier")
 
     stat = CPLEX.CPXgetstat(p.env, p.lp)
     if stat != CPLEX.CPX_STAT_OPTIMAL
@@ -772,6 +789,7 @@ function _cplex_solve_lp!(p::CPLEX_Prob)
         # CPLEX.CPXsetintparam(env, CPLEX.CPXPARAM_ScreenOutput , 1) # unset silent
         # CPLEX.CPXlpopt(env, lp)  
     end
+    return
 end
 
 function _cplex_postsolve_reset_updaters!(p::CPLEX_Prob)
