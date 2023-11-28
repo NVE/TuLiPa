@@ -427,7 +427,6 @@ function solve!(p::HiGHS_Prob)
 
     if !p.warmstart
         Highs_clearSolver(p) # clear solver so HiGHS presolves rather than using existing Basis
-        # finalizer(Highs_destroy, p)
     end
     ret = Highs_run(p)
     checkret(ret)
