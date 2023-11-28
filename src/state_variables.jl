@@ -24,7 +24,7 @@ getvarin(x::StateVariableInfo) = x.var_in
 getvarout(x::StateVariableInfo) = x.var_out
 
 function getingoingstates!(p::Prob, states::Dict{StateVariableInfo, Float64})
-    for var in keys(states)
+    for var in keys(states) # safer with collect, but allocates
         (id, ix) = getvarin(var)
         states[var] = getvarvalue(p, id, ix)
     end
@@ -32,7 +32,7 @@ function getingoingstates!(p::Prob, states::Dict{StateVariableInfo, Float64})
 end
 
 function getoutgoingstates!(p::Prob, states::Dict{StateVariableInfo, Float64})
-    for var in keys(states)
+    for var in keys(states) # safer with collect, but allocates
         (id, ix) = getvarout(var)
         states[var] = getvarvalue(p, id, ix)
     end
@@ -40,7 +40,7 @@ function getoutgoingstates!(p::Prob, states::Dict{StateVariableInfo, Float64})
 end
 
 function getinsidestates!(p::Prob, states::Dict{StateVariableInfo, Float64}, t::Int) # TODO: Make compatible with variables with multiple state variables
-    for var in keys(states)
+    for var in keys(states) # safer with collect, but allocates
         (id, ix) = getvarout(var)
         states[var] = getvarvalue(p, id, t)
     end
@@ -48,7 +48,7 @@ function getinsidestates!(p::Prob, states::Dict{StateVariableInfo, Float64}, t::
 end
 
 function changeendtoinsidestates!(p::Prob, states::Dict{StateVariableInfo, Float64}, t::Int) # TODO: Make compatible with variables with multiple state variables
-    for var in keys(states) # safer with collect, but allocates. Necessary if states[newvar] comes before delete!
+    for var in collect(keys(states)) # safer with collect, but allocates. Necessary if states[newvar] comes before delete! or if code run from subprocess in python
         (id, ix) = getvarout(var)
         newvar = StateVariableInfo(getvarin(var), (id, t))
 
