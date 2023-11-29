@@ -751,12 +751,12 @@ function _cplex_non_optimal_try_barrier(p::CPLEX_Prob, paramname::String, newpar
         if oldparam != newparam
             println(message)
             setparam!(p, paramname, newparam)
-            setparam!(prob, "CPXPARAM_SolutionType", 2)
-            setparam!(prob, "CPXPARAM_Barrier_StartAlg", 4)
+            setparam!(p, "CPXPARAM_SolutionType", 2)
+            setparam!(p, "CPXPARAM_Barrier_StartAlg", 4)
             ret = CPLEX.CPXlpopt(p.env, p.lp)
             _cplex_check_ret(p.env, ret)
             setparam!(p, paramname, oldparam)
-            setparam!(prob, "CPXPARAM_SolutionType", 0)
+            setparam!(p, "CPXPARAM_SolutionType", 0)
         end
     end
     return
