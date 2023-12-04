@@ -731,7 +731,7 @@ function _cplex_update_A!(p::CPLEX_Prob, u::_CPLEXMatrixUpdater)
     return
 end
 
-function _cplex_non_optimal_try_param(p::CPLEX_Prob, paramname::String, newparam::Any, message::String)
+function _cplex_non_optimal_try_param!(p::CPLEX_Prob, paramname::String, newparam::Any, message::String)
     if CPLEX.CPXgetstat(p.env, p.lp) != CPLEX.CPX_STAT_OPTIMAL
         oldparam = getparam(p, paramname)
         if oldparam != newparam
@@ -745,7 +745,7 @@ function _cplex_non_optimal_try_param(p::CPLEX_Prob, paramname::String, newparam
     return
 end
 
-function _cplex_non_optimal_try_barrier(p::CPLEX_Prob, paramname::String, newparam::Any, message::String) # avoids CPX_STAT_OPTIMAL_INFEAS 
+function _cplex_non_optimal_try_barrier!(p::CPLEX_Prob, paramname::String, newparam::Any, message::String) # avoids CPX_STAT_OPTIMAL_INFEAS 
     if CPLEX.CPXgetstat(p.env, p.lp) != CPLEX.CPX_STAT_OPTIMAL
         oldparam = getparam(p, paramname)
         if oldparam != newparam
@@ -768,10 +768,10 @@ function _cplex_solve_lp!(p::CPLEX_Prob)
     ret = CPLEX.CPXlpopt(p.env, p.lp)    
     _cplex_check_ret(p.env, ret)
 
-    _cplex_non_optimal_try_param(p, "CPXPARAM_Read_Scale", 1, "Trying with more aggressive scaling")
-    _cplex_non_optimal_try_param(p, "CPXPARAM_LPMethod", 2, "Solving with dual simplex")
-    _cplex_non_optimal_try_param(p, "CPXPARAM_LPMethod", 1, "Solving with primal simplex")
-    _cplex_non_optimal_try_barrier(p, "CPXPARAM_LPMethod", 4, "Solving with IPM/Barrier")
+    _cplex_non_optimal_try_param!(p, "CPXPARAM_Read_Scale", 1, "Trying with more aggressive scaling")
+    _cplex_non_optimal_try_param!(p, "CPXPARAM_LPMethod", 2, "Solving with dual simplex")
+    _cplex_non_optimal_try_param!(p, "CPXPARAM_LPMethod", 1, "Solving with primal simplex")
+    _cplex_non_optimal_try_barrier!(p, "CPXPARAM_LPMethod", 4, "Solving with IPM/Barrier")
 
     stat = CPLEX.CPXgetstat(p.env, p.lp)
     if stat != CPLEX.CPX_STAT_OPTIMAL
