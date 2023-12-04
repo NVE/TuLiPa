@@ -58,8 +58,8 @@ mutable struct HiGHS_Prob <: Prob
     
     inner::Ptr{Cvoid}
     
-    vars::Dict{Any, HiGHSVarInfo}
-    cons::Dict{Any, HiGHSConInfo}
+    vars::Dict{Id, HiGHSVarInfo}
+    cons::Dict{Id, HiGHSConInfo}
     
     num_col::HighsInt
     num_row::HighsInt
@@ -375,6 +375,18 @@ function _passLP!(p::HiGHS_Prob)
     return
 end
 
+function _passLP_reset!(p::HiGHS_Prob)
+    Highs_destroy(p)
+    p.inner = Highs_create()
+    _passLP!(p)
+	Highs_setIntOptionValue(p, "simplex_scale_strategy", 5)
+    # Highs_setDoubleOptionValue(p, "primal_feasibility_tolerance", 1e-6)
+    Highs_setIntOptionValue(p, "time_limit", 300)
+	setsilent!(p)
+    
+    return
+end
+
 function _changeColsCostByMask!(p::HiGHS_Prob)
     ret = Highs_changeColsCostByMask(p, p.col_cost_mask, p.col_cost)
     checkret(ret)
@@ -403,6 +415,14 @@ function _is_mask_updated(masks::Vector{T}) where {T <: Integer}
     return false
 end
 
+function _Highs_run_reset_clock!(p::HiGHS_Prob)
+    ret = Highs_run(p)
+    ret == kHighsStatusError && println("Highs_run gave kHighsStatusError")
+    ret1 = Highs_zeroAllClocks(p)
+    checkret(ret1)
+    return ret
+end
+
 function solve!(p::HiGHS_Prob)
     row_bounds_updated = _is_mask_updated(p.row_bounds_mask)
     if row_bounds_updated
@@ -426,48 +446,63 @@ function solve!(p::HiGHS_Prob)
     end
 
     if !p.warmstart
-        Highs_clearSolver(p) # clear solver so HiGHS presolves rather than using existing Basis
+        ret = Highs_clearSolver(p) # clear solver so HiGHS presolves rather than using existing Basis
+        checkret(ret)
     end
-    ret = Highs_run(p)
-    checkret(ret)
+    ret = _Highs_run_reset_clock!(p)
 
-    if !(kHighsModelStatusOptimal == Highs_getScaledModelStatus(p))
+    if (ret == kHighsStatusError) || kHighsModelStatusOptimal != Highs_getScaledModelStatus(p)  # try resetting and rebuilding problem
+        if ret == kHighsStatusError 
+            println("Resetting solver due to HiGHS error: Rebuilding full LP and pass to solver")
+        elseif kHighsModelStatusOptimal != Highs_getScaledModelStatus(p)
+            status = Highs_getScaledModelStatus(p)
+            println("Resetting solver due to solver status $(status): Rebuilding full LP and pass to solver")
+        end
+        _passLP_reset!(p) # TODO: Now resets to simplex, make interface to keep settings
+        ret = _Highs_run_reset_clock!(p)
+    end
+
+    if kHighsModelStatusOptimal != Highs_getScaledModelStatus(p) # try simplex with different scaling methods
+        old_scale_strategy = Ref{Int32}(0)
+        Highs_getIntOptionValue(p, "simplex_scale_strategy", old_scale_strategy)
+
         scale_strategy = 5
-        reset = false
-        while (scale_strategy > 2) && !(kHighsModelStatusOptimal == Highs_getScaledModelStatus(p))
+        while (scale_strategy > 2) && (kHighsModelStatusOptimal != Highs_getScaledModelStatus(p))
             scale_strategy -= 1
             println(string("Rescaling LP with scale strategy ", scale_strategy))
             Highs_setIntOptionValue(p, "simplex_scale_strategy", scale_strategy)
-            ret = Highs_run(p)
-            checkret(ret)
-
-            if (scale_strategy == 2) && !(kHighsModelStatusOptimal == Highs_getScaledModelStatus(p)) && !reset
-                println("Resetting solver: Rebuilding full LP and pass to solver")
-                _passLP!(p)
-                ret = Highs_run(p)
-                checkret(ret)
-                reset = true
-            end
+            ret = _Highs_run_reset_clock!(p)
         end
-        Highs_setIntOptionValue(p, "simplex_scale_strategy", 5)
+
+        Highs_setIntOptionValue(p, "simplex_scale_strategy", old_scale_strategy[])
     end
 
-    if !(kHighsModelStatusOptimal == Highs_getScaledModelStatus(p))
+    if kHighsModelStatusOptimal != Highs_getScaledModelStatus(p) # try dual and primal simplex
         simplex_strategy = Ref{Int32}(0)
         Highs_getIntOptionValue(p, "simplex_strategy", simplex_strategy)
-        if (simplex_strategy[] == Int32(2)) || (simplex_strategy[] == Int32(3)) # if paralell try dual simplex
+        if simplex_strategy[] != Int32(1)
             println("Solving with dual simplex")
             Highs_setIntOptionValue(p, "simplex_strategy", 1)
-            ret = Highs_run(p)
-            checkret(ret)
-            Highs_setIntOptionValue(p, "simplex_strategy", simplex_strategy[])
+            ret = _Highs_run_reset_clock!(p)
         end
-        if simplex_strategy[] != Int32(4) && !(kHighsModelStatusOptimal == Highs_getScaledModelStatus(p)) # if not primal try primal
+        if simplex_strategy[] != Int32(4) && (kHighsModelStatusOptimal != Highs_getScaledModelStatus(p))
             println("Solving with primal simplex")
             Highs_setIntOptionValue(p, "simplex_strategy", 4)
-            ret = Highs_run(p)
-            checkret(ret)
-            Highs_setIntOptionValue(p, "simplex_strategy", simplex_strategy[])
+            ret = _Highs_run_reset_clock!(p)
+        end
+        Highs_setIntOptionValue(p, "simplex_strategy", simplex_strategy[])
+    end
+
+    if kHighsModelStatusOptimal != Highs_getScaledModelStatus(p) # try barrier algorithm
+        solver = pointer(Vector{Cchar}(undef, kHighsMaximumStringLength))
+        Highs_getStringOptionValue(p, "solver", solver)
+        if unsafe_string(solver) != "ipm"
+            println("Solving with barrier")
+            # _passLP_reset!(p) # not necessary, but would like to reset if kHighsStatusError from solves above
+            Highs_setStringOptionValue(p, "solver", "ipm") # interior point method
+            Highs_setStringOptionValue(p, "run_crossover", "off") # without crossover
+            ret = _Highs_run_reset_clock!(p)
+            Highs_setStringOptionValue(p, "solver", "simplex")
         end
     end
 
@@ -477,12 +512,14 @@ function solve!(p::HiGHS_Prob)
     p.iscondualsupdated = false
 
     if p.isoptimal == false
+        modelstatus = Highs_getScaledModelStatus(p)
         try
             threadid = myid()
-            Highs_writeModel(p, "failed_model_$threadid.mps")
+            Highs_writeModel(p, "failed_model_status_$(status)_thread_$(threadid).mps")
         catch
-            Highs_writeModel(p, "failed_model.mps")
+            Highs_writeModel(p, "failed_model_status_$(status).mps")
         end
+        println("Model failed with status $(status)")
     end
     @assert p.isoptimal
 
