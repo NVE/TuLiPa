@@ -84,19 +84,24 @@ buildprob(::ProbMethod, modelobjects) = error!("ProbMethod not implemented")
 function buildprob(probmethod::HighsSimplexMethod, modelobjects)
     prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
     Highs_setIntOptionValue(prob, "simplex_scale_strategy", 5)
+    # Highs_setDoubleOptionValue(prob, "primal_feasibility_tolerance", 1e-6)
+    Highs_setIntOptionValue(prob, "time_limit", 300)
     return prob
 end
 function buildprob(probmethod::HighsPrimalSimplexMethod, modelobjects)
     prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
     Highs_setIntOptionValue(prob, "simplex_scale_strategy", 5)
     Highs_setIntOptionValue(prob, "simplex_strategy", 4)
+    # Highs_setDoubleOptionValue(prob, "primal_feasibility_tolerance", 1e-6)
+    Highs_setIntOptionValue(prob, "time_limit", 300)
     return prob
 end
 function buildprob(probmethod::HighsSimplexSIPMethod, modelobjects)
     prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
     Highs_setIntOptionValue(prob, "simplex_strategy", 2) # parallel simplex
     Highs_setIntOptionValue(prob, "simplex_scale_strategy", 5)
-    # Highs_setIntOptionValue(prob, "time_limit", 120) # two minute time limit, does not work since HiGHSRunTime is cumulative when we run several problems consecutively
+    # Highs_setDoubleOptionValue(prob, "primal_feasibility_tolerance", 1e-6)
+    Highs_setIntOptionValue(prob, "time_limit", 300)
     if probmethod.concurrency > 0
         Highs_setIntOptionValue(prob, "simplex_max_concurrency", probmethod.concurrency)
     end
@@ -106,7 +111,8 @@ function buildprob(probmethod::HighsSimplexPAMIMethod, modelobjects)
     prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
     Highs_setIntOptionValue(prob, "simplex_strategy", 3) # parallel simplex
     Highs_setIntOptionValue(prob, "simplex_scale_strategy", 5)
-    # Highs_setIntOptionValue(prob, "time_limit", 120) # two minute time limit, does not work since HiGHSRunTime is cumulative when we run several problems consecutively
+    # Highs_setDoubleOptionValue(prob, "primal_feasibility_tolerance", 1e-6)
+    Highs_setIntOptionValue(prob, "time_limit", 300)
     if probmethod.concurrency > 0
         Highs_setIntOptionValue(prob, "simplex_max_concurrency", probmethod.concurrency)
     end
@@ -115,24 +121,29 @@ end
 function buildprob(probmethod::HighsIPMMethod, modelobjects)
     prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
     Highs_setStringOptionValue(prob, "solver", "ipm") # interior point method
+    Highs_setStringOptionValue(p, "run_crossover", "off") # without crossover
+    Highs_setIntOptionValue(prob, "time_limit", 300)
     return prob
 end
 
 function buildprob(probmethod::CPLEXSimplexMethod, modelobjects)
     prob = CPLEX_Prob(modelobjects)
     setparam!(prob, "CPXPARAM_LPMethod", 2)
+    setparam!(prob, "CPXPARAM_TimeLimit", 300)
     !probmethod.warmstart && setparam!(prob, "CPXPARAM_Advance", 0) # or CPXPARAM_ADVIND?
     return prob
 end
 function buildprob(probmethod::CPLEXPrimalSimplexMethod, modelobjects)
     prob = CPLEX_Prob(modelobjects)
     setparam!(prob, "CPXPARAM_LPMethod", 1)
+    setparam!(prob, "CPXPARAM_TimeLimit", 300)
     !probmethod.warmstart && setparam!(prob, "CPXPARAM_Advance", 0) # or CPXPARAM_ADVIND?
     return prob
 end
 function buildprob(probmethod::CPLEXNetworkMethod, modelobjects)
     prob = CPLEX_Prob(modelobjects)
     setparam!(prob, "CPXPARAM_LPMethod", 3)
+    setparam!(prob, "CPXPARAM_TimeLimit", 300)
     !probmethod.warmstart && setparam!(prob, "CPXPARAM_Advance", 0) # or CPXPARAM_ADVIND?
     return prob
 end
@@ -141,6 +152,7 @@ function buildprob(probmethod::CPLEXIPMMethod, modelobjects)
     setparam!(prob, "CPXPARAM_LPMethod", 4)
     setparam!(prob, "CPXPARAM_SolutionType", 2)
     setparam!(prob, "CPXPARAM_Barrier_StartAlg", 4)
+    setparam!(prob, "CPXPARAM_TimeLimit", 300)
     if probmethod.concurrency > 0
         setparam!(prob, "CPXPARAM_Threads", probmethod.concurrency)
     end
