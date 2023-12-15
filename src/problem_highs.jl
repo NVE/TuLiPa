@@ -51,10 +51,21 @@ mutable struct HiGHSConInfo
     end
 end
 
+mutable struct HIGHS_Settings
+    simplex_scale_strategy::Union{Nothing, Int32}
+    simplex_strategy::Union{Nothing, Int32}
+    time_limit::Union{Nothing, Int32}
+    simplex_max_concurrency::Union{Nothing, Int32}
+    solver::Union{Nothing, String}
+    run_crossover::Union{Nothing, String}
+    HIGHS_Settings() = new(nothing, nothing, nothing, nothing, nothing, nothing)
+end
+
 # --- Main type ----
 
 mutable struct HiGHS_Prob <: Prob
     objects::Vector
+    settings::HIGHS_Settings
     
     inner::Ptr{Cvoid}
     
@@ -100,6 +111,7 @@ mutable struct HiGHS_Prob <: Prob
         end
         p = new(
             modelobjects,
+            HIGHS_Settings(),
             Highs_create(),
             Dict{Any, HiGHSVarInfo}(),
             Dict{Any, HiGHSConInfo}(),
@@ -148,6 +160,7 @@ mutable struct HiGHS_Prob <: Prob
     function HiGHS_Prob(; warmstart::Bool=true)
         p = new(
             [],
+            HIGHS_Settings(),
             C_NULL, 
             Dict{Any, HiGHSVarInfo}(),
             Dict{Any, HiGHSConInfo}(),
@@ -163,6 +176,21 @@ mutable struct HiGHS_Prob <: Prob
             warmstart
         )
     end    
+end
+
+function apply_settings!(p::HiGHS_Prob)
+    !isnothing(p.settings.simplex_scale_strategy) && 
+        Highs_setIntOptionValue(p, "simplex_scale_strategy", p.settings.simplex_scale_strategy)
+    !isnothing(p.settings.simplex_strategy) && 
+        Highs_setIntOptionValue(p, "simplex_strategy", p.settings.simplex_strategy)
+    !isnothing(p.settings.time_limit) && 
+        Highs_setIntOptionValue(p, "time_limit", p.settings.time_limit)
+    !isnothing(p.settings.simplex_max_concurrency) && 
+        Highs_setIntOptionValue(p, "simplex_max_concurrency", p.settings.simplex_max_concurrency)
+    !isnothing(p.settings.solver) && 
+        Highs_setStringOptionValue(p, "solver", p.settings.solver)
+    !isnothing(p.settings.run_crossover) && 
+        Highs_setStringOptionValue(p, "run_crossover", p.settings.run_crossover)
 end
 
 # ----- Update problem ----------
@@ -379,11 +407,8 @@ function _passLP_reset!(p::HiGHS_Prob)
     Highs_destroy(p)
     p.inner = Highs_create()
     _passLP!(p)
-	Highs_setIntOptionValue(p, "simplex_scale_strategy", 5)
-    # Highs_setDoubleOptionValue(p, "primal_feasibility_tolerance", 1e-6)
-    Highs_setIntOptionValue(p, "time_limit", 300)
+    apply_settings!(p)
 	setsilent!(p)
-    
     return
 end
 

@@ -80,49 +80,52 @@ struct JuMPCPLEXMethod <: ProbMethod
 end
 
 # Buildprob function
+
+# NOTE: Simplex highs never sets the solver to be simplex? 
 buildprob(::ProbMethod, modelobjects) = error!("ProbMethod not implemented")
 function buildprob(probmethod::HighsSimplexMethod, modelobjects)
     prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
-    Highs_setIntOptionValue(prob, "simplex_scale_strategy", 5)
-    # Highs_setDoubleOptionValue(prob, "primal_feasibility_tolerance", 1e-6)
-    Highs_setIntOptionValue(prob, "time_limit", 300)
+    prob.settings.simplex_scale_strategy = 5
+    prob.settings.time_limit = 300
+    apply_settings!(prob)
     return prob
 end
 function buildprob(probmethod::HighsPrimalSimplexMethod, modelobjects)
     prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
-    Highs_setIntOptionValue(prob, "simplex_scale_strategy", 5)
-    Highs_setIntOptionValue(prob, "simplex_strategy", 4)
-    # Highs_setDoubleOptionValue(prob, "primal_feasibility_tolerance", 1e-6)
-    Highs_setIntOptionValue(prob, "time_limit", 300)
+    prob.settings.simplex_scale_strategy = 5
+    prob.settings.simplex_strategy = 4
+    prob.settings.time_limit = 300
+    apply_settings!(prob)
     return prob
 end
 function buildprob(probmethod::HighsSimplexSIPMethod, modelobjects)
     prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
-    Highs_setIntOptionValue(prob, "simplex_strategy", 2) # parallel simplex
-    Highs_setIntOptionValue(prob, "simplex_scale_strategy", 5)
-    # Highs_setDoubleOptionValue(prob, "primal_feasibility_tolerance", 1e-6)
-    Highs_setIntOptionValue(prob, "time_limit", 300)
+    prob.settings.simplex_scale_strategy = 5
+    prob.settings.simplex_strategy = 2
+    prob.settings.time_limit = 300
     if probmethod.concurrency > 0
-        Highs_setIntOptionValue(prob, "simplex_max_concurrency", probmethod.concurrency)
+        prob.settings.simplex_max_concurrency = probmethod.concurrency
     end
+    apply_settings!(prob)
     return prob
 end
 function buildprob(probmethod::HighsSimplexPAMIMethod, modelobjects)
     prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
-    Highs_setIntOptionValue(prob, "simplex_strategy", 3) # parallel simplex
-    Highs_setIntOptionValue(prob, "simplex_scale_strategy", 5)
-    # Highs_setDoubleOptionValue(prob, "primal_feasibility_tolerance", 1e-6)
-    Highs_setIntOptionValue(prob, "time_limit", 300)
+    prob.settings.simplex_scale_strategy = 5
+    prob.settings.simplex_strategy = 2
+    prob.settings.time_limit = 300
     if probmethod.concurrency > 0
-        Highs_setIntOptionValue(prob, "simplex_max_concurrency", probmethod.concurrency)
+        prob.settings.simplex_max_concurrency = probmethod.concurrency
     end
+    apply_settings!(prob)
     return prob
 end
 function buildprob(probmethod::HighsIPMMethod, modelobjects)
     prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
-    Highs_setStringOptionValue(prob, "solver", "ipm") # interior point method
-    Highs_setStringOptionValue(p, "run_crossover", "off") # without crossover
-    Highs_setIntOptionValue(prob, "time_limit", 300)
+    prob.settings.solver = "ipm"
+    prob.settings.run_crossover = "off"
+    prob.settings.time_limit = 300
+    apply_settings!(prob)
     return prob
 end
 
