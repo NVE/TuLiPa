@@ -476,7 +476,10 @@ function solve!(p::HiGHS_Prob)
     end
     ret = _Highs_run_reset_clock!(p)
 
-    if (ret == kHighsStatusError) || kHighsModelStatusOptimal != Highs_getScaledModelStatus(p)  # try resetting and rebuilding problem
+    # If non-optimal try different settings
+    if (ret == kHighsStatusError) || kHighsModelStatusOptimal != Highs_getScaledModelStatus(p)  
+
+        # Try resetting and rebuilding problem
         if ret == kHighsStatusError 
             println("Resetting solver due to HiGHS error: Rebuilding full LP and pass to solver")
         elseif kHighsModelStatusOptimal != Highs_getScaledModelStatus(p)
@@ -485,49 +488,53 @@ function solve!(p::HiGHS_Prob)
         end
         _passLP_reset!(p)
         ret = _Highs_run_reset_clock!(p)
-    end
 
-    if kHighsModelStatusOptimal != Highs_getScaledModelStatus(p) # try simplex with different scaling methods
-        old_scale_strategy = Ref{Int32}(0)
-        Highs_getIntOptionValue(p, "simplex_scale_strategy", old_scale_strategy)
+        if kHighsModelStatusOptimal != Highs_getScaledModelStatus(p) 
+            solver = pointer(Vector{Cchar}(undef, kHighsMaximumStringLength))
+            Highs_getStringOptionValue(p, "solver", solver)
+            if unsafe_string(solver) != "ipm"
 
-        scale_strategy = 5
-        while (scale_strategy > 2) && (kHighsModelStatusOptimal != Highs_getScaledModelStatus(p))
-            scale_strategy -= 1
-            println(string("Rescaling LP with scale strategy ", scale_strategy))
-            Highs_setIntOptionValue(p, "simplex_scale_strategy", scale_strategy)
-            ret = _Highs_run_reset_clock!(p)
-        end
+                # Try simplex with different scaling methods
+                old_scale_strategy = Ref{Int32}(0)
+                Highs_getIntOptionValue(p, "simplex_scale_strategy", old_scale_strategy)
 
-        Highs_setIntOptionValue(p, "simplex_scale_strategy", old_scale_strategy[])
-    end
+                scale_strategy = 5
+                while (scale_strategy > 2) && (kHighsModelStatusOptimal != Highs_getScaledModelStatus(p))
+                    scale_strategy -= 1
+                    println(string("Rescaling LP with scale strategy ", scale_strategy))
+                    Highs_setIntOptionValue(p, "simplex_scale_strategy", scale_strategy)
+                    ret = _Highs_run_reset_clock!(p)
+                end
 
-    if kHighsModelStatusOptimal != Highs_getScaledModelStatus(p) # try dual and primal simplex
-        simplex_strategy = Ref{Int32}(0)
-        Highs_getIntOptionValue(p, "simplex_strategy", simplex_strategy)
-        if simplex_strategy[] != Int32(1)
-            println("Solving with dual simplex")
-            Highs_setIntOptionValue(p, "simplex_strategy", 1)
-            ret = _Highs_run_reset_clock!(p)
-        end
-        if simplex_strategy[] != Int32(4) && (kHighsModelStatusOptimal != Highs_getScaledModelStatus(p))
-            println("Solving with primal simplex")
-            Highs_setIntOptionValue(p, "simplex_strategy", 4)
-            ret = _Highs_run_reset_clock!(p)
-        end
-        Highs_setIntOptionValue(p, "simplex_strategy", simplex_strategy[])
-    end
+                Highs_setIntOptionValue(p, "simplex_scale_strategy", old_scale_strategy[])
 
-    if kHighsModelStatusOptimal != Highs_getScaledModelStatus(p) # try barrier algorithm
-        solver = pointer(Vector{Cchar}(undef, kHighsMaximumStringLength))
-        Highs_getStringOptionValue(p, "solver", solver)
-        if unsafe_string(solver) != "ipm"
-            println("Solving with barrier")
-            # _passLP_reset!(p) # not necessary, but would like to reset if kHighsStatusError from solves above
-            Highs_setStringOptionValue(p, "solver", "ipm") # interior point method
-            Highs_setStringOptionValue(p, "run_crossover", "off") # without crossover
-            ret = _Highs_run_reset_clock!(p)
-            Highs_setStringOptionValue(p, "solver", "simplex")
+                # Try dual and primal simplex
+                if kHighsModelStatusOptimal != Highs_getScaledModelStatus(p) 
+                    simplex_strategy = Ref{Int32}(0)
+                    Highs_getIntOptionValue(p, "simplex_strategy", simplex_strategy)
+                    if simplex_strategy[] != Int32(1)
+                        println("Solving with dual simplex")
+                        Highs_setIntOptionValue(p, "simplex_strategy", 1)
+                        ret = _Highs_run_reset_clock!(p)
+                    end
+                    if simplex_strategy[] != Int32(4) && (kHighsModelStatusOptimal != Highs_getScaledModelStatus(p))
+                        println("Solving with primal simplex")
+                        Highs_setIntOptionValue(p, "simplex_strategy", 4)
+                        ret = _Highs_run_reset_clock!(p)
+                    end
+                    Highs_setIntOptionValue(p, "simplex_strategy", simplex_strategy[])
+
+                    # Try barrier algorithm
+                    if kHighsModelStatusOptimal != Highs_getScaledModelStatus(p)
+                        println("Solving with barrier")
+                        # _passLP_reset!(p) # not necessary, but would like to reset if kHighsStatusError from solves above
+                        Highs_setStringOptionValue(p, "solver", "ipm") # interior point method
+                        Highs_setStringOptionValue(p, "run_crossover", "off") # without crossover
+                        ret = _Highs_run_reset_clock!(p)
+                        Highs_setStringOptionValue(p, "solver", "simplex")
+                    end
+                end
+            end
         end
     end
 
