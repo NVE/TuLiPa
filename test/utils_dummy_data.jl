@@ -1,43 +1,6 @@
 using DataFrames, Statistics, JSON, Dates, CSV
+using TuLiPa
 
-# Read DataElement from a tuple
-function getelement(concept, concrete, instance, pairs...) 
-    d = Dict()
-    for (k, v) in pairs
-        d[k] = v
-    end
-    DataElement(concept, concrete, instance, d)
-end
-
-# Power markets or water balances are represented with a Balance equation
-# - They have a commodity which will decide the horizon (time-resolution) of the Balance
-function addbalance!(elements, name, commodity)
-    push!(elements, getelement(BALANCE_CONCEPT, "BaseBalance", name, 
-            (COMMODITY_CONCEPT, commodity)))
-    # Power Balances needs a slack variable if inelastic wind, solar, or run-of-river is higher than the inelastic demand
-    if commodity == "Power"
-        slackname = "SlackVar" * name
-        # Flows are variables that contribute into Balance equations
-        push!(elements, getelement(FLOW_CONCEPT, "BaseFlow", slackname))
-        
-        slackarrowname = "SlackArrow" * name
-        # Arrows connect Flows and Balances
-        push!(elements, getelement(ARROW_CONCEPT, "BaseArrow", slackarrowname, 
-                (BALANCE_CONCEPT, name),
-                (FLOW_CONCEPT, slackname),
-                (CONVERSION_CONCEPT, 1.0), # Factor to convert Flow into the same commodity as Balance (here Power to Power, so 1)
-                (DIRECTIONKEY, DIRECTIONOUT))) # Positive or negative contribution
-    end
-end
-
-# Rhsterms contribute to the right hand side of a Balance equation
-function addrhsterm!(elements, name, balance, direction)
-    d = getelement(RHSTERM_CONCEPT, "BaseRHSTerm", name, 
-        (BALANCE_CONCEPT, balance), 
-        (PARAM_CONCEPT, name), # constant or time-series data
-        (DIRECTIONKEY, direction)) # positive or negative contriution to the balance
-    push!(elements, d)
-end
 
 # DataElements for a Thermal power plant
 function addrhsthermal!(elements, name, balance; 
@@ -46,9 +9,9 @@ function addrhsthermal!(elements, name, balance;
     genname  = "Gen" * name
     costname = "MC"  * name
     capname  = "Cap" * name
-    
+
     powerarrowname  = "PowerSupply" * name
-    
+
     # Flows are variables that contribute into Balance equations
     push!(elements, getelement(FLOW_CONCEPT, "BaseFlow", genname))
 
@@ -72,7 +35,7 @@ function addrhsthermal!(elements, name, balance;
         costdata.value[PARAM_CONCEPT] = cost
     end
     push!(elements, costdata)
-    
+
     # Non-negative capacity
     capdata = getelement(CAPACITY_CONCEPT, "PositiveCapacity", capname, 
             (WHICHCONCEPT, FLOW_CONCEPT),
@@ -85,8 +48,8 @@ function addrhsthermal!(elements, name, balance;
         @assert cap >= 0
         # Parameter that converts the capacity in MW to GWh based on the duration of the horizon periods
         push!(elements, getelement(PARAM_CONCEPT,"MWToGWhSeriesParam",capname,
-              ("Level",cap),
-              ("Profile",1.0)))
+            ("Level",cap),
+            ("Profile",1.0)))
     end
 
     return
@@ -641,4 +604,4 @@ function runscenarios(scenarios, modelobjects, resultobjects)
         # Check that total supply equals total demand
         show(combine(joineddf, [:Yearly_supply_TWh, :Yearly_demand_TWh] .=> sum∘skipmissing))
     end
-end;
+end
