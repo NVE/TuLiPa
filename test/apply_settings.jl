@@ -1,5 +1,5 @@
 using TuLiPa, CSV, DataFrames, Statistics, JuMP, Test, HiGHS, Dates
-include("test/utils_dummy_data.jl");
+include("utils_dummy_data.jl");
 
 
 elements = gettestdataset();
@@ -36,8 +36,8 @@ status = Highs_getIntOptionValue(prob, "simplex_max_concurrency", value)
 
 # NOTE: Simplex highs never sets the solver to be simplex? 
 buffer = Vector{UInt8}(undef, 100)
-status = Highs_getStringOptionValue(model, "solver", buffer)
-@test unsafe_string(pointer(buffer)) == "ipm"
+status = Highs_getStringOptionValue(prob, "solver", buffer)
+@test unsafe_string(pointer(buffer)) == "choose"
 
 buffer = Vector{UInt8}(undef, 100)
 status = Highs_getStringOptionValue(prob, "run_crossover", buffer);
