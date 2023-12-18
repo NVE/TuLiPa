@@ -65,8 +65,8 @@ end
 
 mutable struct HiGHS_Prob <: Prob
     objects::Vector
+	
     settings::HIGHS_Settings
-    
     inner::Ptr{Cvoid}
     
     vars::Dict{Id, HiGHSVarInfo}
@@ -178,21 +178,6 @@ mutable struct HiGHS_Prob <: Prob
     end    
 end
 
-function apply_settings!(p::HiGHS_Prob)
-    !isnothing(p.settings.simplex_scale_strategy) && 
-        Highs_setIntOptionValue(p, "simplex_scale_strategy", p.settings.simplex_scale_strategy)
-    !isnothing(p.settings.simplex_strategy) && 
-        Highs_setIntOptionValue(p, "simplex_strategy", p.settings.simplex_strategy)
-    !isnothing(p.settings.time_limit) && 
-        Highs_setIntOptionValue(p, "time_limit", p.settings.time_limit)
-    !isnothing(p.settings.simplex_max_concurrency) && 
-        Highs_setIntOptionValue(p, "simplex_max_concurrency", p.settings.simplex_max_concurrency)
-    !isnothing(p.settings.solver) && 
-        Highs_setStringOptionValue(p, "solver", p.settings.solver)
-    !isnothing(p.settings.run_crossover) && 
-        Highs_setStringOptionValue(p, "run_crossover", p.settings.run_crossover)
-end
-
 # ----- Update problem ----------
 function update!(p::HiGHS_Prob, start::ProbTime)
     for horizon in gethorizons(p)
@@ -219,6 +204,21 @@ Base.cconvert(::Type{Ptr{Cvoid}}, model::HiGHS_Prob) = model
 Base.unsafe_convert(::Type{Ptr{Cvoid}}, model::HiGHS_Prob) = model.inner
 
 # ---- Interface functions for Prob types -----
+
+function apply_settings!(p::HiGHS_Prob) # TODO: Add to documentation
+    !isnothing(p.settings.simplex_scale_strategy) && 
+        Highs_setIntOptionValue(p, "simplex_scale_strategy", p.settings.simplex_scale_strategy)
+    !isnothing(p.settings.simplex_strategy) && 
+        Highs_setIntOptionValue(p, "simplex_strategy", p.settings.simplex_strategy)
+    !isnothing(p.settings.time_limit) && 
+        Highs_setIntOptionValue(p, "time_limit", p.settings.time_limit)
+    !isnothing(p.settings.simplex_max_concurrency) && 
+        Highs_setIntOptionValue(p, "simplex_max_concurrency", p.settings.simplex_max_concurrency)
+    !isnothing(p.settings.solver) && 
+        Highs_setStringOptionValue(p, "solver", p.settings.solver)
+    !isnothing(p.settings.run_crossover) && 
+        Highs_setStringOptionValue(p, "run_crossover", p.settings.run_crossover)
+end
 
 function setsilent!(p::HiGHS_Prob)
     ret = Highs_setBoolOptionValue(p, "output_flag", 0)
@@ -483,7 +483,7 @@ function solve!(p::HiGHS_Prob)
             status = Highs_getScaledModelStatus(p)
             println("Resetting solver due to solver status $(status): Rebuilding full LP and pass to solver")
         end
-        _passLP_reset!(p) # TODO: Now resets to simplex, make interface to keep settings
+        _passLP_reset!(p)
         ret = _Highs_run_reset_clock!(p)
     end
 
