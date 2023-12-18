@@ -51,14 +51,14 @@ mutable struct HiGHSConInfo
     end
 end
 
-mutable struct HIGHS_Settings
+mutable struct HiGHS_Settings
     simplex_scale_strategy::Union{Nothing, Int32}
     simplex_strategy::Union{Nothing, Int32}
     time_limit::Union{Nothing, Int32}
     simplex_max_concurrency::Union{Nothing, Int32}
     solver::Union{Nothing, String}
     run_crossover::Union{Nothing, String}
-    HIGHS_Settings() = new(nothing, nothing, nothing, nothing, nothing, nothing)
+    HiGHS_Settings() = new(nothing, nothing, nothing, nothing, nothing, nothing)
 end
 
 # --- Main type ----
@@ -111,7 +111,7 @@ mutable struct HiGHS_Prob <: Prob
         end
         p = new(
             modelobjects,
-            HIGHS_Settings(),
+            HiGHS_Settings(),
             Highs_create(),
             Dict{Any, HiGHSVarInfo}(),
             Dict{Any, HiGHSConInfo}(),
@@ -160,7 +160,7 @@ mutable struct HiGHS_Prob <: Prob
     function HiGHS_Prob(; warmstart::Bool=true)
         p = new(
             [],
-            HIGHS_Settings(),
+            HiGHS_Settings(),
             C_NULL, 
             Dict{Any, HiGHSVarInfo}(),
             Dict{Any, HiGHSConInfo}(),
