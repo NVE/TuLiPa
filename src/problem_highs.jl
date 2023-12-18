@@ -66,7 +66,7 @@ end
 mutable struct HiGHS_Prob <: Prob
     objects::Vector
 	
-    settings::HIGHS_Settings
+    settings::HiGHS_Settings
     inner::Ptr{Cvoid}
     
     vars::Dict{Id, HiGHSVarInfo}
