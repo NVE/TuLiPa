@@ -14,6 +14,7 @@ include("problem_jump.jl") # with description of general problem framework
 include("problem_highs.jl")
 include("problem_method.jl")
 include("problem_common.jl")
+include("problem_fixbreach.jl")
 
 # Time, time-series and horizons (based on Dates.jl)
 include("utils_datetime.jl") # functions for datetime

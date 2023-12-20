@@ -9,6 +9,7 @@ mutable struct BaseSoftBound <: SoftBound
     softcap::Param
     penalty::Param
     isupper::Bool
+    fixable::Bool
 end
 
 # --------- Interface functions ------------
@@ -17,6 +18,7 @@ getvar(trait::BaseSoftBound) = trait.var
 getsoftcap(trait::BaseSoftBound) = trait.softcap
 getpenalty(trait::BaseSoftBound) = trait.penalty
 isupper(trait::BaseSoftBound) = trait.isupper
+isfixable(trait::BaseSoftBound) = trait.fixable
 
 getparent(trait::BaseSoftBound) = trait.var
 
@@ -35,12 +37,18 @@ end
 
 # ---------- build!, setconstants! and update! ---------
 
-# Build variables and equations for softbound equation
+# Build variables and equations for softbound equation, also make breachvar fixable
 function build!(p::Prob, trait::BaseSoftBound)
     T = getnumperiods(gethorizon(getvar(trait)))
 
     addvar!(p, getbreachvarid(trait), T)
     addle!(p, getleid(trait), T)
+
+    if isfixable(trait)
+        for t in 1:T
+            makefixable!(p, getbreachvarid(trait), t)
+        end
+    end
 
     return
 end
@@ -136,6 +144,23 @@ function update!(p::Prob, trait::BaseSoftBound, start::ProbTime)
     return
 end
 
+function getbreachvars(trait::BaseSoftBound)
+    if isfixable(trait)
+        horizon = gethorizon(trait.var)
+        T = getnumperiods(horizon)
+        breachvarid = getbreachvarid(trait)
+
+        breachvars = Tuple{Id, Int}[]
+        for t in 1:T
+            push!(breachvars, (breachvarid, t))
+        end
+
+        return breachvars
+    else
+        return []
+    end
+end 
+
 # BaseSoftBound types are toplevel objects in dataset_compiler, so we must implement assemble!
 function assemble!(trait::BaseSoftBound)
     # return if var not assembled yet
@@ -162,7 +187,7 @@ function includeBaseSoftBound!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey
     var = toplevel[varkey]
         
     varkey = getobjkey(elkey)
-    toplevel[varkey] = BaseSoftBound(varkey, var, softcap, penalty, isupper)
+    toplevel[varkey] = BaseSoftBound(varkey, var, softcap, penalty, isupper, false)
     
     return true     
 end
