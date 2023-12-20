@@ -178,16 +178,6 @@ mutable struct HiGHS_Prob <: Prob
     end    
 end
 
-# ----- Update problem ----------
-function update!(p::HiGHS_Prob, start::ProbTime)
-    for horizon in gethorizons(p)
-        update!(horizon, start)
-    end
-    for obj in getobjects(p)
-        update!(p, obj, start)
-    end
-end
-
 # ---- Utility functions ---
 
 function checkret(ret::HighsInt)
@@ -678,6 +668,12 @@ function getfixvardual(p::HiGHS_Prob, varid::Id, varix::Int)
     conid = _getfixeqid(varid, varix)
     return getcondual(p, conid, 1)
 end
+
+function setwarmstart!(p::HiGHS_Prob, bool::Bool)
+    p.warmstart = bool
+end
+
+getwarmstart(p::HiGHS_Prob) = p.warmstart
 
 # --- Fix state variables for boundary conditions ---
 
