@@ -9,6 +9,7 @@ influencing modelled market prices.
 struct FixBreach_Prob{P <: Prob} <: Prob
     prob::P
     breachvars::Vector{Tuple{Id, Int}}
+    breachcosts::Vector{Float64}
 
     function FixBreach_Prob(prob::Prob)
         if prob isa FixBreach_Prob
@@ -17,12 +18,14 @@ struct FixBreach_Prob{P <: Prob} <: Prob
 
         breachvars = Tuple{Id, Int}[]
         for obj in getobjects(prob)
-            for (varid, varix) in getbreachvars(obj)
-                push!(breachvars, (varid, varix))
+            for (id, varix) in getbreachvars(obj)
+                push!(breachvars, (id, varix))
             end
         end
 
-        return new{typeof(prob)}(prob, breachvars)
+        breachcosts = zeros(length(breachvars))
+
+        return new{typeof(prob)}(prob, breachvars, breachcosts)
     end
 end
 
@@ -39,7 +42,7 @@ function solve!(p::FixBreach_Prob)
     firsttime = @elapsed solve!(p.prob)
 
     need_resolve = false
-    for (id, t) in p.breachvars
+    for (i, (id, t)) in enumerate(p.breachvars)
         value = getvarvalue(p, id, t)
         if value > zero(typeof(value))
             need_resolve = true
@@ -52,9 +55,11 @@ function solve!(p::FixBreach_Prob)
     end
 
     count = 0
-    for (id, t) in p.breachvars
+    for (i, (id, t)) in enumerate(p.breachvars)
         value = getvarvalue(p, id, t)
         fix!(p, id, t, value)
+        p.breachcosts[i] = getobjcoeff(p, id, t)
+        setobjcoeff!(p, id, t, 0.0)
         if value > zero(typeof(value))
             count += 1
         end
@@ -68,9 +73,15 @@ function solve!(p::FixBreach_Prob)
 
     mainwarmstart == false && setwarmstart!(p, false)
 
-    for (id, t) in p.breachvars
+    for (i, (id, t)) in enumerate(p.breachvars)
+        # if p.breachcosts[i] > 0
         unfix!(p, id, t)
+        setobjcoeff!(p, id, t, p.breachcosts[i])
+        # end
     end
+
+    fill!(p.breachcosts, 0.0)
+
     return
 end
 
