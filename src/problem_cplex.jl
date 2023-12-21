@@ -376,16 +376,6 @@ end
 Base.cconvert(::Type{Ptr{Cvoid}}, prob::CPLEX_Prob) = prob
 Base.unsafe_convert(::Type{Ptr{Cvoid}}, prob::CPLEX_Prob) = prob.lp::Ptr{Cvoid}
 
-# ----- Update problem ----------
-function update!(p::CPLEX_Prob, start::ProbTime)
-    for horizon in gethorizons(p)
-        update!(horizon, start)
-    end
-    for obj in getobjects(p)
-        update!(p, obj, start)
-    end
-end
-
 # ---- Definition of Prob interface functions for CPLEX_Prob --------
 
 is_CPLEX_Prob(p::CPLEX_Prob) = true  # Used to check if the problem type is cplex without having the cplex package
@@ -671,12 +661,25 @@ function unfix!(p::CPLEX_Prob, varid::Id, varix::Int)
 end
 
 function setsilent!(p::CPLEX_Prob)
-    setparam!(p::CPLEX_Prob, "CPXPARAM_ScreenOutput", 0)
+    setparam!(p, "CPXPARAM_ScreenOutput", 0)
     return
 end
 
 function unsetsilent!(p::CPLEX_Prob)
-    setparam!(p::CPLEX_Prob, "CPXPARAM_ScreenOutput", 1)
+    setparam!(p, "CPXPARAM_ScreenOutput", 1)
+    return
+end
+
+function setwarmstart!(p::CPLEX_Prob, bool::Bool)
+    bool == false && setparam!(p, "CPXPARAM_Advance", 0)
+    bool == true && setparam!(p, "CPXPARAM_Advance", 1)
+    return
+end
+
+function getwarmstart(p::CPLEX_Prob)
+    param = getparam(p, "CPXPARAM_Advance")
+    param == 0 && return false
+    param > 0 && return true
     return
 end
 

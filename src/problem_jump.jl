@@ -78,22 +78,6 @@ end
 getobjects(p::JuMP_Prob) = p.objects
 gethorizons(p::JuMP_Prob) = p.horizons
 
-# -------- Update problem for given problem time --------------
-function update!(p::JuMP_Prob, start::ProbTime)
-    # Update horizons that need to dynamically update
-    for horizon in gethorizons(p)
-        update!(horizon, start)
-    end
-    
-    # Loop through all model objects. Set parameters and coefficients that
-    # depend on the problem time and period in the horizon.
-    # The generic function update! has different methods depending on the inputed object
-    # Some objects will again call update! on its internal traits
-    for obj in getobjects(p)
-        update!(p, obj, start)
-    end
-end
-
 # Functions used by objects or traits to update the problem -------------
 function addvar!(p::JuMP_Prob, id::Id, N::Int)
     name = getname(id)

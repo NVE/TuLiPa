@@ -177,9 +177,9 @@ end
 
 function statedependentprod_init!(problem::Prob, startstorage::Float64, t::ProbTime)
     dummydelta = MsTimeDelta(Millisecond(0))
-    plants = gethydroplants(problem.objects)
-    storages = getstorages(problem.objects)
-    balanceflows = getbalanceflows(problem.objects)
+    plants = gethydroplants(getobjects(problem))
+    storages = getstorages(getobjects(problem))
+    balanceflows = getbalanceflows(getobjects(problem))
     for plant in plants
         lowerheight = 0.0 # preallocate
         upperstorage = getupperreservoirplant(plant, balanceflows, storages)
@@ -233,9 +233,9 @@ function statedependentprod_init!(problem::Prob, startstorage::Float64, t::ProbT
 end
 
 function statedependentprod!(problem::Prob, startstates::Dict{String, Float64}; init::Bool=false)
-    plants = gethydroplants(problem.objects)
-    storages = getstorages(problem.objects)
-    balanceflows = getbalanceflows(problem.objects)
+    plants = gethydroplants(getobjects(problem))
+    storages = getstorages(getobjects(problem))
+    balanceflows = getbalanceflows(getobjects(problem))
     for plant in plants
         lowerheight = 0.0 # preallocate
         upperstorage = getupperreservoirplant(plant, balanceflows, storages)
@@ -297,8 +297,8 @@ function statedependentprod!(problem::Prob, startstates::Dict{String, Float64}; 
 end
 
 function statedependentpump!(problem::Prob, startstates::Dict{String, Float64})
-    pumps = gethydropumps(problem.objects)
-    storages = getstorages(problem.objects)
+    pumps = gethydropumps(getobjects(problem))
+    storages = getstorages(getobjects(problem))
     for pump in pumps
         for arrow in getarrows(pump)
             conversion = arrow.conversion
@@ -374,7 +374,7 @@ function updateheadlosscosts!(method::ReservoirCurveSlopeMethod, clearing::Prob,
 
     # Assumes all reservoirs in master problems are also in clearing problem
     for master in masters 
-        for obj in master.objects
+        for obj in getobjects(master)
             if obj isa Storage
                 if haskey(obj.metadata, RESERVOIRCURVEKEY) # also implies hydro storage
                     resid = getid(obj)
@@ -410,7 +410,7 @@ function updateheadlosscosts!(method::ReservoirCurveSlopeMethod, clearing::Prob,
 end
 
 function resetheadlosscosts!(problem::Prob)
-    for obj in problem.objects
+    for obj in getobjects(problem)
         if obj isa Storage
             if haskey(obj.metadata, RESERVOIRCURVEKEY)
                 resid = getid(obj)
