@@ -99,7 +99,6 @@ hasconstantdurations(h::ShiftableHorizon) = hasconstantdurations(h.subhorizon)
 
 build!(h::_SHorizons, p::Prob) = build!(h.subhorizon, h.handler, p)
 function update!(h::_SHorizons, start::ProbTime)
-    update!(h.subhorizon, start)
     update!(h.subhorizon, h.handler, start)
 end
 mayshiftfrom(h::_SHorizons, t::Int)::Int = mayshiftfrom(h.subhorizon, h.handler, t)
@@ -549,6 +548,7 @@ function _common_update_shrinkable!(h, handler, p, start)
     
     if s.prev_start === nothing
         s.prev_start = start
+        update!(h, start)
         return true
     end
 
@@ -562,13 +562,10 @@ function _common_update_shrinkable!(h, handler, p, start)
     end
 
     if change <= s.remaining_duration
-        println("shrink")
         shrink!(s, p, change)
     elseif (change == (s.remaining_duration + s.minperiod)) && (s.last_shiftperiod != HORIZON_NOSHIFT)
-        println("reset_shift")
         reset_shift!(s, p, change)
     else
-        println("reset_normal")
         reset_normal!(s, p, change)
     end
 
