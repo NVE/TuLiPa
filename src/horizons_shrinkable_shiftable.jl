@@ -457,7 +457,7 @@ build!(h::AdaptiveHorizon, handler::AdaptiveHorizonShifter, p::Prob) = build!(h,
 mayshiftfrom(h::SequentialHorizon, handler::SequentialHorizonShrinker, t::Int) = _common_mayshiftfrom(h, handler.shrinker, t)
 mayshiftfrom(h::SequentialHorizon, handler::SequentialHorizonShifter, t::Int) = _common_mayshiftfrom(h, handler.shifter, t)
 mayshiftfrom(h::AdaptiveHorizon, handler::AdaptiveHorizonShrinker, t::Int) = _common_mayshiftfrom(h, handler.shrinker, t)
-mayshiftfrom(h::AdaptiveHorizon, handler::AdaptiveHorizonShrinker, t::Int) = _common_mayshiftfrom(h, handler.shrinker, t)
+mayshiftfrom(h::AdaptiveHorizon, handler::AdaptiveHorizonShifter, t::Int) = _common_mayshiftfrom(h, handler.shrinker, t)
 
 function _common_mayshiftfrom(h::SequentialHorizon, shrinker_shifter, t)
     v = shrinker_shifter.updates_shift[t]
