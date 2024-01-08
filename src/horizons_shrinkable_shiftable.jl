@@ -59,8 +59,8 @@ struct ShrinkableHorizon{H <: Horizon, S} <: Horizon
     handler::S
 
     function ShrinkableHorizon(subhorizon::Horizon, startafter::Millisecond, shrinkatleast::Millisecond, minperiod::Millisecond)
-        @assert !isa ShrinkableHorizon
-        @assert !isa ShiftableHorizon
+        @assert !(subhorizon isa ShrinkableHorizon)
+        @assert !(subhorizon isa ShiftableHorizon)
         handler = gethorizonshrinker(subhorizon, startafter, shrinkatleast, minperiod)
         makeshrinkable!(subhorizon, handler)
         new{typeof(subhorizon), typeof(handler)}(subhorizon, handler)
@@ -72,8 +72,8 @@ struct ShiftableHorizon{H <: Horizon, S} <: Horizon
     handler::S
 
     function ShiftableHorizon(subhorizon::Horizon)
-        @assert !isa ShrinkableHorizon
-        @assert !isa ShiftableHorizon
+        @assert !(subhorizon isa ShrinkableHorizon)
+        @assert !(subhorizon isa ShiftableHorizon)
         handler = gethorizonshifter(subhorizon)
         new{typeof(subhorizon), typeof(handler)}(subhorizon, handler)
     end
@@ -98,7 +98,10 @@ hasconstantdurations(::ShrinkableHorizon) = false
 hasconstantdurations(h::ShiftableHorizon) = hasconstantdurations(h.subhorizon)
 
 build!(h::_SHorizons, p::Prob) = build!(h.subhorizon, h.handler, p)
-update!(h::_SHorizons, start::ProbTime) = update!(h.subhorizon, h.handler, start)
+function update!(h::_SHorizons, start::ProbTime)
+    update!(h.subhorizon, start)
+    update!(h.subhorizon, h.handler, start)
+end
 mayshiftfrom(h::_SHorizons, t::Int)::Int = mayshiftfrom(h.subhorizon, h.handler, t)
 mustupdate(h::_SHorizons, t::Int)::Bool = mustupdate(h.subhorizon, h.handler, t)
 
@@ -126,6 +129,8 @@ mutable struct SequentialPeriodsShifter
     updates_must::Vector{Bool}
     prev_start::Union{ProbTime, Nothing}
 end
+
+const _SSequentialPeriods = Union{SequentialPeriodsShrinker, SequentialPeriodsShifter}
 
 getms(p::SequentialPeriods, t) = getduration(gettimedelta(p, t))
 getms(h::Horizon, t) = getduration(gettimedelta(p, t))
@@ -165,10 +170,10 @@ function gethorizonshifter(h::SequentialPeriods)
     T = getnumperiods(h)
     updates_shift = [HORIZON_NOSHIFT for t in 1:T]
     updates_must = [true for t in 1:T]
-    return SequentialPeriodsShifter(updates_shift, updates_must, prev_start)
+    return SequentialPeriodsShifter(updates_shift, updates_must, nothing)
 end
 
-function getlastshiftperiod(h::Horizon, L::Int)
+function getlastshiftperiod(h::SequentialPeriods, L::Int)
     T = getnumperiods(h)
     @assert 1 <= L <= T
     
@@ -194,6 +199,7 @@ function makeshrinkable!(p::SequentialPeriods, handler::SequentialPeriodsShrinke
     first_shrinkperiod = first(handler.shrinkperiods)
     acc = 0
     for (i, (n, ms)) in enumerate(p.data)
+        acc += n
         if acc == first_shrinkperiod
             handler.shrinkperiods_index = i:(i+length(handler.shrinkperiods)-1)
         end
@@ -202,7 +208,7 @@ function makeshrinkable!(p::SequentialPeriods, handler::SequentialPeriodsShrinke
     # TODO: Replace checks with tests
     @assert first(handler.shrinkperiods_index) > 0
     @assert last(handler.shrinkperiods_index) < length(p.data)
-    @assert first(handler.shrinkperiods_index) >= last(handler.shrinkperiods_index)
+    @assert first(handler.shrinkperiods_index) <= last(handler.shrinkperiods_index)
     for i in handler.shrinkperiods_index
         (n, ms) = p.data[i]
         @assert n == 1
@@ -312,13 +318,13 @@ function getshrinkperiods(p::SequentialPeriods, startafter::Millisecond, shrinka
     acc = Millisecond(0)
     last_period = -1
     for t in first_period:T
+        d = getms(p, t)
+        @assert d > minperiod
+        acc += (d - minperiod)
         if acc >= shrinkatleast
             last_period = t
             break
         end
-        d = getms(p, t)
-        @assert d > minperiod
-        acc += (d - minperiod)
     end
     @assert last_period > 0
 
@@ -335,7 +341,7 @@ function shrink!(handler::SequentialPeriodsShrinker, p::SequentialPeriods, chang
         j = handler.shrinkperiods_index[i]
         (n, ms) = p.data[j]
         if ms > handler.minperiod
-            if subtract > (ms - handler.minperiod)
+            if subtract >= (ms - handler.minperiod)
                 p.data[j] = (n, handler.minperiod)
                 subtract -= (ms - handler.minperiod)
                 handler.shrinkperiods_isupdated[i] = true
@@ -367,7 +373,7 @@ function reset_shift!(handler::SequentialPeriodsShrinker, p::SequentialPeriods, 
         p.data[j] = (n, cap)
     end
 
-    for t in last(handler.shrinkperiods):(handler.last_shiftperiod - 1)
+    for t in (last(handler.shrinkperiods)+1):(handler.last_shiftperiod)
         handler.updates_shift[t] = t + 1
         handler.updates_must[t] = false
     end
@@ -394,20 +400,26 @@ function reset_state!(handler::SequentialPeriodsShrinker)
     return
 end
 
-function getchange(handler::SequentialPeriodsShrinker, start::ProbTime)
-    c1 = datatime(start) - datatime(handler.prev_start)
-    c2 = scenariotime(start) - scenariotime(handler.prev_start)
-    max(c1, c2)
+function reset_state!(handler::SequentialPeriodsShifter)
+    fill!(handler.updates_shift, HORIZON_NOSHIFT)
+    fill!(handler.updates_must, true)
+    return
+end
+
+function getchange(handler::_SSequentialPeriods, start::ProbTime)
+    c1 = getdatatime(start) - getdatatime(handler.prev_start)
+    c2 = getscenariotime(start) - getscenariotime(handler.prev_start)
+    return max(c1, c2)
 end
 
 # ---- SequentialHorizonShrinker, AdaptiveHorizonShrinker, SequentialHorizonShifter and AdaptiveHorizonShifter ----
 
 struct SequentialHorizonShrinker
-    shrinker::SequentialHorizonShrinker
+    shrinker::SequentialPeriodsShrinker
 end
 
 struct AdaptiveHorizonShrinker
-    shrinker::SequentialHorizonShrinker
+    shrinker::SequentialPeriodsShrinker
 end
 
 struct SequentialHorizonShifter
@@ -415,17 +427,17 @@ struct SequentialHorizonShifter
 end
 
 struct AdaptiveHorizonShifter
-    shifter::SequentialHorizonShifter
+    shifter::SequentialPeriodsShifter
 end
 
 function gethorizonshrinker(h::SequentialHorizon, startafter::Millisecond, shrinkatleast::Millisecond, minperiod::Millisecond)
     shrinker = gethorizonshrinker(h.periods, startafter, shrinkatleast, minperiod)
-    SequentialHorizonShrinker(shrinker)
+    return SequentialHorizonShrinker(shrinker)
 end
 
 function gethorizonshrinker(h::AdaptiveHorizon, startafter::Millisecond, shrinkatleast::Millisecond, minperiod::Millisecond)
     shrinker = gethorizonshrinker(h.macro_periods, startafter, shrinkatleast, minperiod)
-    AdaptiveHorizonShrinker(shrinker)
+    return AdaptiveHorizonShrinker(shrinker)
 end
 
 function gethorizonshifter(h::Union{SequentialHorizon, AdaptiveHorizon})
@@ -436,7 +448,7 @@ function gethorizonshifter(h::Union{SequentialHorizon, AdaptiveHorizon})
 end
 
 makeshrinkable!(h::SequentialHorizon, handler::SequentialHorizonShrinker) = makeshrinkable!(h.periods, handler.shrinker)
-makeshrinkable!(h::AdaptiveHorizon, handler::AdaptiveHorizonShrinker) = makeshrinkable!(h.macro_periods, handler.subshrinker)
+makeshrinkable!(h::AdaptiveHorizon, handler::AdaptiveHorizonShrinker) = makeshrinkable!(h.macro_periods, handler.shrinker)
 
 build!(h::SequentialHorizon, handler::SequentialHorizonShrinker, p::Prob) = build!(h, p)
 build!(h::AdaptiveHorizon, handler::AdaptiveHorizonShrinker, p::Prob) = build!(h, p)
@@ -469,10 +481,10 @@ mustupdate(h::AdaptiveHorizon, handler::AdaptiveHorizonShrinker, t::Int) = _comm
 mustupdate(h::AdaptiveHorizon, handler::AdaptiveHorizonShifter, t::Int) = _common_mustupdate(h, handler.shifter, t)
 
 _common_mustupdate(h::SequentialHorizon, shrinker_shifter, t) = shrinker_shifter.updates_must[t]
-_common_mustupdate(h::AdaptiveHorizon, shrinker_shifter, t) = shrinker_shifter.updates_must[(t-1) Ã· h.num_block + 1]
+_common_mustupdate(h::AdaptiveHorizon, shrinker_shifter, t) = shrinker_shifter.updates_must[(t-1) * h.num_block + 1]
 
 function update!(h::SequentialHorizon, handler::SequentialHorizonShrinker, start::ProbTime)
-    __ = _common_update_shrinkable!(h, handler.shrinker, h.periods, start)
+    __ = _common_update_shrinkable!(h, handler, h.periods, start)
     return
 end
 
@@ -480,7 +492,7 @@ function update!(h::AdaptiveHorizon, handler::AdaptiveHorizonShrinker, start::Pr
     s = handler.shrinker
     p = h.macro_periods
     
-    early_ret = _common_update_shrinkable!(h, s, p, start)
+    early_ret = _common_update_shrinkable!(h, handler, p, start)
 
     early_ret && return
 
@@ -527,10 +539,12 @@ function update!(h::AdaptiveHorizon, handler::AdaptiveHorizonShrinker, start::Pr
     return
 end
 
-update!(h::SequentialHorizon, handler::SequentialHorizonShifter, start::ProbTime) = _common_update_shiftable!(h, handler.shifter, start)
-update!(h::AdaptiveHorizon, handler::AdaptiveHorizonShifter, start::ProbTime) = _common_update_shiftable!(h, handler.shifter, start)
+update!(h::SequentialHorizon, handler::SequentialHorizonShifter, start::ProbTime) = _common_update_shiftable!(h, handler, start)
+update!(h::AdaptiveHorizon, handler::AdaptiveHorizonShifter, start::ProbTime) = _common_update_shiftable!(h, handler, start)
 
-function _common_update_shrinkable!(h, s, p, start)
+function _common_update_shrinkable!(h, handler, p, start)
+    s = handler.shrinker
+
     reset_state!(s)
     
     if s.prev_start === nothing
@@ -547,18 +561,23 @@ function _common_update_shrinkable!(h, s, p, start)
         return true
     end
 
-    if change < s.remaining_duration
+    if change <= s.remaining_duration
+        println("shrink")
         shrink!(s, p, change)
     elseif (change == (s.remaining_duration + s.minperiod)) && (s.last_shiftperiod != HORIZON_NOSHIFT)
+        println("reset_shift")
         reset_shift!(s, p, change)
     else
+        println("reset_normal")
         reset_normal!(s, p, change)
     end
 
     return false
 end
 
-function _common_update_shiftable!(h, s, start::ProbTime)
+function _common_update_shiftable!(h, handler, start::ProbTime)
+    s = handler.shifter
+
     reset_state!(s)
     
     if s.prev_start === nothing
@@ -582,7 +601,7 @@ function _common_update_shiftable!(h, s, start::ProbTime)
         if acc == change
             last_shiftperiod = getlastshiftperiod(h, t)
             for j in t:(last_shiftperiod - 1)
-                handler.updates_shift[j] = j + 1
+                handler.updates_shift[j] = j + 1 # ikke fleksibel for tidsoppløsning, shift må være lik periodelengde
                 handler.updates_must[j] = false
             end            
             return
