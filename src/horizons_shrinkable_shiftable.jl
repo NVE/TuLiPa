@@ -102,7 +102,7 @@ function update!(h::_SHorizons, start::ProbTime)
     update!(h.subhorizon, start)
     update!(h.subhorizon, h.handler, start)
 end
-mayshiftfrom(h::_SHorizons, t::Int)::Int = mayshiftfrom(h.subhorizon, h.handler, t)
+mayshiftfrom(h::_SHorizons, t::Int)::Tuple{Int, Bool} = mayshiftfrom(h.subhorizon, h.handler, t)
 mustupdate(h::_SHorizons, t::Int)::Bool = mustupdate(h.subhorizon, h.handler, t)
 
 # Implementation of SequentialPeriodsShrinker and SequentialPeriodsShifter
