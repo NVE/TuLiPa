@@ -401,10 +401,18 @@ function reset_shift!(handler::SequentialPeriodsShrinker, p::SequentialPeriods, 
         sumshrink += cap - handler.minperiod
     end
 
-    it = Int(sumshrink.value / handler.shrinkperiods_maxduration[1].value)
-    for t in (last(handler.shrinkperiods)-it+1):(handler.last_shiftperiod-it+1)
-        handler.updates_shift[t] = t + it
-        handler.updates_must[t] = false
+    shiftperiods = sumshrink.value / sum(handler.shrinkperiods_maxduration).value * length(handler.shrinkperiods)
+    if !isinteger(shiftperiods)
+        reset_normal!(handler, p, change)
+        return
+    end
+    sp = Int(shiftperiods)
+
+    for t in (last(handler.shrinkperiods)-sp+1):(handler.last_shiftperiod-sp+1)
+        if getms(p, t) == getms(p, last(handler.shrinkperiods) + 1)
+            handler.updates_shift[t] = t + sp
+            handler.updates_must[t] = false
+        end
     end
 
     handler.remaining_duration = sum(v - handler.minperiod for v in handler.shrinkperiods_maxduration)
@@ -592,13 +600,10 @@ function _common_update_shrinkable!(h, handler, p, start)
     end
 
     if change <= s.remaining_duration
-        println("shrink")
         shrink!(s, p, change)
     elseif (change == (s.remaining_duration + s.minperiod)) && (s.last_shiftperiod != HORIZON_NOSHIFT)
-        println("reset_shift")
         reset_shift!(s, p, change)
     else
-        println("reset_normal")
         reset_normal!(s, p, change)
     end
 
