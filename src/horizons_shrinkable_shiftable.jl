@@ -1,9 +1,9 @@
 """
-This file extends the Horizon interface with two new functions (mayshiftfrom and mustupdate) which
-can be used to significantly reduce update time in certain cases, when used with ShrinkableHorizon and ShiftableHorizon.
-
 We define ShrinkableHorizon and ShiftableHorizon, and add support for these for SequentialHorizon or AdaptiveHorizon. 
 The system can be extended to support other Horizon types as well.
+
+This file extends the Horizon interface with two new functions (mayshiftfrom and mustupdate) which
+can be used to significantly reduce update time in certain cases, when used with ShrinkableHorizon and ShiftableHorizon.
 
 ShrinkableHorizon wraps another Horizon and modifies it through updates in a way that keeps most of 
 the horizon (except a few periods in the front) unchanged for several updates. This is done by shrinking 
@@ -16,6 +16,33 @@ for long horizons (e.g. 6 years) with long periods (e.g. 6 weeks) for which para
 ShiftableHorizon wraps another Horizon and can enable fast updates by saying that a period t can use data from period future_t. 
 This way, one can reuse stored data to update Horizon or LP problem. This can be much faster than computing the parameter value 
 from a Param object.
+
+Below is ShrinkableHorizon exemplified in a forward simulation model. The Horizon is a SequentialHorizon with 6 periods of 4 weeks.
+When the simulation moves 2 weeks forward to the second step, the duration of the first period is halved (to the duration of 
+the minperiod, which is also 2 weeks). Parameters in periods 2-6 does not need to be updated, and can be reused from the previous 
+simulation step. In step 3 periods 3-6 does not need to be updated, and in step 4 periods 4-6 does not need to be updated.
+At step 4 we have reached the limit of how much we wanted to shrink the horizon (shrinkatleast, which is 6 weeks). In step 5 we
+therefore reset the period duration of steps 1-3. We also take advantage of fast shift updates since periods 4-6 in step 4
+corresponds to periods 2-4 in step 5. 
+
+Step = 1
+Periods:     1         2         3         4         5         6
+        |---- ----|---- ----|---- ----|---- ----|---- ----|---- ----|
+Step = 2
+Periods:       1       2         3         4         5         6
+             |----|---- ----|---- ----|---- ----|---- ----|---- ----|
+Step = 3
+Periods:            1    2       3         4         5         6
+                  |----|----|---- ----|---- ----|---- ----|---- ----|
+Step = 4
+Periods:                 1    2    3       4         5         6
+                       |----|----|----|---- ----|---- ----|---- ----|
+Step = 5                      
+Periods:                         1         2         3         4         5         6
+                            |---- ----|---- ----|---- ----|---- ----|---- ----|---- ----|
+Step = 6                      
+Periods:                           1       2         3         4         5         6
+                                 |----|---- ----|---- ----|---- ----|---- ----|---- ----|
 
 The way to use the mayshiftfrom and mustupdate functions, which must be used together, is to do two passes 
 over all periods in the horizon. In the first pass you use shift updates if mayshiftfrom says ok.
@@ -99,7 +126,6 @@ hasconstantdurations(h::ShiftableHorizon) = hasconstantdurations(h.subhorizon)
 
 build!(h::_SHorizons, p::Prob) = build!(h.subhorizon, h.handler, p)
 function update!(h::_SHorizons, start::ProbTime)
-    update!(h.subhorizon, start)
     update!(h.subhorizon, h.handler, start)
 end
 mayshiftfrom(h::_SHorizons, t::Int)::Tuple{Int, Bool} = mayshiftfrom(h.subhorizon, h.handler, t)
@@ -180,13 +206,13 @@ function getlastshiftperiod(h::SequentialPeriods, L::Int)
     L >= (T - 1) && return HORIZON_NOSHIFT
 
     d1 = getms(h, L)
-    d2 = getms(h, L+1)
+    d2 = getms(h, L+1) # only compatible with shift of one
     d1 != d2 && return HORIZON_NOSHIFT
     
     P = L+1
     for t in (L+2):(T-1)
         dt = getms(h, t)
-        d1 != dt && return P
+        d1 != dt && return P  # only compatible with shift of one
         P = t
     end
     
@@ -366,16 +392,27 @@ function shrink!(handler::SequentialPeriodsShrinker, p::SequentialPeriods, chang
 end
 
 function reset_shift!(handler::SequentialPeriodsShrinker, p::SequentialPeriods, change::Millisecond)
+    sumshrink = handler.minperiod # rather have sumshift as a field in handler?
     for (i, t) in enumerate(handler.shrinkperiods)
         j = handler.shrinkperiods_index[i]
         (n, ms) = p.data[j]
         cap = handler.shrinkperiods_maxduration[i]
         p.data[j] = (n, cap)
+        sumshrink += cap - handler.minperiod
     end
 
-    for t in (last(handler.shrinkperiods)+1):(handler.last_shiftperiod)
-        handler.updates_shift[t] = t + 1
-        handler.updates_must[t] = false
+    shiftperiods = sumshrink.value / sum(handler.shrinkperiods_maxduration).value * length(handler.shrinkperiods)
+    if !isinteger(shiftperiods)
+        reset_normal!(handler, p, change)
+        return
+    end
+    sp = Int(shiftperiods)
+
+    for t in (last(handler.shrinkperiods)-sp+1):(handler.last_shiftperiod-sp+1)
+        if getms(p, t) == getms(p, last(handler.shrinkperiods) + 1)
+            handler.updates_shift[t] = t + sp
+            handler.updates_must[t] = false
+        end
     end
 
     handler.remaining_duration = sum(v - handler.minperiod for v in handler.shrinkperiods_maxduration)
@@ -458,7 +495,7 @@ build!(h::AdaptiveHorizon, handler::AdaptiveHorizonShifter, p::Prob) = build!(h,
 mayshiftfrom(h::SequentialHorizon, handler::SequentialHorizonShrinker, t::Int) = _common_mayshiftfrom(h, handler.shrinker, t)
 mayshiftfrom(h::SequentialHorizon, handler::SequentialHorizonShifter, t::Int) = _common_mayshiftfrom(h, handler.shifter, t)
 mayshiftfrom(h::AdaptiveHorizon, handler::AdaptiveHorizonShrinker, t::Int) = _common_mayshiftfrom(h, handler.shrinker, t)
-mayshiftfrom(h::AdaptiveHorizon, handler::AdaptiveHorizonShrinker, t::Int) = _common_mayshiftfrom(h, handler.shrinker, t)
+mayshiftfrom(h::AdaptiveHorizon, handler::AdaptiveHorizonShifter, t::Int) = _common_mayshiftfrom(h, handler.shrinker, t)
 
 function _common_mayshiftfrom(h::SequentialHorizon, shrinker_shifter, t)
     v = shrinker_shifter.updates_shift[t]
@@ -549,6 +586,7 @@ function _common_update_shrinkable!(h, handler, p, start)
     
     if s.prev_start === nothing
         s.prev_start = start
+        update!(h, start)
         return true
     end
 
@@ -562,13 +600,10 @@ function _common_update_shrinkable!(h, handler, p, start)
     end
 
     if change <= s.remaining_duration
-        println("shrink")
         shrink!(s, p, change)
     elseif (change == (s.remaining_duration + s.minperiod)) && (s.last_shiftperiod != HORIZON_NOSHIFT)
-        println("reset_shift")
         reset_shift!(s, p, change)
     else
-        println("reset_normal")
         reset_normal!(s, p, change)
     end
 
@@ -601,7 +636,7 @@ function _common_update_shiftable!(h, handler, start::ProbTime)
         if acc == change
             last_shiftperiod = getlastshiftperiod(h, t)
             for j in t:(last_shiftperiod - 1)
-                handler.updates_shift[j] = j + 1 # ikke fleksibel for tidsoppløsning, shift må være lik periodelengde
+                handler.updates_shift[j] = j + 1 # only shift to next period
                 handler.updates_must[j] = false
             end            
             return

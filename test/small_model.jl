@@ -1,4 +1,4 @@
-function get_dummy_data()
+function get_dummy_data(; profilepath=nothing)
     
     elements_bio = [
         DataElement("Flow", "BaseFlow", "GenBioGER", Dict{Any, Any}()),
@@ -53,7 +53,10 @@ function get_dummy_data()
         DataElement("TimeIndex", "VectorTimeIndex", "DataLevelsTimeIndex", Dict("Vector" => [DateTime("2021-01-04T00:00:00"), DateTime("2024-12-30T00:00:00")])),
     ]
     
-    df = CSV.read(joinpath(dirname(pwd()), "data/testprofiles_1981_2010.csv"), DataFrame)
+    if profilepath == nothing
+        profilepath = joinpath(dirname(pwd()), "data/testprofiles_1981_2010.csv")
+    end
+    df = CSV.read(profilepath, DataFrame)
     df.Timestamp = DateTime.(df.Timestamp, dateformat"yyyy-mm-dd HH:MM:SS")
     df_demand = df[:, [:"Timestamp", :"DemandGER"]];
     start = first(df_demand.Timestamp)
