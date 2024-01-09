@@ -82,4 +82,33 @@ end
 
 include("../test/utils_dummy_data.jl")
 
+using PrecompileTools, JuMP, HiGHS
+
+@compile_workload begin
+	elements = gettestdataset();
+	scenarioyearstart = 1981
+	scenarioyearstop = 1983
+	addscenariotimeperiod!(elements, "ScenarioTimePeriod", getisoyearstart(scenarioyearstart), getisoyearstart(scenarioyearstop));
+	power_horizon = SequentialHorizon(364 * 3, Day(1))
+	hydro_horizon = SequentialHorizon(52 * 3, Week(1))
+	set_horizon!(elements, "Power", power_horizon)
+	set_horizon!(elements, "Hydro", hydro_horizon);
+	push!(elements, getelement(BOUNDARYCONDITION_CONCEPT, "StartEqualStop", "StartEqualStop_StorageResNO2",
+			(WHICHINSTANCE, "StorageResNO2"),
+			(WHICHCONCEPT, STORAGE_CONCEPT)));
+	modelobjects = getmodelobjects(elements);
+
+	mymodel = JuMP.Model(HiGHS.Optimizer)
+	set_silent(mymodel)
+	prob = JuMP_Prob(modelobjects, mymodel)
+	prob.model
+
+	t = TwoTime(getisoyearstart(2021), getisoyearstart(1981))
+	update!(prob, t)
+
+	solve!(prob)
+	prob1 = getobjectivevalue(prob)
+end
+
+
 end
