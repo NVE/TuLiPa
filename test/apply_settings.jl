@@ -1,4 +1,3 @@
-#using TuLiPa, CSV, DataFrames, Statistics, JuMP, Test, HiGHS, Dates
 using TuLiPa, JuMP, HiGHS, Test
 include("utils_dummy_data.jl");
 
