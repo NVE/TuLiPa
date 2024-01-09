@@ -56,7 +56,7 @@ struct RotatingTimeVector{I, V} <: TimeVector
         b = isisoyearstart(stop)
         a || error("isisoyearstart(start) must be true")
         b || error("isisoyearstart(stop) must be true")
-        b > a || error("Must have stop > start")
+        stop > start || error("Must have stop > start")
 
         # Only keep indexes and values inside of [start, stop]
         istart = searchsortedfirst(index, start)
