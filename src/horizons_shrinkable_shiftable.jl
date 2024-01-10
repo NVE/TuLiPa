@@ -129,9 +129,11 @@ hasconstantdurations(::ShrinkableHorizon) = false
 hasconstantdurations(h::ShiftableHorizon) = hasconstantdurations(h.subhorizon)
 
 build!(h::_SHorizons, p::Prob) = build!(h.subhorizon, h.handler, p)
-update!(h::_SHorizons, start::ProbTime) = update!(h.subhorizon, h.handler, start)
-mayshiftfrom(h::_SHorizons, t::Int)::Tuple{Int, Bool} = mayshiftfrom(h.subhorizon, h.handler, t)
-mustupdate(h::_SHorizons, t::Int)::Bool = mustupdate(h.subhorizon, h.handler, t)
+function update!(h::_SHorizons, start::ProbTime)
+    update!(h.subhorizon, h.handler, start)
+end
+mayshiftfrom(h::_SHorizons, t::Int) = mayshiftfrom(h.subhorizon, h.handler, t)
+mustupdate(h::_SHorizons, t::Int) = mustupdate(h.subhorizon, h.handler, t)
 
 # Implementation of SequentialPeriodsShrinker and SequentialPeriodsShifter
 # and extention of SequentialPeriods with new functions. These will be used
@@ -570,7 +572,7 @@ function update!(h::AdaptiveHorizon, handler::AdaptiveHorizonShrinker, start::Pr
     
     # Then do the shifts
     T = getnumperiods(h)
-    for t in (T-1):-1:1
+    for t in 1:(T-1)
         (future_t, ok) = mayshiftfrom(h, handler, t)
         if ok
             h.periods[t].units = h.periods[future_t].units
