@@ -129,9 +129,7 @@ hasconstantdurations(::ShrinkableHorizon) = false
 hasconstantdurations(h::ShiftableHorizon) = hasconstantdurations(h.subhorizon)
 
 build!(h::_SHorizons, p::Prob) = build!(h.subhorizon, h.handler, p)
-function update!(h::_SHorizons, start::ProbTime)
-    update!(h.subhorizon, h.handler, start)
-end
+update!(h::_SHorizons, start::ProbTime) = update!(h.subhorizon, h.handler, start)
 mayshiftfrom(h::_SHorizons, t::Int) = mayshiftfrom(h.subhorizon, h.handler, t)
 mustupdate(h::_SHorizons, t::Int) = mustupdate(h.subhorizon, h.handler, t)
 
