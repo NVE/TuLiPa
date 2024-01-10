@@ -24,6 +24,7 @@ include("times.jl") # problem times
 include("timeperiods.jl") # start and stop of simulation/scenario 
 include("timeoffset.jl") # to offset problem times
 include("horizons.jl")
+include("horizons_shrinkable_shiftable.jl") # shrink or shift horizon periods
 
 # Lowlevel model objects
 # see data_elements_to_objects.jl for description of difference between lowlevel and toplevel
