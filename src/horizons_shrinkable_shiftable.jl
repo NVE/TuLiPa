@@ -11,11 +11,12 @@ the duration of certain periods on each update. The unchanged periods does not n
 Warm starting with simplex methods may also improve because only a fraction of the parameters have changed. 
 Periodically, the shrinked periods must be reset, and all periods of the horizon must be updated. 
 In this case, fast shift updates (described in more detail below) are used if applicable. This horizon type is useful 
-for long horizons (e.g. 6 years) with long periods (e.g. 6 weeks) for which parameter values are expensive to compute. 
+for forward simulations with long horizons (e.g. 6 years) and long periods (e.g. 6 weeks) for which parameter values 
+are expensive to compute. 
 
 ShiftableHorizon wraps another Horizon and can enable fast updates by saying that a period t can use data from period future_t. 
 This way, one can reuse stored data to update Horizon or LP problem. This can be much faster than computing the parameter value 
-from a Param object.
+from a Param object. At the moment ShiftableHorizon only supports shifts of one period.
 
 Below is ShrinkableHorizon exemplified in a forward simulation model. The Horizon is a SequentialHorizon with 6 periods of 4 weeks.
 When the simulation moves 2 weeks forward to the second step, the duration of the first period is halved (to the duration of 
@@ -44,6 +45,8 @@ Step = 6
 Periods:                           1       2         3         4         5         6
                                  |----|---- ----|---- ----|---- ----|---- ----|---- ----|
 
+While the update!(p::Prob, start::ProbTime) function handles the update of horizons and finds the periods that need to be updated
+and which periods that can be shifted from, we still have to implement these concepts in the modelobjects.
 The way to use the mayshiftfrom and mustupdate functions, which must be used together, is to do two passes 
 over all periods in the horizon. In the first pass you use shift updates if mayshiftfrom says ok.
 In the second pass you use mustupdate to tell which remaining periods to update. Below is an example for a cost parameter.
@@ -126,9 +129,7 @@ hasconstantdurations(::ShrinkableHorizon) = false
 hasconstantdurations(h::ShiftableHorizon) = hasconstantdurations(h.subhorizon)
 
 build!(h::_SHorizons, p::Prob) = build!(h.subhorizon, h.handler, p)
-function update!(h::_SHorizons, start::ProbTime)
-    update!(h.subhorizon, h.handler, start)
-end
+update!(h::_SHorizons, start::ProbTime) = update!(h.subhorizon, h.handler, start)
 mayshiftfrom(h::_SHorizons, t::Int)::Tuple{Int, Bool} = mayshiftfrom(h.subhorizon, h.handler, t)
 mustupdate(h::_SHorizons, t::Int)::Bool = mustupdate(h.subhorizon, h.handler, t)
 
@@ -139,8 +140,8 @@ mustupdate(h::_SHorizons, t::Int)::Bool = mustupdate(h.subhorizon, h.handler, t)
 # be used to make SequentialHorizon and AdaptiveHorizon shiftable and shrinkable.
 
 mutable struct SequentialPeriodsShrinker
-    shrinkperiods::UnitRange{Int}
-    shrinkperiods_index::UnitRange{Int}
+    shrinkperiods::UnitRange{Int} # numperiods of shrinkperiods
+    shrinkperiods_index::UnitRange{Int} # index of shrinkperiods in SequentialPeriods.data
     shrinkperiods_isupdated::Vector{Bool}
     shrinkperiods_maxduration::Vector{Millisecond}
     minperiod::Millisecond
@@ -162,12 +163,18 @@ const _SSequentialPeriods = Union{SequentialPeriodsShrinker, SequentialPeriodsSh
 getms(p::SequentialPeriods, t) = getduration(gettimedelta(p, t))
 getms(h::Horizon, t) = getduration(gettimedelta(p, t))
 
+# startafter skips periods in the front of the horizon that should not be shrinked
+# shrinkatleast is the minimum total duration the shrinkperiods should be shrinked
+# minperiod is the minimum duration a shrinkperiod can be shrinked to
+# last_shiftperiod: shiftperiods are consecutive periods after the last shrinkperiod, all shiftperiods have equal duration
+# prev_start is used to calculate the step size in the simulation
+# reimaing_duration is the remaining duration that can be shrinked
 function gethorizonshrinker(h::SequentialPeriods, startafter::Millisecond, shrinkatleast::Millisecond, minperiod::Millisecond)    
     T = getnumperiods(h)
     
     shrinkperiods = getshrinkperiods(h, startafter, shrinkatleast, minperiod)
 
-    shrinkperiods_index = 0:0    # set by makeshrinkable!
+    shrinkperiods_index = 0:0 # set by makeshrinkable!
     
     shrinkperiods_isupdated = [false for __ in shrinkperiods]
     shrinkperiods_maxduration = [getms(h, t) for t in shrinkperiods]
@@ -176,7 +183,7 @@ function gethorizonshrinker(h::SequentialPeriods, startafter::Millisecond, shrin
 
     last_shiftperiod = getlastshiftperiod(h, last(shrinkperiods))
 
-    prev_start = nothing    # set by update!
+    prev_start = nothing # set by update!
     
     remaining_duration = sum(v - minperiod for v in shrinkperiods_maxduration)
     
@@ -207,13 +214,13 @@ function getlastshiftperiod(h::SequentialPeriods, L::Int)
     L >= (T - 1) && return HORIZON_NOSHIFT
 
     d1 = getms(h, L)
-    d2 = getms(h, L+1) # only compatible with shift of one
+    d2 = getms(h, L+1)
     d1 != d2 && return HORIZON_NOSHIFT
     
     P = L+1
     for t in (L+2):(T-1)
         dt = getms(h, t)
-        d1 != dt && return P  # only compatible with shift of one
+        d1 != dt && return P
         P = t
     end
     
@@ -221,8 +228,10 @@ function getlastshiftperiod(h::SequentialPeriods, L::Int)
 end
 
 function makeshrinkable!(p::SequentialPeriods, handler::SequentialPeriodsShrinker)
+    # Shrinkperiods should not be part of p.data pairs (n, ms) where n !=1, split up p.data pairs
     makeshrinkable!(p, handler.shrinkperiods)
 
+    # Find index of shrinkperiods in SequentialPeriods.data
     first_shrinkperiod = first(handler.shrinkperiods)
     acc = 0
     for (i, (n, ms)) in enumerate(p.data)
@@ -256,7 +265,7 @@ function _makeshrinkable!(data::Vector{Tuple{Int, Millisecond}}, shrinkperiod::I
     
     if shrinkperiod == 1
         (n, ms) = first(data)
-        n == 1 && return        # already shrinkable
+        n == 1 && return # already shrinkable
         push!(data, last(data))
         for i in (N-2):-1:1
             data[i+1] = data[i]
@@ -270,7 +279,7 @@ function _makeshrinkable!(data::Vector{Tuple{Int, Millisecond}}, shrinkperiod::I
 
     if shrinkperiod == T
         (n, ms) = last(data)
-        n == 1 && return        # already shrinkable
+        n == 1 && return # already shrinkable
         push!(data, last(data))
         data[N] = (n-1, ms)
         data[N+1] = (1, ms)
@@ -280,7 +289,7 @@ function _makeshrinkable!(data::Vector{Tuple{Int, Millisecond}}, shrinkperiod::I
     (start, prev, acc) = _shrinkable_find_startpos(data, shrinkperiod)
 
     (n, ms) = data[start]
-    n == 1 && return           # already shrinkable
+    n == 1 && return # already shrinkable
 
     if prev == shrinkperiod
         push!(data, last(data))
@@ -360,13 +369,19 @@ end
 
 function shrink!(handler::SequentialPeriodsShrinker, p::SequentialPeriods, change::Millisecond)
     subtract = Millisecond(change.value)
+    
     for (i, t) in enumerate(handler.shrinkperiods)
+        # Until change/subtract is used up
         if subtract <= Millisecond(0)
             @assert subtract == Millisecond(0)
             break
         end
+
+        # Find shrinkperiod in p
         j = handler.shrinkperiods_index[i]
         (n, ms) = p.data[j]
+
+        # Shrink period by change or down to minperiod
         if ms > handler.minperiod
             if subtract >= (ms - handler.minperiod)
                 p.data[j] = (n, handler.minperiod)
@@ -384,6 +399,7 @@ function shrink!(handler::SequentialPeriodsShrinker, p::SequentialPeriods, chang
     # TODO: Remove or replace with test after initial implementation
     @assert !all(v == false for v in handler.shrinkperiods_isupdated)
 
+    # Update updates_must for all periods up until last shrinked period
     L = maximum(handler.shrinkperiods[i] for (i,isupd) in enumerate(handler.shrinkperiods_isupdated) if isupd)
     fill!(handler.updates_must, false)
     for t in 1:L
@@ -393,22 +409,29 @@ function shrink!(handler::SequentialPeriodsShrinker, p::SequentialPeriods, chang
 end
 
 function reset_shift!(handler::SequentialPeriodsShrinker, p::SequentialPeriods, change::Millisecond)
-    sumshrink = handler.minperiod # rather have sumshift as a field in handler?
+    # Find sum of shrinking
+    sumshrink = handler.minperiod
     for (i, t) in enumerate(handler.shrinkperiods)
         j = handler.shrinkperiods_index[i]
         (n, ms) = p.data[j]
         cap = handler.shrinkperiods_maxduration[i]
+        sumshrink += cap - ms
+
+        # Reset period duration of shrinkperiods
         p.data[j] = (n, cap)
-        sumshrink += cap - handler.minperiod
     end
 
+    # How many shiftperiods does the shrinking equal to
     numshiftperiods = sumshrink.value / sum(handler.shrinkperiods_maxduration).value * length(handler.shrinkperiods)
+
+    # If not integer periods are not compatible to do shifting
     if !isinteger(numshiftperiods)
         reset_normal!(handler, p, change)
         return
     end
     nsp = Int(numshiftperiods)
 
+    # Update updates_shift and handler.updates_must for shiftperiods
     for t in (last(handler.shrinkperiods)-nsp+1):(handler.last_shiftperiod-nsp+1)
         if getms(p, t) == getms(p, last(handler.shrinkperiods) + 1)
             handler.updates_shift[t] = t + nsp
@@ -421,12 +444,14 @@ function reset_shift!(handler::SequentialPeriodsShrinker, p::SequentialPeriods, 
 end
 
 function reset_normal!(handler::SequentialPeriodsShrinker, p::SequentialPeriods, change::Millisecond)
+    # Reset duration of shrinkperiods
     for (i, t) in enumerate(handler.shrinkperiods)
         j = handler.shrinkperiods_index[i]
         (n, ms) = p.data[j]
         cap = handler.shrinkperiods_maxduration[i]
         p.data[j] = (n, cap)
     end
+
     handler.remaining_duration = sum(v - handler.minperiod for v in handler.shrinkperiods_maxduration)
     return
 end
@@ -530,6 +555,7 @@ function update!(h::AdaptiveHorizon, handler::AdaptiveHorizonShrinker, start::Pr
     s = handler.shrinker
     p = h.macro_periods
     
+    # Update shrinkable for macro_periods. Early return if first step of simulation or change = 0
     early_ret = _common_update_shrinkable!(h, handler, p, start)
 
     early_ret && return
@@ -637,7 +663,7 @@ function _common_update_shiftable!(h, handler, start::ProbTime)
         if acc == change
             last_shiftperiod = getlastshiftperiod(h, t)
             for j in t:(last_shiftperiod - 1)
-                handler.updates_shift[j] = j + 1 # only shift to next period
+                handler.updates_shift[j] = j + 1 # only supports shift to next period
                 handler.updates_must[j] = false
             end            
             return
