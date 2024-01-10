@@ -71,6 +71,7 @@ However, horizons not supporting ShrinkableHorizon or ShiftableHorizon will not 
 Warning! The example may be too simple for certain applications. E.g. some parameters may be stateful and thus change at every update. 
 In this case, one should update all periods with getparamvalue. 
 """
+# TODO: Change _common_update_shiftable! (for ShiftableHorizon) to support shift of more than one periods. This is already supported in ShrinkableHorizon
 
 const HORIZON_NOSHIFT = -1
 
@@ -401,16 +402,16 @@ function reset_shift!(handler::SequentialPeriodsShrinker, p::SequentialPeriods, 
         sumshrink += cap - handler.minperiod
     end
 
-    shiftperiods = sumshrink.value / sum(handler.shrinkperiods_maxduration).value * length(handler.shrinkperiods)
-    if !isinteger(shiftperiods)
+    numshiftperiods = sumshrink.value / sum(handler.shrinkperiods_maxduration).value * length(handler.shrinkperiods)
+    if !isinteger(numshiftperiods)
         reset_normal!(handler, p, change)
         return
     end
-    sp = Int(shiftperiods)
+    nsp = Int(numshiftperiods)
 
-    for t in (last(handler.shrinkperiods)-sp+1):(handler.last_shiftperiod-sp+1)
+    for t in (last(handler.shrinkperiods)-nsp+1):(handler.last_shiftperiod-nsp+1)
         if getms(p, t) == getms(p, last(handler.shrinkperiods) + 1)
-            handler.updates_shift[t] = t + sp
+            handler.updates_shift[t] = t + nsp
             handler.updates_must[t] = false
         end
     end
