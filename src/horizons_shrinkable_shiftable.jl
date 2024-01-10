@@ -543,7 +543,7 @@ function update!(h::AdaptiveHorizon, handler::AdaptiveHorizonShrinker, start::Pr
     
     # Then do the shifts
     T = getnumperiods(h)
-    for t in (T-1):-1:1
+    for t in 1:(T-1)
         (future_t, ok) = mayshiftfrom(h, handler, t)
         if ok
             h.periods[t].units = h.periods[future_t].units
