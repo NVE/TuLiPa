@@ -51,6 +51,11 @@ struct RotatingTimeVector{I, V} <: TimeVector
     start::DateTime
     stop::DateTime
     function RotatingTimeVector(index, values, start, stop)
+        # Check that [start, stop] is at least one whole year
+        isisoyearstart(start) || error("isisoyearstart(start) must be true")
+        isisoyearstart(stop) || error("isisoyearstart(stop) must be true")
+        stop > start || error("Must have stop > start")
+
         # Only keep indexes and values inside of [start, stop]
         istart = searchsortedfirst(index, start)
         istop  = searchsortedlast(index, stop)
