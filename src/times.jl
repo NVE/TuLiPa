@@ -169,7 +169,7 @@ struct PrognosisTime <: ProbTime
     scenariotime::DateTime
 end
 
-getprognosisdatatime(x::PrognosisTime) = x.datatime
+getprognosisdatatime(x::PrognosisTime) = x.prognosisdatatime
 getscenariotime(x::PrognosisTime) = x.scenariotime
 getdatatime(x::PrognosisTime) = x.datatime
 
