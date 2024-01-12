@@ -12,6 +12,7 @@ time-series we reuse it (therefore rotating)
 Start and stop indicates which part of the timeseries should be used
 Uses getsimilardatetime() to find values for a problem time which is 
 not necessarily inside the range of the time-series
+Must have at least one year of data
 Used for profile i.e wind profile from 1981-2010
 
 InfiniteTimeVector contains a time-series that represents the
