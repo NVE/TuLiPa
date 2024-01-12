@@ -644,6 +644,7 @@ function _common_update_shiftable!(h, handler, start::ProbTime)
     
     if s.prev_start === nothing
         s.prev_start = start
+        update!(h, start)
         return
     end
 
