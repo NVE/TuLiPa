@@ -1,4 +1,4 @@
-using Dates, CSV, DataFrames, Statistics, JuMP, Test, HiGHS, TuLiPa, Random
+using TuLiPa, JuMP, HiGHS, Test
 include("utils_dummy_data.jl");
 
 elements = gettestdataset();
