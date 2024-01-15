@@ -13,7 +13,7 @@ mutable struct BaseStorage <: Storage
     ub::Union{Nothing, Capacity}
     loss::Union{Nothing, Loss}
     costs::Vector{Cost}
-    sumcost::Union{Nothing, SimpleSumCost}
+    sumcost::Union{Nothing, SumCost}
     metadata::Dict
 
     function BaseStorage(id, balance)
@@ -170,7 +170,7 @@ function assemble!(var::BaseStorage)::Bool
     (T < 2) && error("Storage balance must have at least 2 periods in horizon for $id")
 
     if length(var.costs) > 0
-        var.sumcost = SimpleSumCost(var.costs)
+        var.sumcost = SumCost(var.costs)
     end
 
     return true

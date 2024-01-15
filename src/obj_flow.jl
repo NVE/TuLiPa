@@ -12,7 +12,7 @@ mutable struct BaseFlow <: Flow
     lb::Union{Capacity}
 
     costs::Vector{Cost}
-    sumcost::Union{Nothing, SimpleSumCost}
+    sumcost::Union{Nothing, SumCost}
 
     arrows::Vector{Arrow}
 
@@ -81,16 +81,7 @@ function build!(p::Prob, var::BaseFlow)
 end
 
 function setconstants!(p::Prob, var::BaseFlow)
-    if !isnothing(var.sumcost)
-        if isconstant(var.sumcost)
-            dummytime = ConstantTime()
-            for t in 1:getnumperiods(var.horizon)
-                querydelta = gettimedelta(var.horizon, t)
-                value = getparamvalue(var.sumcost, dummytime, querydelta)
-                setobjcoeff!(p, var.id, t, value)
-            end   
-        end
-    end
+    !isnothing(var.sumcost) && setconstants!(p, var, var.sumcost)
 
     setconstants!(p, var, var.lb)
 
@@ -103,16 +94,7 @@ function setconstants!(p::Prob, var::BaseFlow)
 end
 
 function update!(p::Prob, var::BaseFlow, start::ProbTime)
-    if !isnothing(var.sumcost)
-        if !isconstant(var.sumcost)
-            for t in 1:getnumperiods(var.horizon)
-                querystart = getstarttime(var.horizon, t, start)
-                querydelta = gettimedelta(var.horizon, t)
-                value = getparamvalue(var.sumcost, querystart, querydelta)
-                setobjcoeff!(p, var.id, t,  value)
-            end   
-        end
-    end
+    !isnothing(var.sumcost) && update!(p, var, var.sumcost, start)
 
     update!(p, var, var.lb, start)
 
@@ -154,7 +136,7 @@ function assemble!(var::BaseFlow)::Bool
 
     # Make sumcost from all costterms
     if length(var.costs) > 0
-        var.sumcost = SimpleSumCost(var.costs)
+        var.sumcost = SumCost(var.costs, var.horizon)
     end
 
     return true

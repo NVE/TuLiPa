@@ -11,6 +11,7 @@ function isconstant(param::Param)
     end
     return true
 end
+isstateful(param::Param) = false
 
 # ---- Concrete types ----
 
@@ -24,6 +25,9 @@ end
 struct TwoProductParam{P1 <: Any, P2 <: Any} <: Param
     param1::P1
     param2::P2
+end
+struct StatefulParam{P <: Param} <: Param
+    param::P
 end
 
 # Sometimes we want the contribution of the parameter to be negative
@@ -237,12 +241,17 @@ isdurational(param::InConversionLossParam) = isdurational(param.conversion) && i
 isdurational(param::OutConversionLossParam) = isdurational(param.conversion) && isdurational(param.loss)
 isdurational(param::TransmissionLossRHSParam) = isdurational(param.capacity)
 isdurational(param::UMMSeriesParam) = false
+isdurational(param::StatefulParam) = isdurational(param.param)
+
+# Will the parameter change at every new state? Means that the parameter value will have to be recalculated at every time step.
+isstateful(param::StatefulParam) = true
 
 # Calculate the parameter value for a given parameter, problem time and timedelta duration
 getparamvalue(::ZeroParam,     ::ProbTime, ::TimeDelta) =  0.0
 getparamvalue(::PlusOneParam,  ::ProbTime, ::TimeDelta) =  1.0
 getparamvalue(::MinusOneParam, ::ProbTime, ::TimeDelta) = -1.0
 getparamvalue(param::ConstantParam, ::ProbTime, ::TimeDelta) = param.value
+getparamvalue(param::StatefulParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.param, start, d)
 getparamvalue(param::TwoProductParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.param1, start, d)*getparamvalue(param.param2, start, d)
 getparamvalue(param::FlipSignParam, start::ProbTime, d::TimeDelta) = -getparamvalue(param.param, start, d)
 getparamvalue(param::ExogenIncomeParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.price, start, d)*getparamvalue(param.conversion, start, d)*(1-getparamvalue(param.loss, start, d))
@@ -753,6 +762,15 @@ function includeUMMSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value
     return true
 end
 
+function includeStatefulParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+    checkkey(lowlevel, elkey)
+
+    (param, ok) = getdictparamvalue(lowlevel, elkey, value)   ;  ok || return false
+    lowlevel[getobjkey(elkey)] = StatefulParam(param)
+
+    return true
+end
+
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "FossilMCParam")] = includeFossilMCParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "M3SToMM3SeriesParam")] = includeM3SToMM3SeriesParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "M3SToMM3Param")] = includeM3SToMM3Param!
@@ -763,3 +781,4 @@ INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MeanSeriesParam")] = includeMeanSeriesPar
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MeanSeriesIgnorePhaseinParam")] = includeMeanSeriesIgnorePhaseinParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "PrognosisSeriesParam")] = includePrognosisSeriesParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "UMMSeriesParam")] = includeUMMSeriesParam!
+INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "StatefulParam")] = includeStatefulParam!
