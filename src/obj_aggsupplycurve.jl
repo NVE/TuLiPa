@@ -74,6 +74,40 @@ function setconstants!(p::Prob, var::AggSupplyCurve)
             setconcoeff!(p, Id(BALANCE_CONCEPT, eqinstance), Id(AGGSUPPLYCURVE_CONCEPT, newname), t, t, -1.0)
         end
     end
+
+    horizon = gethorizon(getcommodity(var.balance))
+    T = getnumperiods(horizon)
+    dummytime = ConstantTime()
+    dummydelta = MsTimeDelta(Hour(1))
+
+    for i in 1:length(var.flows)
+        flow = var.flows[i]
+
+        cost = getcost(flow)
+        if isconstant(cost)
+            paramvalue = getparamvalue(cost, dummytime, dummydelta)
+            for t in 1:T
+                var.mcs[t,i] = paramvalue::Float64 # pq not supported
+            end
+        end
+
+        lb = getlb(flow)
+        if isconstant(lb) && !isdurational(lb)
+            # Why? SequentialHorizon can have two or more sets of (nperiods, duration) pairs
+            paramvalue = getparamvalue(lb, dummytime, dummydelta)
+            for t in 1:T
+                var.lbs[t,i] = paramvalue::Float64
+            end
+        end
+
+        ub = getub(flow)
+        if isconstant(ub) && !isdurational(ub)
+            paramvalue = getparamvalue(ub, dummytime, dummydelta)
+            for t in 1:T
+                var.ubs[t,i] = paramvalue::Float64
+            end
+        end
+    end
 end
 
 # Update the problem with cost and upper/lower bound for each equivalent flow
@@ -88,23 +122,12 @@ function update!(p::Prob, var::AggSupplyCurve, start::ProbTime)
     querystarts = [getstarttime(horizon, t, start) for t in 1:T]
     querydeltas = [gettimedelta(horizon, t) for t in 1:T]
 
-    dummytime = ConstantTime()
-    dummydelta = MsTimeDelta(Hour(1))
-
     # Calculate costs and upper/lower bound for each flow and timeperiod
     for i in 1:numflows
         flow = var.flows[i]
 
-        # Cost
         cost = getcost(flow)
-        if isconstant(cost)
-            paramvalue = getparamvalue(cost, dummytime, dummydelta)
-            for t in 1:T
-                if mustupdate(horizon, t)
-                    var.mcs[t,i] = paramvalue::Float64 # pq not supported
-                end
-            end
-        else
+        if !isconstant(cost)
             for t in 1:T
                 if mustupdate(horizon, t)
                     var.mcs[t,i] = getparamvalue(cost, querystarts[t], querydeltas[t])::Float64 # pq not supported
@@ -112,17 +135,8 @@ function update!(p::Prob, var::AggSupplyCurve, start::ProbTime)
             end
         end   
 
-        # Lower bound
         lb = getlb(flow)
-        if isconstant(lb) && !isdurational(lb)
-            # Why? SequentialHorizon can have two or more sets of (nperiods, duration) pairs
-            paramvalue = getparamvalue(lb, dummytime, dummydelta)
-            for t in 1:T
-                if mustupdate(horizon, t)
-                    var.lbs[t,i] = paramvalue::Float64
-                end
-            end
-        else
+        if !isconstant(lb) || isdurational(lb)
             for t in 1:T
                 if mustupdate(horizon, t)
                     var.lbs[t,i] = getparamvalue(lb, querystarts[t], querydeltas[t])::Float64
@@ -130,16 +144,8 @@ function update!(p::Prob, var::AggSupplyCurve, start::ProbTime)
             end
         end
 
-        # Upper bound
         ub = getub(flow)
-        if isconstant(ub) && !isdurational(ub)
-            paramvalue = getparamvalue(ub, dummytime, dummydelta)
-            for t in 1:T
-                if mustupdate(horizon, t)
-                    var.ubs[t,i] = paramvalue::Float64
-                end
-            end
-        else
+        if !isconstant(ub) || isdurational(ub)
             for t in 1:T
                 if mustupdate(horizon, t)
                     var.ubs[t,i] = getparamvalue(ub, querystarts[t], querydeltas[t])::Float64
