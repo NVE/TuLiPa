@@ -19,12 +19,12 @@ end
 struct SumCost <: Cost
     terms::Vector{Cost}
     values::Matrix{Float64}
-    isupdated::Matrix{Bool}
+    isupdated::Vector{Bool}
 
     function SumCost(terms::Vector{Cost}, h::Horizon)
         T = getnumperiods(h)
         numterms = length(terms)
-        new(terms, zeros(T, numterms), falses(T, numterms))
+        new(terms, zeros(T, numterms), falses(T))
     end
 end
 
@@ -75,15 +75,17 @@ function setconstants!(p::Prob, var::Any, sumcost::SumCost)
             for t in 1:T
                 querydelta = gettimedelta(var.horizon, t)
                 sumcost.values[t, col] = getparamvalue(term, dummytime, querydelta)::Float64
-                sumcost.isupdated[t, col] = true
+                sumcost.isupdated[t] = true
             end
         end
     end
 
-    for t in 1:T
-        if sum(sumcost.isupdated[t, :]) > 0
-            value = sum(sumcost.values[t, :])
-            setobjcoeff!(p, var.id, t, value)
+    if isconstant(sumcost) && !isstateful(sumcost)
+        for t in 1:T
+            if sumcost.isupdated[t] == true
+                value = sum(sumcost.values[t, :])
+                setobjcoeff!(p, var.id, t, value)
+            end
         end
     end
 end
@@ -99,7 +101,7 @@ function update!(p::Prob, var::Any, sumcost::SumCost, start::ProbTime)
                     querystart = getstarttime(var.horizon, t, start)
                     querydelta = gettimedelta(var.horizon, t)
                     sumcost.values[t, col] = getparamvalue(term, querystart, querydelta)::Float64
-                    sumcost.isupdated[t, col] = true
+                    sumcost.isupdated[t] = true
                 end
             end
         end
@@ -107,14 +109,14 @@ function update!(p::Prob, var::Any, sumcost::SumCost, start::ProbTime)
 
     for t in 1:T
         (future_t, ok) = mayshiftfrom(var.horizon, t)
-        if ok && (sum(sumcost.isupdated[t, :]) == 0)
+        if ok && (sumcost.isupdated[t] == false)
             value = getobjcoeff!(p, var.id, future_t)
             setobjcoeff!(p, var.id, t, value)
         end
     end
 
     for t in 1:T
-        if sum(sumcost.isupdated[t, :]) > 0
+        if sumcost.isupdated[t] == true
             value = sum(sumcost.values[t, :])
             setobjcoeff!(p, var.id, t, value)
         end
