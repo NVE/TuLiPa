@@ -52,8 +52,8 @@ ELEMENTFAILED  = Dict()
 # Limit error output
 MAXPRINTERRORS = 10000
 
-function getmodelobjects(elements::Vector{DataElement})
-    # validate_elements(elements)
+function getmodelobjects(elements::Vector{DataElement}; validate::Bool=true)
+    validate == true && validate_elements(elements)
     check_duplicates(elements)
     modelobjects = include_all_elements(elements)
     assemble!(modelobjects)
