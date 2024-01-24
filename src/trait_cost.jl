@@ -1,9 +1,9 @@
 """
-We implement CostTerm and SimpleSumCost
+We implement CostTerm and SumCost
 
 CostTerm represents a single contribution to the objective function
 
-SimpleSumCost sums up several CostTerms for a Flow or Storage
+SumCost sums up several CostTerms for a Flow or Storage
 """
 
 # -------- Generic fallback --------------------
@@ -16,36 +16,111 @@ mutable struct CostTerm <: Cost
     isingoing::Bool
 end
 
-struct SimpleSumCost <: Cost
+struct SumCost <: Cost
     terms::Vector{Cost}
+    values::Matrix{Float64}
+    isupdated::Vector{Bool}
+
+    function SumCost(terms::Vector{Cost}, h::Horizon)
+        T = getnumperiods(h)
+        numterms = length(terms)
+        new(terms, zeros(T, numterms), falses(T))
+    end
 end
 
 # --------- Interface functions ------------
 isconstant(cost::CostTerm) = isconstant(cost.param)
-function isconstant(cost::SimpleSumCost)
+function isconstant(cost::SumCost)
     for term in cost.terms
         !isconstant(term) && return false
     end
     return true
 end
 
+isstateful(cost::CostTerm) = isstateful(cost.param)
+function isstateful(cost::SumCost)
+    for term in cost.terms
+        isstateful(term) && return true
+    end
+    return false
+end
+
 getid(cost::CostTerm) = cost.id
 
 # Indicate positive or negative contribution to objective function
 isingoing(cost::CostTerm) = cost.isingoing
-isingoing(cost::SimpleSumCost) = true
+isingoing(cost::SumCost) = true
 
-getparamvalue(cost::CostTerm, t::ProbTime, d::TimeDelta) = getparamvalue(cost.param, t, d)
-function getparamvalue(cost::SimpleSumCost, start::ProbTime, d::TimeDelta)
-    value = 0.0
+function getparamvalue(cost::CostTerm, t::ProbTime, d::TimeDelta)
+    value = getparamvalue(cost.param, t, d)
+    if !isingoing(cost)
+        return -value
+    else
+        return value
+    end
+end
+function getparamvalue(cost::SumCost, t::ProbTime, d::TimeDelta) # quick fix for AggSupplyCurve, implement cost, lb and ub for aggsupplycurve
+    value = float(0)
     for term in cost.terms
-        termvalue = getparamvalue(term, start, d)
-        if !isingoing(term) 
-            termvalue = -termvalue
-        end
-        value += termvalue
+        value += getparamvalue(term, t, d)
     end
     return value
+end
+
+function setconstants!(p::Prob, var::Any, sumcost::SumCost)
+    T = getnumperiods(var.horizon)
+    for (col, term) in enumerate(sumcost.terms)
+        if isconstant(term) && !isstateful(term)
+            dummytime = ConstantTime()
+            for t in 1:T
+                querydelta = gettimedelta(var.horizon, t)
+                sumcost.values[t, col] = getparamvalue(term, dummytime, querydelta)::Float64
+                sumcost.isupdated[t] = true
+            end
+        end
+    end
+
+    if isconstant(sumcost) && !isstateful(sumcost)
+        for t in 1:T
+            if sumcost.isupdated[t] == true
+                value = sum(sumcost.values[t, :])
+                setobjcoeff!(p, var.id, t, value)
+            end
+        end
+    end
+end
+
+function update!(p::Prob, var::Any, sumcost::SumCost, start::ProbTime)
+    fill!(sumcost.isupdated, false)
+
+    T = getnumperiods(var.horizon)
+    for (col, term) in enumerate(sumcost.terms)
+        if !isconstant(term) || isstateful(term)
+            for t in 1:T
+                if mustupdate(var.horizon, t)
+                    querystart = getstarttime(var.horizon, t, start)
+                    querydelta = gettimedelta(var.horizon, t)
+                    sumcost.values[t, col] = getparamvalue(term, querystart, querydelta)::Float64
+                    sumcost.isupdated[t] = true
+                end
+            end
+        end
+    end
+
+    for t in 1:T
+        (future_t, ok) = mayshiftfrom(var.horizon, t)
+        if ok && (sumcost.isupdated[t] == false)
+            value = getobjcoeff!(p, var.id, future_t)
+            setobjcoeff!(p, var.id, t, value)
+        end
+    end
+
+    for t in 1:T
+        if sumcost.isupdated[t] == true
+            value = sum(sumcost.values[t, :])
+            setobjcoeff!(p, var.id, t, value)
+        end
+    end
 end
 
 # ------ Include dataelements -------

@@ -81,6 +81,7 @@ using Clustering, Random
 # If the value is the same for all scenarios and time periods, 
 # it should only be updated once using setconstants! instead of update!
 function _must_dynamic_update(paramlike::Any, horizon::Horizon) 
+    isstateful(paramlike) && return true
     isconstant(paramlike) || return true
 
     if isdurational(paramlike) && !hasconstantdurations(horizon)

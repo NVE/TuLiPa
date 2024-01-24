@@ -181,14 +181,27 @@ function update!(p::Prob, var::Any, arrow::BaseArrow, start::ProbTime)
             for s in 1:getnumperiods(balancehorizon)
                 subperiods = getsubperiods(balancehorizon, varhorizon, s)
                 for t in subperiods
-                    querystart = getstarttime(varhorizon, t, start)
-                    querydelta = gettimedelta(varhorizon, t)
-                    value = getparamvalue(param, querystart, querydelta)
-                    if arrow.isingoing 
-                        value = -value
+                    (future_t, ok) = mayshiftfrom(varhorizon, t)
+                    if ok
+                        value = getconcoeff!(p, getid(arrow.balance), getid(var), s, future_t)
+                        setconcoeff!(p, getid(arrow.balance), getid(var), s, t, value)
                     end
+                end
+            end
 
-                    setconcoeff!(p, getid(arrow.balance), getid(var), s, t, value)
+            for s in 1:getnumperiods(balancehorizon)
+                subperiods = getsubperiods(balancehorizon, varhorizon, s)
+                for t in subperiods
+                    if mustupdate(varhorizon, t)
+                        querystart = getstarttime(varhorizon, t, start)
+                        querydelta = gettimedelta(varhorizon, t)
+                        value = getparamvalue(param, querystart, querydelta)
+                        if arrow.isingoing 
+                            value = -value
+                        end
+
+                        setconcoeff!(p, getid(arrow.balance), getid(var), s, t, value)
+                    end
                 end
             end
         end

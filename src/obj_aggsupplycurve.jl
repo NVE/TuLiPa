@@ -74,6 +74,40 @@ function setconstants!(p::Prob, var::AggSupplyCurve)
             setconcoeff!(p, Id(BALANCE_CONCEPT, eqinstance), Id(AGGSUPPLYCURVE_CONCEPT, newname), t, t, -1.0)
         end
     end
+
+    horizon = gethorizon(getcommodity(var.balance))
+    T = getnumperiods(horizon)
+    dummytime = ConstantTime()
+    dummydelta = MsTimeDelta(Hour(1))
+
+    for i in 1:length(var.flows)
+        flow = var.flows[i]
+
+        cost = getcost(flow)
+        if isconstant(cost)
+            paramvalue = getparamvalue(cost, dummytime, dummydelta)
+            for t in 1:T
+                var.mcs[t,i] = paramvalue::Float64 # pq not supported
+            end
+        end
+
+        lb = getlb(flow)
+        if isconstant(lb) && !isdurational(lb)
+            # Why? SequentialHorizon can have two or more sets of (nperiods, duration) pairs
+            paramvalue = getparamvalue(lb, dummytime, dummydelta)
+            for t in 1:T
+                var.lbs[t,i] = paramvalue::Float64
+            end
+        end
+
+        ub = getub(flow)
+        if isconstant(ub) && !isdurational(ub)
+            paramvalue = getparamvalue(ub, dummytime, dummydelta)
+            for t in 1:T
+                var.ubs[t,i] = paramvalue::Float64
+            end
+        end
+    end
 end
 
 # Update the problem with cost and upper/lower bound for each equivalent flow
@@ -88,88 +122,93 @@ function update!(p::Prob, var::AggSupplyCurve, start::ProbTime)
     querystarts = [getstarttime(horizon, t, start) for t in 1:T]
     querydeltas = [gettimedelta(horizon, t) for t in 1:T]
 
-    dummytime = ConstantTime()
-    dummydelta = MsTimeDelta(Hour(1))
-
     # Calculate costs and upper/lower bound for each flow and timeperiod
     for i in 1:numflows
         flow = var.flows[i]
 
-        # Cost
         cost = getcost(flow)
-        if isconstant(cost)
-            paramvalue = getparamvalue(cost, dummytime, dummydelta)
+        if !isconstant(cost)
             for t in 1:T
-                var.mcs[t,i] = paramvalue::Float64 # pq not supported
-            end
-        else
-            for t in 1:T
-                var.mcs[t,i] = getparamvalue(cost, querystarts[t], querydeltas[t])::Float64 # pq not supported
+                if mustupdate(horizon, t)
+                    var.mcs[t,i] = getparamvalue(cost, querystarts[t], querydeltas[t])::Float64 # pq not supported
+                end
             end
         end   
 
-        # Lower bound
         lb = getlb(flow)
-        if isconstant(lb) && !isdurational(lb)
-            # Why? SequentialHorizon can have two or more sets of (nperiods, duration) pairs
-            paramvalue = getparamvalue(lb, dummytime, dummydelta)
+        if !isconstant(lb) || isdurational(lb)
             for t in 1:T
-                var.lbs[t,i] = paramvalue::Float64
-            end
-        else
-            for t in 1:T
-                var.lbs[t,i] = getparamvalue(lb, querystarts[t], querydeltas[t])::Float64
+                if mustupdate(horizon, t)
+                    var.lbs[t,i] = getparamvalue(lb, querystarts[t], querydeltas[t])::Float64
+                end
             end
         end
 
-        # Upper bound
         ub = getub(flow)
-        if isconstant(ub) && !isdurational(ub)
-            paramvalue = getparamvalue(ub, dummytime, dummydelta)
+        if !isconstant(ub) || isdurational(ub)
             for t in 1:T
-                var.ubs[t,i] = paramvalue::Float64
-            end
-        else
-            for t in 1:T
-                var.ubs[t,i] = getparamvalue(ub, querystarts[t], querydeltas[t])::Float64
+                if mustupdate(horizon, t)
+                    var.ubs[t,i] = getparamvalue(ub, querystarts[t], querydeltas[t])::Float64
+                end
             end
         end
     end
-    
-    # Constant seed for reproducability of clustering
-    Random.seed!(1000)
 
     # For each timeperiod cluster flows by costs
     for t in 1:T
-        r = kmeans(reshape(var.mcs[t,:],1,numflows), var.numclusters)
-        assignments = r.assignments
+        (future_t, ok) = mayshiftfrom(horizon, t)
+        if ok
+            for assignment in 1:var.numclusters
+                newname = string(varname,"_",assignment)
+                newid = Id(AGGSUPPLYCURVE_CONCEPT, newname)
 
-        # For each cluster aggregate costs and upper/lower bounds
-        for assignment in 1:var.numclusters
-            mc = float(0)
-            lb = float(0)
-            ub = float(0)
-            for j in 1:numflows
-                if assignments[j] == assignment
-                    mc += var.mcs[t,j]*(var.ubs[t,j]-var.lbs[t,j])
-                    lb += var.lbs[t,j]
-                    ub += var.ubs[t,j]
+                value = getobjcoeff(p, newid, future_t)
+                setobjcoeff!(p, newid, t, value)
+
+                value = getlb(p, newid, future_t)
+                setlb!(p, newid, t, value)
+
+                value = getub(p, newid, future_t)
+                setub!(p, newid, t, value)
+            end
+        end
+    end
+
+    # Constant seed for reproducability of clustering
+    Random.seed!(1000)
+
+    for t in 1:T
+        if mustupdate(horizon, t)
+            r = kmeans(reshape(var.mcs[t,:],1,numflows), var.numclusters)
+            assignments = r.assignments
+
+            # For each cluster aggregate costs and upper/lower bounds
+            for assignment in 1:var.numclusters
+                mc = float(0)
+                lb = float(0)
+                ub = float(0)
+                for j in 1:numflows
+                    if assignments[j] == assignment
+                        mc += var.mcs[t,j]*(var.ubs[t,j]-var.lbs[t,j])
+                        lb += var.lbs[t,j]
+                        ub += var.ubs[t,j]
+                    end
                 end
+
+                if ub == 0 # TODO: More robust. Checks
+                    mc = 100000
+                else
+                    mc /= (ub - lb)
+                end
+
+                newname = string(varname,"_",assignment)
+                newid = Id(AGGSUPPLYCURVE_CONCEPT, newname)
+
+                # Set costs and upper/lower bounds for timeperiod and cluster
+                setobjcoeff!(p, newid, t, float(mc))
+                setlb!(p, newid, t, float(lb))
+                setub!(p, newid, t, float(ub))
             end
-
-            if ub == 0 # TODO: More robust. Checks
-                mc = 100000
-            else
-                mc /= (ub - lb)
-            end
-
-            newname = string(varname,"_",assignment)
-            newid = Id(AGGSUPPLYCURVE_CONCEPT, newname)
-
-            # Set costs and upper/lower bounds for timeperiod and cluster
-            setobjcoeff!(p, newid, t, float(mc))
-            setlb!(p, newid, t, float(lb))
-            setub!(p, newid, t, float(ub))
         end
     end
 end

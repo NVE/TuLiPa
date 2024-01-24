@@ -521,7 +521,7 @@ build!(h::AdaptiveHorizon, handler::AdaptiveHorizonShifter, p::Prob) = build!(h,
 mayshiftfrom(h::SequentialHorizon, handler::SequentialHorizonShrinker, t::Int) = _common_mayshiftfrom(h, handler.shrinker, t)
 mayshiftfrom(h::SequentialHorizon, handler::SequentialHorizonShifter, t::Int) = _common_mayshiftfrom(h, handler.shifter, t)
 mayshiftfrom(h::AdaptiveHorizon, handler::AdaptiveHorizonShrinker, t::Int) = _common_mayshiftfrom(h, handler.shrinker, t)
-mayshiftfrom(h::AdaptiveHorizon, handler::AdaptiveHorizonShifter, t::Int) = _common_mayshiftfrom(h, handler.shrinker, t)
+mayshiftfrom(h::AdaptiveHorizon, handler::AdaptiveHorizonShifter, t::Int) = _common_mayshiftfrom(h, handler.shifter, t)
 
 function _common_mayshiftfrom(h::SequentialHorizon, shrinker_shifter, t)
     v = shrinker_shifter.updates_shift[t]
@@ -540,11 +540,11 @@ end
 
 mustupdate(h::SequentialHorizon, handler::SequentialHorizonShrinker, t::Int) = _common_mustupdate(h, handler.shrinker, t)
 mustupdate(h::SequentialHorizon, handler::SequentialHorizonShifter, t::Int) = _common_mustupdate(h, handler.shifter, t)
-mustupdate(h::AdaptiveHorizon, handler::AdaptiveHorizonShrinker, t::Int) = _common_mustupdate(h, handler.shifter, t)
+mustupdate(h::AdaptiveHorizon, handler::AdaptiveHorizonShrinker, t::Int) = _common_mustupdate(h, handler.shrinker, t)
 mustupdate(h::AdaptiveHorizon, handler::AdaptiveHorizonShifter, t::Int) = _common_mustupdate(h, handler.shifter, t)
 
 _common_mustupdate(h::SequentialHorizon, shrinker_shifter, t) = shrinker_shifter.updates_must[t]
-_common_mustupdate(h::AdaptiveHorizon, shrinker_shifter, t) = shrinker_shifter.updates_must[(t-1) * h.num_block + 1]
+_common_mustupdate(h::AdaptiveHorizon, shrinker_shifter, t) = shrinker_shifter.updates_must[div(t-1, h.num_block) + 1]
 
 function update!(h::SequentialHorizon, handler::SequentialHorizonShrinker, start::ProbTime)
     __ = _common_update_shrinkable!(h, handler, h.periods, start)
@@ -644,6 +644,7 @@ function _common_update_shiftable!(h, handler, start::ProbTime)
     
     if s.prev_start === nothing
         s.prev_start = start
+        update!(h, start)
         return
     end
 
