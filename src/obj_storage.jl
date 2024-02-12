@@ -149,7 +149,6 @@ function assemble!(var::BaseStorage)::Bool
     
     horizon = gethorizon(balance)
     T = getnumperiods(horizon)
-    (T < 2) && error("Storage balance must have at least 2 periods in horizon for $id")
 
     if length(var.costs) > 0
         var.sumcost = SumCost(var.costs)
