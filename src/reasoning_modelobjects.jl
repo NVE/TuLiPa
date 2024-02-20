@@ -508,9 +508,9 @@ function replacebalance!(x::BaseFlow, coupling, modelobjects)
                 addrhsterm!(getbalance(arrow), rhsterm)
             end
         end
-        delete!(modelobjects, getid(x))
+        pop!(modelobjects, getid(x))
         for minor in mainmodelobjects[x]
-            delete!(modelobjects, getid(minor))
+            pop!(modelobjects, getid(minor))
         end
     elseif length(replacer) > 0
         assemble!(x) # needed? commodity/horizon should not be updated
@@ -528,7 +528,7 @@ function aggzone!(modelobjects, aggzonedict)
             for rhsterm in getrhsterms(oldbalance)
                 addrhsterm!(newbalance,rhsterm)
             end
-            delete!(modelobjects,getid(oldbalance))
+            pop!(modelobjects,getid(oldbalance))
         end    
 
         assemble!(newbalance)
