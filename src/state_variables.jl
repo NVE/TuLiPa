@@ -74,15 +74,3 @@ function setoutgoingstates!(p::Prob, states::Dict{StateVariableInfo, Float64})
     return
 end
 
-function getcutparameters(p::Prob, states::Dict{StateVariableInfo, Float64})
-    constant = getobjectivevalue(p)
-    slopes = Dict{StateVariableInfo, Float64}()
-    for (var, state) in states
-        (id, ix) = getvarin(var)
-        slope = getfixvardual(p, id, ix)
-        constant -= slope * state
-        slopes[var] = slope
-    end
-    return (constant, slopes)
-end
-

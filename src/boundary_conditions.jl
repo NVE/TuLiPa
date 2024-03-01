@@ -260,9 +260,12 @@ end
 mutable struct SimpleSingleCuts <: BoundaryCondition
     id::Id
     objects::Vector{Any}
+    statevars::Vector{StateVariableInfo}
     probabilities::Vector{Float64}
     constants::Vector{Float64}
-    slopes::Vector{Dict{StateVariableInfo, Float64}}
+    scenconstants::Array{Float64}
+    slopes::Array{Float64}
+    scenslopes::Array{Float64}
     maxcuts::Int
     numcuts::Int
     cutix::Int
@@ -275,33 +278,30 @@ mutable struct SimpleSingleCuts <: BoundaryCondition
         for object in objects
             @assert length(getstatevariables(object)) > 0 
         end
-        @assert length(probabilities) > 0
+        numscen = length(probabilities)
+        @assert numscen > 0
         @assert sum(probabilities) ≈ 1.0
         for probability in probabilities
             @assert probability >= 0.0
         end
         
         # allocate internal storage
+        statevars = [var for obj in objects for var in getstatevariables(obj)]
+
         constants = Float64[-Inf for __ in 1:maxcuts]
-        slopes = Vector{Dict{StateVariableInfo, Float64}}(undef, maxcuts)
-        for i in 1:maxcuts
-            d = Dict{StateVariableInfo, Float64}()
-            for object in objects
-                for var in getstatevariables(object)
-                    d[var] = 0.0
-                end
-            end
-            slopes[i] = d
-        end       
+        scenconstants = fill(-Inf, numscen, maxcuts)
+
+        slopes = zeros(Float64, maxcuts, length(statevars))
+        scenslopes = zeros(Float64, numscen, maxcuts, length(statevars))   
 
         # set initial counters
         numcuts = 0
         cutix = 0
 
-        return new(id, objects, probabilities, constants, slopes, maxcuts, numcuts, cutix, lower_bound)
+        return new(id, objects, statevars, probabilities, constants, scenconstants, slopes, scenslopes, maxcuts, numcuts, cutix, lower_bound)
     end
     function SimpleSingleCuts()
-        return new(Id("Empty","Empty"), [], [], [], [], 0, 0, 0, 0.0)
+        return new(Id("Empty","Empty"), [], [], [], [], [], [], [], 0, 0, 0, 0.0)
     end
 end
 
@@ -316,7 +316,9 @@ setcutix!(x::SimpleSingleCuts, i::Int) = x.cutix = i
 getobjects(x::SimpleSingleCuts) = x.objects
 getprobabilities(x::SimpleSingleCuts) = x.probabilities
 getconstants(x::SimpleSingleCuts) = x.constants
+getscenconstants(x::SimpleSingleCuts) = x.scenconstants
 getslopes(x::SimpleSingleCuts) = x.slopes
+getscenslopes(x::SimpleSingleCuts) = x.scenslopes
 getmaxcuts(x::SimpleSingleCuts) = x.maxcuts
 getnumcuts(x::SimpleSingleCuts) = x.numcuts
 getcutix(x::SimpleSingleCuts) = x.cutix
@@ -357,11 +359,9 @@ function setconstants!(p::Prob, x::SimpleSingleCuts)
         setrhsterm!(p, getcutconid(x), getcutconstantid(x), cutix, x.lower_bound)
 
         # inactivate cut slopes
-        for object in getobjects(x)
-            for statevar in getstatevariables(object)
-                (varid, varix) = getvarout(statevar)
-                setconcoeff!(p, getcutconid(x), varid, cutix, varix, 0.0)
-            end
+        for statevar in x.statevars
+            (varid, varix) = getvarout(statevar)
+            setconcoeff!(p, getcutconid(x), varid, cutix, varix, 0.0)
         end
     end
     return
@@ -380,11 +380,9 @@ function setconstants!(p::Prob, x::SimpleSingleCuts, varendperiod::Dict)
         setrhsterm!(p, getcutconid(x), getcutconstantid(x), cutix, x.lower_bound)
 
         # inactivate cut slopes
-        for object in getobjects(x)
-            for statevar in getstatevariables(object)
-                (varid, varix) = getvarout(statevar)
-                setconcoeff!(p, getcutconid(x), varid, cutix, varendperiod[varid], 0.0)
-            end
+        for statevar in x.statevars
+            (varid, varix) = getvarout(statevar)
+            setconcoeff!(p, getcutconid(x), varid, cutix, varendperiod[varid], 0.0)
         end
     end
     return
@@ -392,18 +390,27 @@ end
 
 update!(::Prob, ::SimpleSingleCuts, ::ProbTime) = nothing
 
-function _set_values_to_zero!(d::Dict)
-    for (k, v) in d
-        d[k] = zero(typeof(v))
+# Updates scenariocutparameters for new cut
+function getscencutparameters!(p::Prob, x::SimpleSingleCuts, states::Dict{StateVariableInfo, Float64}, scenario::Int64)
+    cutix = getcutix(x) + 1
+    if cutix > getmaxcuts(x)
+        cutix = 1
     end
-    return nothing
+
+    constant = getobjectivevalue(p)
+    
+    for (i, statevar) in enumerate(x.statevars)
+        (id, ix) = getvarin(statevar)
+        slope = getfixvardual(p, id, ix)
+        constant -= slope * states[statevar]
+        x.scenslopes[scenario, cutix, i] = getfixvardual(p, id, ix)
+    end
+    x.scenconstants[scenario, cutix] = constant
 end
 
-function updatecuts!(p::Prob, x::SimpleSingleCuts, 
-                     scenarioparameters::Vector{Tuple{Float64, Dict{StateVariableInfo, Float64}}})
-    @assert length(scenarioparameters) == length(x.probabilities)
-    
-    # update cutix
+# Updates cutparameters for new cut
+function updatecutparameters!(p::Prob, x::SimpleSingleCuts)
+    # get cutix    
     cutix = getcutix(x) + 1
     if cutix > getmaxcuts(x)
         cutix = 1
@@ -420,31 +427,20 @@ function updatecuts!(p::Prob, x::SimpleSingleCuts,
     avgslopes = getslopes(x)
 
     # calculate average cut parameters
-    avgconstant = 0.0
-    avgslope = avgslopes[cutix]
-    _set_values_to_zero!(avgslope)
+    avgconstants[cutix] = 0.0
+    avgslopes[cutix, :] .= 0.0
+
     for (i, probability) in enumerate(getprobabilities(x))
-        (constant, slopes) = scenarioparameters[i]
-        avgconstant += constant * probability
-        for (var, value) in slopes
-            avgslope[var] += value * probability
+        avgconstants[cutix] += x.scenconstants[i, cutix] * probability
+        for (j, statevar) in enumerate(x.statevars)
+            avgslopes[cutix, j] += x.scenslopes[i, cutix, j] * probability
         end
-    end
-
-    # store updated cut internally
-    avgconstants[cutix] = avgconstant
-    avgslopes[cutix] = avgslope
-
-    # set the newly updated cut in the problem
-    setrhsterm!(p, getcutconid(x), getcutconstantid(x), cutix, avgconstant)
-    for (var, slope) in avgslope
-        (varid, varix) = getvarout(var)
-        setconcoeff!(p, getcutconid(x), varid, cutix, varix, -slope)
     end
 
     return
 end
 
+# Updates all cuts in problem
 function updatecuts!(p::Prob, x::SimpleSingleCuts)
     # get internal storage for cut parameters
     avgconstants = getconstants(x)
@@ -453,27 +449,26 @@ function updatecuts!(p::Prob, x::SimpleSingleCuts)
     # update cuts in problem
     for cutix in eachindex(avgconstants)
         setrhsterm!(p, getcutconid(x), getcutconstantid(x), cutix, avgconstants[cutix])
-        for (var, slope) in avgslopes[cutix]
-            (varid, varix) = getvarout(var)
-            setconcoeff!(p, getcutconid(x), varid, cutix, varix, -slope)
+        for (j, statevar) in enumerate(x.statevars)
+            (varid, varix) = getvarout(statevar)
+            setconcoeff!(p, getcutconid(x), varid, cutix, varix, -avgslopes[cutix, j])
         end
     end
     return
 end
 
-# Variation where a cut from another problem is used (different state variables due to different time resolutions)
-function updatecuts!(p::Prob, x::SimpleSingleCuts, varendperiod::Dict)
+# Updates last cut in problem
+function updatelastcut!(p::Prob, x::SimpleSingleCuts)
     # get internal storage for cut parameters
     avgconstants = getconstants(x)
     avgslopes = getslopes(x)
 
-    # update cuts in problem
-    for cutix in eachindex(avgconstants)
-        setrhsterm!(p, getcutconid(x), getcutconstantid(x), cutix, avgconstants[cutix])
-        for (var, slope) in avgslopes[cutix]
-            (varid, varix) = getvarout(var)
-            setconcoeff!(p, getcutconid(x), varid, cutix, varendperiod[varid], -slope)
-        end
+    # update last cut in problem
+    cutix = getcutix(x)
+    setrhsterm!(p, getcutconid(x), getcutconstantid(x), cutix, avgconstants[cutix])
+    for (j, statevar) in enumerate(x.statevars)
+        (varid, varix) = getvarout(statevar)
+        setconcoeff!(p, getcutconid(x), varid, cutix, varix, -avgslopes[cutix, j])
     end
     return
 end
@@ -485,9 +480,9 @@ function clearcuts!(p::Prob, x::SimpleSingleCuts)
     
     # inactivate cut parameters in internal storage
     fill!(avgconstants, x.lower_bound)
-    for slopes in avgslopes
-        _set_values_to_zero!(slopes)
-    end
+    fill!(x.scenconstants, x.lower_bound)
+    fill!(avgslopes, 0.0)
+    fill!(x.scenslopes, 0.0)
 
     # set counters to 0
     setnumcuts!(x, 0)
@@ -496,9 +491,9 @@ function clearcuts!(p::Prob, x::SimpleSingleCuts)
     # inactivate cuts in problem
     for cutix in eachindex(avgconstants)
         setrhsterm!(p, getcutconid(x), getcutconstantid(x), cutix, avgconstants[cutix])
-        for (var, slope) in avgslopes[cutix]
-            (varid, varix) = getvarout(var)
-            setconcoeff!(p, getcutconid(x), varid, cutix, varix, -slope)
+        for (j, statevar) in enumerate(x.statevars)
+            (varid, varix) = getvarout(statevar)
+            setconcoeff!(p, getcutconid(x), varid, cutix, varix, -avgslopes[cutix, j])
         end
     end
     return
