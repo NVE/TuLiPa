@@ -403,7 +403,7 @@ function getscencutparameters!(p::Prob, x::SimpleSingleCuts, states::Dict{StateV
         (id, ix) = getvarin(statevar)
         slope = getfixvardual(p, id, ix)
         constant -= slope * states[statevar]
-        x.scenslopes[scenario, cutix, i] = getfixvardual(p, id, ix)
+        x.scenslopes[scenario, cutix, i] = slope
     end
     x.scenconstants[scenario, cutix] = constant
 end
