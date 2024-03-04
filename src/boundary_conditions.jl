@@ -457,6 +457,23 @@ function updatecuts!(p::Prob, x::SimpleSingleCuts)
     return
 end
 
+# Variation where a cut from another problem is used (different state variables due to different time resolutions)
+function updatecuts!(p::Prob, x::SimpleSingleCuts, varendperiod::Dict)
+    # get internal storage for cut parameters
+    avgconstants = getconstants(x)
+    avgslopes = getslopes(x)
+
+    # update cuts in problem
+    for cutix in eachindex(avgconstants)
+        setrhsterm!(p, getcutconid(x), getcutconstantid(x), cutix, avgconstants[cutix])
+        for (j, statevar) in enumerate(x.statevars)
+            (varid, varix) = getvarout(statevar)
+            setconcoeff!(p, getcutconid(x), varid, cutix, varendperiod[varid], -avgslopes[cutix, j])
+        end
+    end
+    return
+end
+
 # Updates last cut in problem
 function updatelastcut!(p::Prob, x::SimpleSingleCuts)
     # get internal storage for cut parameters
