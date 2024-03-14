@@ -74,7 +74,7 @@ TODO: Better error messages
 TODO: This description is messy?
 """
 
-const INCLUDEELEMENT = Dict()
+const INCLUDEELEMENT = Dict{TypeKey, Function}()
 
 # Limit error output
 const MAXPRINTERRORS = 10000
