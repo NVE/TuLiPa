@@ -15,7 +15,38 @@ validate that all the inputs behave as expected) and put into toplevel, lowlevel
 inside one of toplevel/lowlevel.
 Naming convention: All functions named include + OBJECTNAME + !
     (see for example includePositiveCapacity! in trait_capacity.jl) 
-Function signature: f(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value)::Bool
+
+Function signature: 
+
+    (ok, needed_objkeys) = f(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value)
+    
+    where ok::Bool if true if the object was successfully included, false otherwise, and
+    needed_objkeys is a Vector{Id} containing all objects that the function need in order
+    to successfully execute. 
+    
+    needed_objkeys was added because we needed it for two things: 
+        1. To add this behaviour to the  getmodelobjects
+           (objects, dependencies) = getmodelobjects(data_elements, return_dependencies=true)
+           which enables us to find all data elements that belongs to a subset of
+           objects. We needed this to minimize data transfers to cores in JulES.
+
+        2. To add better error messages in getmodelobjects. When getmodelobjects fails
+           to compile all data elements into model objects, we can use needed_objkeys to 
+           figure out why a data element failed. This will in turn enable us to find
+           root causes, e.g. if one missing object causes several layers of failures
+           because many objects depend on it, and other objects depend on the objects that 
+           depend on it, and do on. In such case we can give a good error message informing
+           only about the root cause. This is much better than the old verson, which just
+           listed all objects that failed, even though most of them failed because of the
+           same (root cause) object. This left it to the user to figure out the root cause,
+           which is very time consuming. 
+           
+           Note that for this to work correctly, the INCLUDEELEMENT-functions 
+           must always return all its dependencies. Furthermore, 
+           the INCLUDEELEMENT-functions must return ok=false only when one or 
+           more dependencies are missing. Other types of failures 
+           (such as validation failures) should throw errors.
+
 
 getmodelobjects() consist of 3 elements:
 
