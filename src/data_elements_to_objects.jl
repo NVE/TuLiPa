@@ -80,11 +80,15 @@ INCLUDEELEMENT = Dict()
 MAXPRINTERRORS = 10000
 
 # TODO: remove kwarg validate::Bool=true ? INCLUDEELEMENT-function always do validation. Can do advanced validation on modelobjects, but this is hard and not top priority.
-function getmodelobjects(elements::Vector{DataElement}; validate::Bool=true, deps=false)
+function getmodelobjects(elements::Vector{DataElement}; validate::Bool=true, deps::Bool=false)
     check_duplicates(elements)
-    modelobjects = include_all_elements(elements)
+    (modelobjects, dependencies) = include_all_elements(elements)
     assemble!(modelobjects)
-    return modelobjects
+    if deps
+        return (modelobjects, dependencies)
+    else
+        return modelobjects
+    end
 end
 
 function check_duplicates(elements::Vector{DataElement})
@@ -110,13 +114,14 @@ function include_all_elements(elements)
     toplevel = Dict()
     lowlevel = Dict()
     completed = Set()
+    dependencies = Dict()
 
     numelements = length(elements)
 
     while true
         numbefore = length(completed)
 
-        include_some_elements!(completed, toplevel, lowlevel, elements)
+        include_some_elements!(completed, dependencies, toplevel, lowlevel, elements)
 
         numafter = length(completed)
         
@@ -124,13 +129,14 @@ function include_all_elements(elements)
             return toplevel
             
         elseif numbefore == numafter
+            # TODO: use dependencies
             msg = build_error_message(completed, toplevel, lowlevel, elements)
             error(msg)
         end
     end    
 end
 
-function include_some_elements!(completed, toplevel, lowlevel, elements)
+function include_some_elements!(completed, dependencies, toplevel, lowlevel, elements)
     INCLUDEELEMENT::Dict
 
     for element in elements
@@ -148,7 +154,11 @@ function include_some_elements!(completed, toplevel, lowlevel, elements)
 
             elvalue = getelvalue(element)
 
-            ok = func(toplevel, lowlevel, elkey, elvalue)
+            (ok, needed_objkeys) = func(toplevel, lowlevel, elkey, elvalue)
+
+            if !haskey(dependencies, elkey)
+                dependencies[elkey] = needed_objkeys
+            end
 
             ok && push!(completed, elkey)
         end
