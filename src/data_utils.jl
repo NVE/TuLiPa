@@ -109,4 +109,4 @@ end
 
 getdictpricevalue(::Dict, ::ElementKey, value::AbstractFloat) = (nothing, BasePrice(ConstantParam(value)), true)
 getdictpricevalue(::Dict, ::ElementKey, value::Param) = (nothing, BasePrice(value), true)
-getdictpricevalue(::Dict, ::ElementKey, value::Price) = (nothing, nothingvalue, true)
+getdictpricevalue(::Dict, ::ElementKey, value::Price) = (nothing, value, true)
