@@ -92,8 +92,8 @@ function getmodelobjects(elements::Vector{DataElement}; validate::Bool=true, dep
 end
 
 function check_duplicates(elements::Vector{DataElement})
-    seen = Set{DataElement}()
-    dups = Set{DataElement}()
+    seen = Set{ElementKey}()
+    dups = Set{ElementKey}()
 
     for element in elements
         k = getelkey(element)
