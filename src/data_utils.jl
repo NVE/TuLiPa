@@ -54,12 +54,12 @@ end
 
 function getdictparamvalue(lowlevel::Dict, ::ElementKey, value::String, paramname=PARAM_CONCEPT)
     objkey = Id(paramname, value)
-    haskey(lowlevel, objkey) && return (lowlevel[objkey], true)
-    return (value, false)
+    haskey(lowlevel, objkey) && return (objkey, lowlevel[objkey], true)
+    return (objkey, value, false)
 end
 
-getdictparamvalue(::Dict, ::ElementKey, value::AbstractFloat, paramname=PARAM_CONCEPT) = (ConstantParam(value), true)
-getdictparamvalue(::Dict, ::ElementKey, value::Param, paramname=PARAM_CONCEPT) = (value, true)
+getdictparamvalue(::Dict, ::ElementKey, value::AbstractFloat, paramname=PARAM_CONCEPT) = (nothing, ConstantParam(value), true)
+getdictparamvalue(::Dict, ::ElementKey, value::Param, paramname=PARAM_CONCEPT) = (nothing, value, true)
 
 # Parse ParamList
 function getdictparamlist(lowlevel::Dict, elkey::ElementKey, value::Dict, paramname=PARAM_CONCEPT)
@@ -67,8 +67,8 @@ function getdictparamlist(lowlevel::Dict, elkey::ElementKey, value::Dict, paramn
     paramlist = [getdictparamvalue(lowlevel, elkey, listvalue) for listvalue in value[paramname]]
     paramvaluelist = [first(param) for param in paramlist]
     parambool = [bool for (param,bool) in paramlist]
-    all(y->y==true,parambool) || return (paramvaluelist,false)
-    return (paramvaluelist,true)
+    all(y->y==true,parambool) || return (paramvaluelist, false)
+    return (paramvaluelist, true)
 end
 
 # Parse Conversion
