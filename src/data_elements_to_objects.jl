@@ -126,7 +126,7 @@ function include_all_elements(elements)
         numafter = length(completed)
         
         if numafter == numelements
-            return toplevel
+            return (toplevel, dependencies)
             
         elseif numbefore == numafter
             # TODO: use dependencies
