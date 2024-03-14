@@ -74,10 +74,10 @@ TODO: Better error messages
 TODO: This description is messy?
 """
 
-INCLUDEELEMENT = Dict()
+const INCLUDEELEMENT = Dict()
 
 # Limit error output
-MAXPRINTERRORS = 10000
+const MAXPRINTERRORS = 10000
 
 # TODO: remove kwarg validate::Bool=true ? INCLUDEELEMENT-function always do validation. Can do advanced validation on modelobjects, but this is hard and not top priority.
 function getmodelobjects(elements::Vector{DataElement}; validate::Bool=true, deps::Bool=false)
