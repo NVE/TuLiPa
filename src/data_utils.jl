@@ -38,12 +38,12 @@ end
 const  TIMEVECTORPARSETYPES = Union{AbstractFloat, String, TimeVector}
 function getdicttimevectorvalue(lowlevel::Dict, value::String)
     objkey = Id(TIMEVECTOR_CONCEPT, value)
-    haskey(lowlevel, objkey) && return (lowlevel[objkey], true)
-    return (value, false)
+    haskey(lowlevel, objkey) && return (objkey, lowlevel[objkey], true)
+    return (objkey, value, false)
 end
 
-getdicttimevectorvalue(::Dict, value::AbstractFloat) = (ConstantTimeVector(value), true)
-getdicttimevectorvalue(::Dict, value::TimeVector) = (value, true)
+getdicttimevectorvalue(::Dict, value::AbstractFloat) = (nothing, ConstantTimeVector(value), true)
+getdicttimevectorvalue(::Dict, value::TimeVector) = (nothing, value, true)
 
 # Parse Param
 const  PARAMPARSETYPES = Union{AbstractFloat, String, Param}

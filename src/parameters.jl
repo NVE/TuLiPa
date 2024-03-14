@@ -569,6 +569,14 @@ function getparamvalue(param::MWToGWhParam, start::ProbTime, d::TimeDelta)
     return mw * hours / 1e3
 end
 
+function _update_deps(deps, id, ok)
+    if id === nothing
+        @assert ok
+    else
+        push!(deps, id)
+    end
+end
+
 # ------ Include dataelements -------
 function includeFossilMCParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
@@ -581,24 +589,54 @@ function includeFossilMCParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value:
     efficiency  = getdictvalue(value, "Efficiency",  TIMEVECTORPARSETYPES, elkey)
     voc         = getdictvalue(value, "VOC",         TIMEVECTORPARSETYPES, elkey)
     
-    (fuellevel,   ok) = getdicttimevectorvalue(lowlevel, fuellevel)   ;  ok || return false
-    (fuelprofile, ok) = getdicttimevectorvalue(lowlevel, fuelprofile) ;  ok || return false
-    (co2factor,   ok) = getdicttimevectorvalue(lowlevel, co2factor)   ;  ok || return false
-    (co2level,    ok) = getdicttimevectorvalue(lowlevel, co2level)    ;  ok || return false
-    (co2profile,  ok) = getdicttimevectorvalue(lowlevel, co2profile)  ;  ok || return false
-    (efficiency,  ok) = getdicttimevectorvalue(lowlevel, efficiency)  ;  ok || return false
-    (voc,         ok) = getdicttimevectorvalue(lowlevel, voc)         ;  ok || return false
+    deps = Id[]
+    all_ok = true
+    
+    (id, fuellevel, ok) = getdicttimevectorvalue(lowlevel, fuellevel)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    (id, fuelprofile, ok) = getdicttimevectorvalue(lowlevel, fuelprofile) 
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+    
+    (id, co2factor, ok) = getdicttimevectorvalue(lowlevel, co2factor)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    (id, co2level, ok) = getdicttimevectorvalue(lowlevel, co2level)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    (id, co2profile, ok) = getdicttimevectorvalue(lowlevel, co2profile)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+    
+    (id, efficiency, ok) = getdicttimevectorvalue(lowlevel, efficiency)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    (id, voc, ok) = getdicttimevectorvalue(lowlevel, voc)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    if all_ok == false
+        return (false, deps)
+    end
     
     obj = FossilMCParam(fuellevel, fuelprofile, co2factor, co2level, co2profile, efficiency, voc)
     
     lowlevel[getobjkey(elkey)] = obj
-    return true
+    return (true, deps)
 end
 
 function includeM3SToMM3Param!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
 
-    (param, ok) = getdictparamvalue(lowlevel, elkey, value)   ;  ok || return false
+    (param, ok) = getdictparamvalue(lowlevel, elkey, value)
+    
+    ok || return false
+    
     lowlevel[getobjkey(elkey)] = M3SToMM3Param(param)
 
     return true
