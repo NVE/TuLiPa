@@ -92,22 +92,21 @@ function getmodelobjects(elements::Vector{DataElement}; validate::Bool=true, dep
     return modelobjects
 end
 
-function check_duplicates(elements)
-    function nonunique(v)
-        seen = Dict{eltype(v), Ref{Int}}()
-        [x for x in v if 2 == (get!(()->Ref(0), seen, x)[]+=1)]
-    end
-    
-    all = Vector()
+function check_duplicates(elements::Vector{DataElement})
+    seen = Set{DataElement}()
+    dups = Set{DataElement}()
 
     for element in elements
-        elkey = getelkey(element)
-        push!(all,elkey)
+        k = getelkey(element)
+        if k in seen
+            push!(seen, k)
+        else
+            push!(dups, k)
+        end
     end
 
-    duplicates = nonunique(all)
-    if length(duplicates) > 0
-        display(duplicates)
+    if length(dups) > 0
+        display(dups)
         error("Duplicated elkeys")
     end
 end
