@@ -1,5 +1,5 @@
 """
-Here we define the getmodelobjects() function, which compiles data elements into model objects.
+Here we define the getmodelobjects function, which compiles data elements into model objects.
 The parts and steps are describe below:
 
 DataElements: see data_types.jl
@@ -13,6 +13,7 @@ When including an element, first we check if all the dependencies of the data el
 created (in toplevel or lowlevel). If that is the case, the object will be built (also important to 
 validate that all the inputs behave as expected) and put into toplevel, lowlevel or other objects 
 inside one of toplevel/lowlevel.
+
 Naming convention: All functions named include + OBJECTNAME + !
     (see for example includePositiveCapacity! in trait_capacity.jl) 
 
@@ -20,11 +21,11 @@ Function signature:
 
     (ok, needed_objkeys) = f(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value)
     
-    where ok::Bool if true if the object was successfully included, false otherwise, and
-    needed_objkeys is a Vector{Id} containing all objects that the function need in order
-    to successfully execute. 
+    where ok::Bool if true if the object was successfully included, and false if one or more 
+    dependencies are missing (throw error for other types of failure, such as validation failures)
     
-    needed_objkeys was added because we needed it for two things: 
+    needed_objkeys is a Vector{Id} containing all objects that the function needs in order
+    to successfully execute, and was added because we needed it for two things: 
         1. To add this behaviour to the  getmodelobjects
            (objects, dependencies) = getmodelobjects(data_elements, return_dependencies=true)
            which enables us to find all data elements that belongs to a subset of
@@ -35,7 +36,7 @@ Function signature:
            figure out why a data element failed. This will in turn enable us to find
            root causes, e.g. if one missing object causes several layers of failures
            because many objects depend on it, and other objects depend on the objects that 
-           depend on it, and do on. In such case we can give a good error message informing
+           depend on it, and so on. In such case we can give a good error message informing
            only about the root cause. This is much better than the old verson, which just
            listed all objects that failed, even though most of them failed because of the
            same (root cause) object. This left it to the user to figure out the root cause,
