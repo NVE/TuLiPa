@@ -77,10 +77,6 @@ TODO: This description is messy?
 
 INCLUDEELEMENT = Dict()
 
-# TODO: Complete
-# To have better error messages
-ELEMENTFAILED  = Dict()
-
 # Limit error output
 MAXPRINTERRORS = 10000
 
