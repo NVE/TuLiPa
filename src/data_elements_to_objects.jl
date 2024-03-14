@@ -74,14 +74,12 @@ TODO: Better error messages
 TODO: This description is messy?
 """
 
-
 INCLUDEELEMENT = Dict()
 
 # Limit error output
 MAXPRINTERRORS = 10000
 
 function getmodelobjects(elements::Vector{DataElement}; validate::Bool=true, deps=false)
-    validate == true && validate_elements(elements)
     check_duplicates(elements)
     modelobjects = include_all_elements(elements)
     assemble!(modelobjects)
@@ -251,96 +249,5 @@ function assemble!(modelobjects::Dict)
             error("Some objects could not be made")
 
         end
-    end
-end
-
-function elements_to_df(elements)
-    return DataFrame(
-        conceptname=[e.conceptname for e in elements], 
-        typename=[e.typename for e in elements], 
-        instancename=[e.instancename for e in elements], 
-        value = [e.value for e in elements]
-    )
-end
-
-function add_extra_col(df)
-    function add_dict_as_columns(df_input)
-        df_dict = DataFrame()
-        for d in df_input
-            df_dict = vcat(df_dict, DataFrame(d))
-        end
-        return df_dict
-    end
-    df_extra = hcat(df, add_dict_as_columns(df.value))
-    return select!(df_extra, Not(:value))
-end
-
-function check_ref(all_instancenames, type_df, col)
-    # fields that are strings but not reference
-    if (col in ["conceptname", "instancename", 
-                "typename", "Residualhint", 
-                "Name", "Direction", 
-                "WhichConcept", "value_type", 
-                "Bound"])
-        return
-    end
-    reference_does_not_exist = .!in.(type_df[!, col], Ref(all_instancenames))
-    no_refs = type_df[reference_does_not_exist, :]
-    
-    # since instancename is not unique at this point (should be?) 
-    # some dataelements could reference elements with same name
-    # this prevents it to be validated if it references itself
-    no_refs = no_refs[no_refs[!, col] .!= no_refs.instancename, :]
-    
-    if ~isempty(no_refs)
-        return (col, no_refs)
-    end
-    return nothing
-end
-
-function validate_refrences(df)
-    all_instancenames = Set(df.instancename)
-    df = df[typeof.(df.value) .== Dict{Any, Any}, :]
-    df[!, "value"] = _remove_non_string_dict_values.(df.value)
-    df[!, "value_type"] = join.(sort.(collect.((keys.(df.value)))))
-    missing_refs = []
-    for value_type in unique(df.value_type)
-        type_df = add_extra_col(df[df.value_type.==value_type, :])
-        for col in names(type_df)
-            refs = check_ref(all_instancenames, type_df, col)
-            if !isnothing(refs)
-                push!(missing_refs, refs)
-            end
-        end
-    end
-    return missing_refs
-end
-
-function _remove_non_string_dict_values(element_value::Dict)
-    value = copy(element_value)
-    for (key, val) in value
-        if typeof(val) != String
-            delete!(value, key)
-        end
-    end
-    return value
-end
-
-function validate_elements(elements)
-    df = elements_to_df(elements)
-    checks = validate_refrences(df)
-    errors = false
-    for check in checks
-        if size(check[2])[1] == 0
-            continue
-        end
-        for element in eachrow(check[2])
-            println("Missing instancename referenced by $(element["instancename"])($(element["conceptname"]))")
-            println("$(element[check[1]]) was not found in data elements")
-            errors = true
-        end
-    end
-    if errors
-        error("Found data elements problems")
     end
 end
