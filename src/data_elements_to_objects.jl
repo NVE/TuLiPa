@@ -185,6 +185,7 @@ function build_error_message(completed, toplevel, lowlevel, elements)
     return msg
 end
 
+# TODO: remove ELEMENTFAILED
 function add_good_error_messages!(errors, numshow, completed, toplevel, lowlevel, elements)
     ELEMENTFAILED::Dict
 
