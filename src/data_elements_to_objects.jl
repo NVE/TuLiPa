@@ -79,6 +79,7 @@ INCLUDEELEMENT = Dict()
 # Limit error output
 MAXPRINTERRORS = 10000
 
+# TODO: remove kwarg validate::Bool=true ? INCLUDEELEMENT-function always do validation. Can do advanced validation on modelobjects, but this is hard and not top priority.
 function getmodelobjects(elements::Vector{DataElement}; validate::Bool=true, deps=false)
     check_duplicates(elements)
     modelobjects = include_all_elements(elements)
