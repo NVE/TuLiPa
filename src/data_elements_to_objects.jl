@@ -27,7 +27,7 @@ Function signature:
     needed_objkeys is a Vector{Id} containing all objects that the function needs in order
     to successfully execute, and was added because we needed it for two things: 
         1. To add this behaviour to the  getmodelobjects
-           (objects, dependencies) = getmodelobjects(data_elements, return_dependencies=true)
+           (objects, dependencies) = getmodelobjects(data_elements, deps=true)
            which enables us to find all data elements that belongs to a subset of
            objects. We needed this to minimize data transfers to cores in JulES.
 
@@ -84,7 +84,7 @@ ELEMENTFAILED  = Dict()
 # Limit error output
 MAXPRINTERRORS = 10000
 
-function getmodelobjects(elements::Vector{DataElement}; validate::Bool=true)
+function getmodelobjects(elements::Vector{DataElement}; validate::Bool=true, deps=false)
     validate == true && validate_elements(elements)
     check_duplicates(elements)
     modelobjects = include_all_elements(elements)
