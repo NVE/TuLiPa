@@ -39,16 +39,13 @@ struct Id
     instancename::String
 end
 
-# Id functions
 getinstancename(x::Id) = x.instancename
 getconceptname(x::Id) = x.conceptname
 getname(x::Id) = "$(x.conceptname)$(x.instancename)"
 
-# ElementKey functions
 getobjkey(x::ElementKey) = Id(x.conceptname, x.instancename)
 gettypekey(x::ElementKey) = TypeKey(x.conceptname, x.typename)
 
-# Dataelement functions
 getelkey(x::DataElement) = ElementKey(x.conceptname, x.typename, x.instancename)
 getelvalue(x::DataElement) = x.value
 getobjkey(x::DataElement) = Id(x.conceptname, x.instancename)
