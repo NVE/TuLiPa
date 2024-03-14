@@ -144,33 +144,47 @@ end
 # ------ Include dataelements -------
 function includeBaseBalance!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(toplevel, elkey)
-    
+
     commodityname = getdictvalue(value, COMMODITY_CONCEPT, String, elkey)
     commoditykey = Id(COMMODITY_CONCEPT, commodityname)
-    haskey(lowlevel, commoditykey) || return false
+
+    deps = Id[]
+    push!(commoditykey)
+
+    haskey(lowlevel, commoditykey) || return (false, deps)
     
     id = getobjkey(elkey)
     
     toplevel[id] = BaseBalance(id, lowlevel[commoditykey])
     
-    return true    
+    return (true, deps)    
 end
 
 function includeExogenBalance!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(toplevel, elkey)
 
-    (price, ok) = getdictpricevalue(lowlevel, elkey, value)
-    ok || return false
+    deps = Id[]
+
+    (objkey, price, ok) = getdictpricevalue(lowlevel, elkey, value)
+
+    if objkey === nothing
+        @assert ok
+    else
+        push!(deps, objkey)
+    end
+
+    ok || return (false, deps)
     
     commodityname = getdictvalue(value, COMMODITY_CONCEPT, String, elkey)
     commoditykey = Id(COMMODITY_CONCEPT, commodityname)
-    haskey(lowlevel, commoditykey) || return false
+    push!(deps, commoditykey)
+    haskey(lowlevel, commoditykey) || return (false, deps)
     
     id = getobjkey(elkey)
     
     toplevel[id] = ExogenBalance(id, lowlevel[commoditykey], price)
     
-    return true    
+    return (true, deps)    
 end
 
 INCLUDEELEMENT[TypeKey(BALANCE_CONCEPT, "BaseBalance")] = includeBaseBalance!

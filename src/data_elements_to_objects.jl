@@ -1,6 +1,6 @@
 """
 Here we define the getmodelobjects function, which compiles data elements into model objects.
-The parts and steps are describe below:
+The parts and steps are described below:
 
 DataElements: see data_types.jl
 

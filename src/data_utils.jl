@@ -95,18 +95,18 @@ getdictconversionvalue(::Dict, ::ElementKey, value::Conversion) = (value, true)
 # If price is a constant or param it should be converted to BasePrice
 function getdictpricevalue(lowlevel::Dict, elkey::ElementKey, value::Dict)
     haskey(value, PRICE_CONCEPT) || error("Missing $PRICE_CONCEPT for $elkey")
-    price = getdictpricevalue(lowlevel, elkey, value[PRICE_CONCEPT])
-    return price
+    (id, obj, ok) = getdictpricevalue(lowlevel, elkey, value[PRICE_CONCEPT])
+    return (id, obj, ok)
 end
 
 function getdictpricevalue(lowlevel::Dict, elkey::ElementKey, value::String)
     objkey = Id(PRICE_CONCEPT, value)
-    haskey(lowlevel, objkey) && return (lowlevel[objkey], true)
+    haskey(lowlevel, objkey) && return (objkey, lowlevel[objkey], true)
     objkey = Id(PARAM_CONCEPT, value)
-    haskey(lowlevel, objkey) && return (BasePrice(lowlevel[objkey]), true)
-    return (value, false)
+    haskey(lowlevel, objkey) && return (objkey, BasePrice(lowlevel[objkey]), true)
+    return (nothing, value, false)
 end
 
-getdictpricevalue(::Dict, ::ElementKey, value::AbstractFloat) = (BasePrice(ConstantParam(value)), true)
-getdictpricevalue(::Dict, ::ElementKey, value::Param) = (BasePrice(value), true)
-getdictpricevalue(::Dict, ::ElementKey, value::Price) = (value, true)
+getdictpricevalue(::Dict, ::ElementKey, value::AbstractFloat) = (nothing, BasePrice(ConstantParam(value)), true)
+getdictpricevalue(::Dict, ::ElementKey, value::Param) = (nothing, BasePrice(value), true)
+getdictpricevalue(::Dict, ::ElementKey, value::Price) = (nothing, nothingvalue, true)
