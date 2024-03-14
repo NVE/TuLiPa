@@ -137,8 +137,6 @@ function include_all_elements(elements)
 end
 
 function include_some_elements!(completed, dependencies, toplevel, lowlevel, elements)
-    INCLUDEELEMENT::Dict
-
     for element in elements
 
         elkey = getelkey(element)
@@ -166,8 +164,6 @@ function include_some_elements!(completed, dependencies, toplevel, lowlevel, ele
 end
 
 function build_error_message(completed, toplevel, lowlevel, elements)
-    MAXPRINTERRORS::Int
-
     errors = Dict()
 
     numshow = MAXPRINTERRORS #min(MAXPRINTERRORS, length(errors))
