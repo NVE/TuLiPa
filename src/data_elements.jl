@@ -19,7 +19,7 @@ struct DataElement
     conceptname::String
     typename::String
     instancename::String
-    value::Any # TODO: Change to data
+    value::Any
 end
 
 # Different keys
