@@ -98,9 +98,9 @@ function check_duplicates(elements::Vector{DataElement})
     for element in elements
         k = getelkey(element)
         if k in seen
-            push!(seen, k)
-        else
             push!(dups, k)
+        else
+            push!(seen, k)
         end
     end
 
