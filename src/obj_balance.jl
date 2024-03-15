@@ -142,7 +142,7 @@ function assemble!(balance::OurBalanceTypes)::Bool
 end
 
 # ------ Include dataelements -------
-function includeBaseBalance!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeBaseBalance!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(toplevel, elkey)
 
     commodityname = getdictvalue(value, COMMODITY_CONCEPT, String, elkey)
@@ -160,7 +160,7 @@ function includeBaseBalance!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, 
     return (true, deps)    
 end
 
-function includeExogenBalance!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeExogenBalance!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(toplevel, elkey)
 
     deps = Id[]

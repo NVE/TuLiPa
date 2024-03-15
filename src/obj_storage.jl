@@ -158,7 +158,7 @@ function assemble!(var::BaseStorage)::Bool
 end
 
 # ------ Include dataelements -------
-function includeBaseStorage!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeBaseStorage!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
     checkkey(toplevel, elkey)
 
     deps = Id[]

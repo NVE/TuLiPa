@@ -571,7 +571,7 @@ end
 
 # ------ Include dataelements -------
 
-function includeFossilMCParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeFossilMCParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
 
     fuellevel   = getdictvalue(value, "FuelLevel",   TIMEVECTORPARSETYPES, elkey)
@@ -623,7 +623,7 @@ function includeFossilMCParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value:
     return (true, deps)
 end
 
-function includeM3SToMM3Param!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeM3SToMM3Param!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
 
     (id, param, ok) = getdictparamvalue(lowlevel, elkey, value)
@@ -638,7 +638,7 @@ function includeM3SToMM3Param!(::Dict, lowlevel::Dict, elkey::ElementKey, value:
     return (true, deps)
 end
 
-function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
     
     level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
@@ -664,13 +664,13 @@ function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, 
     return (true, deps)
 end
 
-function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::M3SToMM3SeriesParam)::Bool
+function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::M3SToMM3SeriesParam)
     deps = Id[]
     lowlevel[getobjkey(elkey)] = value
     return (true, deps)
 end
 
-function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)::Bool
+function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)
     deps = Id[]
     level = ConstantTimeVector(value)
     profile = ConstantTimeVector(one(typeof(value)))
@@ -678,7 +678,7 @@ function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, 
     return (true, deps)
 end
 
-function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
     
     level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
@@ -703,13 +703,13 @@ function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, v
     return (true, deps)
 end
 
-function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MWToGWhSeriesParam)::Bool
+function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MWToGWhSeriesParam)
     deps = Id[]
     lowlevel[getobjkey(elkey)] = value
     return (true, deps)
 end
 
-function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)::Bool
+function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)
     deps = Id[]
     level = ConstantTimeVector(value)
     profile = ConstantTimeVector(one(typeof(value)))
@@ -717,7 +717,7 @@ function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, v
     return (true, deps)
 end
 
-function includeMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     (id, param, ok) = getdictparamvalue(lowlevel, elkey, value)
 
     deps = Id[]
@@ -729,7 +729,7 @@ function includeMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::
     return (true, deps)
 end
 
-function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
 
     deps = Id[]
@@ -768,19 +768,19 @@ function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, 
     return (false, deps)
 end
 
-function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::CostPerMWToGWhParam)::Bool
+function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::CostPerMWToGWhParam)
     deps = Id[]
     lowlevel[getobjkey(elkey)] = value
     return (true, deps)
 end
 
-function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)::Bool
+function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)
     deps = Id[]
     lowlevel[getobjkey(elkey)] = CostPerMWToGWhParam(ConstantParam(value))
     return (true, deps)
 end
 
-function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
     
     level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
@@ -805,13 +805,13 @@ function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, valu
     return (true, deps)
 end
 
-function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MeanSeriesParam)::Bool
+function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MeanSeriesParam)
     deps = Id[]
     lowlevel[getobjkey(elkey)] = value
     return (true, deps)
 end
 
-function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
     
     level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
@@ -836,7 +836,7 @@ function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::Ele
     return (true, deps)
 end
 
-function includePrognosisSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includePrognosisSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
     
     level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
@@ -868,13 +868,13 @@ function includePrognosisSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey,
     return (true, deps)
 end
 
-function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MeanSeriesIgnorePhaseinParam)::Bool
+function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MeanSeriesIgnorePhaseinParam)
     deps = Id[]
     lowlevel[getobjkey(elkey)] = value
     return (true, deps)
 end
 
-function includeUMMSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeUMMSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     level = getdictvalue(value, "Level", TIMEVECTORPARSETYPES, elkey)
     ummprofile = getdictvalue(value, "Ummprofile", TIMEVECTORPARSETYPES, elkey)
     profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
@@ -902,7 +902,7 @@ function includeUMMSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value
     return (true, deps)
 end
 
-function includeStatefulParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeStatefulParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
 
     deps = Id[]

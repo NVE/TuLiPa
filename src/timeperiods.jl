@@ -11,7 +11,7 @@ TODO: SimulationTimePeriod
 
 # --- ScenarioTimePeriod ---
 
-function includeScenarioTimePeriod!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeScenarioTimePeriod!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
 
     deps = Id[]
@@ -30,7 +30,7 @@ end
 
 # --- SimulationTimePeriod ---
 
-function includeSimulationTimePeriod!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeSimulationTimePeriod!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
 
     deps = Id[]

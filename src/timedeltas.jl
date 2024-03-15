@@ -53,7 +53,7 @@ end
 
 # ------ Include dataelements -------
 # TODO: Is this ever used? Can it be removed?
-function includeMsTimeDelta!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeMsTimeDelta!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
 
     deps = Id[]
