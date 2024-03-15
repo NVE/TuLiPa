@@ -53,6 +53,13 @@ Function signature:
            more dependencies are missing. Other types of failures 
            (such as validation failures) should throw errors.
 
+NB! Note about needed_objkeys: a failing elemnt may return larger set of dependencies
+    than a non-failing element. This is because some dependencies can be one of multiple
+    options, and we don't know which one when the element fails. E.g. if an element depends
+    on a Price object, this could refer to a Price element or a Param element 
+    (if so it will be converted into a Price object). For a non-failing element we know
+    which one it is, and only return this as dependency. If the element fails, we have 
+    to return both object keys.
 
 The getmodelobjects function consist of 3 elements:
     check_duplicates(elements)
