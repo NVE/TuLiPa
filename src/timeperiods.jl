@@ -13,6 +13,8 @@ TODO: SimulationTimePeriod
 
 function includeScenarioTimePeriod!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
+
+    deps = Id[]
     
     start = getdictvalue(value, "Start", DateTime, elkey)
     stop  = getdictvalue(value, "Stop",  DateTime, elkey)
@@ -23,13 +25,15 @@ function includeScenarioTimePeriod!(::Dict, lowlevel::Dict, elkey::ElementKey, v
     
     lowlevel[getobjkey(elkey)] = value
     
-    return true
+    return (true, deps)
 end
 
 # --- SimulationTimePeriod ---
 
 function includeSimulationTimePeriod!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
+
+    deps = Id[]
     
     start = getdictvalue(value, "Start", DateTime, elkey)
     stop  = getdictvalue(value, "Stop",  DateTime, elkey)
@@ -37,7 +41,8 @@ function includeSimulationTimePeriod!(::Dict, lowlevel::Dict, elkey::ElementKey,
     stop > start || error("Stop  <= Start for $elkey")
         
     lowlevel[getobjkey(elkey)] = value
-    return true
+    
+    return (true, deps)
 end
 
 INCLUDEELEMENT[TypeKey(TIMEPERIOD_CONCEPT, "ScenarioTimePeriod")] = includeScenarioTimePeriod!
