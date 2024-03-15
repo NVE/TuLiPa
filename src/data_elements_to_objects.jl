@@ -230,16 +230,24 @@ end
 
 function error_messages(dependencies, errors, completed, failed, roots)
     messages = String[]
-    for k in roots
-        for s in get(errors, k, String[])
-            push!(messages, s)
-        end
-        missing_deps = [d for d in get(dependencies, k, ElementKey[]) if !(d in completed)]
-        if length(missing_deps) > 0
-            for d in missing_deps
-                s = "Element $k failed due to missing dependency $d"
+    for k in failed
+        if haskey(errors, k)
+            for s in errors[k]
                 push!(messages, s)
             end
+        end
+    end
+    for k in roots
+        missing_deps = [d for d in get(dependencies, k, ElementKey[]) if !(d in completed)]
+        if length(missing_deps) > 1
+            for d in missing_deps
+                s = "Element $k may have failed due to missing dependency $d"
+                push!(messages, s)
+            end
+        elseif length(missing_deps) == 1
+            d = missing_deps[1]
+            s = "Element $k failed due to missing dependency $d"
+            push!(messages, s)
         else
             if !haskey(errors, k)
                 s = "Element $k failed due to unknown reason"
