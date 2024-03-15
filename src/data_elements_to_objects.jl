@@ -232,7 +232,7 @@ function error_messages(dependencies, errors, completed, failed, roots)
         missing_deps = [d for d in get(dependencies, k, ElementKey[]) if !(d in completed)]
         if length(missing_deps) > 0
             for d in missing_deps
-                s = "Element $k failed due to missing dependency $(deps[1])"
+                s = "Element $k failed due to missing dependency $d"
                 push!(messages, s)
             end
         else
