@@ -359,50 +359,62 @@ function update!(p::Prob, trait::HydroRamping, start::ProbTime)
     return
 end
 
-# TransmissionRamping types are toplevel objects in dataset_compiler, so we must implement assemble!
 function assemble!(trait::TransmissionRamping)
-
-    # return if flows not assembled yet
     isnothing(gethorizon(trait.firstflow)) && return false
     isnothing(gethorizon(trait.secondflow)) && return false
-
-    # check that horizons are the same in the two flows
     @assert gethorizon(trait.firstflow) == gethorizon(trait.secondflow)
-
     return true
 end
 
-function assemble!(trait::HydroRampingWithout)
-
-    # return if flow not assembled yet
-    isnothing(gethorizon(trait.flow)) && return false
-
-    return true
-end
-
-function assemble!(trait::HydroRamping)
-
-    # return if flow not assembled yet
-    isnothing(gethorizon(trait.flow)) && return false
-
-    return true
-end
+assemble!(trait::HydroRampingWithout) = !isnothing(gethorizon(trait.flow))
+assemble!(trait::HydroRamping) = !isnothing(gethorizon(trait.flow))
 
 # ------ Include dataelements -------
-function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
+
+# NB! Note special handeling of deps in order to support good error messages in these funcs
+
+function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
     checkkey(toplevel, elkey)
+
+    deps = Id[]
     
     firstflowname = getdictvalue(value, "FirstFlow", String, elkey)
     firstflowkey = Id(FLOW_CONCEPT, firstflowname)
-    haskey(toplevel, firstflowkey) || return false
+    push!(deps, firstflowkey)
+
     secondflowname = getdictvalue(value, "SecondFlow", String, elkey)
     secondflowkey = Id(FLOW_CONCEPT, secondflowname)
-    haskey(toplevel, secondflowkey) || return false
+    push!(deps, secondflowkey)
 
-    firstflow = toplevel[firstflowkey]
-    secondflow = toplevel[secondflowkey]
-    isnothing(getub(firstflow)) && return false
-    isnothing(getub(secondflow)) && return false
+    early_ret = false
+
+    if haskey(toplevel, firstflowkey)
+        firstflow = toplevel[firstflowkey]
+        if isnothing(getub(firstflow)) 
+            early_ret = true
+            s = "Missing upper bound in $firstflow for $elkey"
+            deps = ([s], deps)
+        end
+    else
+        early_ret = true
+    end
+
+    if haskey(toplevel, secondflowkey)
+        secondflow = toplevel[secondflowkey]
+        if isnothing(getub(secondflow)) 
+            early_ret = true
+            s = "Missing upper bound in $secondflow for $elkey"
+            if deps isa Tuple
+                push!(deps[1], s)
+            else
+                deps = ([s], deps)
+            end
+        end
+    else
+        early_ret = true
+    end
+
+    early_ret && return (false, deps)
 
     rampingpercentage = ConstantParam(getdictvalue(value, "RampingPercentage", Real, elkey))
     flowcap = getub(firstflow).param
@@ -413,17 +425,31 @@ function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, 
 
     toplevel[objkey] = TransmissionRamping(objkey, firstflow, secondflow, rampingcap)
     
-    return true
+    return (true, deps)
  end
 
- function includeHydroRampingWithout!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
+ function includeHydroRampingWithout!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
     checkkey(toplevel, elkey)
+
+    deps = Id[]
     
     flowname = getdictvalue(value, FLOW_CONCEPT, String, elkey)
     flowkey = Id(FLOW_CONCEPT, flowname)
-    haskey(toplevel, flowkey) || return false
-    flow = toplevel[flowkey]
-    isnothing(getub(flow)) && return false
+
+    early_ret = false
+
+    if haskey(toplevel, flowkey)
+        flow = toplevel[flowkey]
+        if isnothing(getub(flow))
+            early_ret = true
+            s = "Missing upper bound in $flow for $elkey"
+            deps = ([s], deps)
+        end
+    else
+        early_ret = true
+    end
+
+    early_ret && return (false, deps)
 
     rampingpercentage = ConstantParam(getdictvalue(value, "RampingPercentage", Real, elkey))
     flowcap = getub(flow).param
@@ -434,17 +460,31 @@ function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, 
 
     toplevel[objkey] = HydroRampingWithout(objkey, flow, rampingcap)
     
-    return true
+    return (true, deps)
  end
 
- function includeHydroRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
+ function includeHydroRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
     checkkey(toplevel, elkey)
+
+    deps = Id[]
     
     flowname = getdictvalue(value, FLOW_CONCEPT, String, elkey)
     flowkey = Id(FLOW_CONCEPT, flowname)
-    haskey(toplevel, flowkey) || return false
-    flow = toplevel[flowkey]
-    isnothing(getub(flow)) && return false
+
+    early_ret = false
+
+    if haskey(toplevel, flowkey)
+        flow = toplevel[flowkey]
+        if isnothing(getub(flow))
+            early_ret = true
+            s = "Missing upper bound in $flow for $elkey"
+            deps = ([s], deps)
+        end
+    else
+        early_ret = true
+    end
+
+    early_ret && return (false, deps)
 
     rampingpercentage = ConstantParam(getdictvalue(value, "RampingPercentage", Real, elkey))
     flowcap = getub(flow).param
@@ -455,7 +495,7 @@ function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, 
 
     toplevel[objkey] = HydroRamping(objkey, flow, rampingcap)
     
-    return true
+    return (true, deps)
  end
 
 INCLUDEELEMENT[TypeKey(RAMPING_CONCEPT, "TransmissionRamping")] = includeTransmissionRamping!
