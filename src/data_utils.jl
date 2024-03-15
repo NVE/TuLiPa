@@ -1,17 +1,16 @@
 # --- Helper functions used to include data elements -----
 
-function _update_deps(deps, id, ok)
-    if id === nothing
-        @assert ok
-    elseif id isa Id
-        push!(deps, id)
-    else
-        for i in id
-            @assert i isa Union{Id, Nothing}
-            if i isa Id
-                push!(deps, id)
-            end
-        end
+_update_deps(deps::Any, id::Nothing, ok::Bool) = @assert ok
+_update_deps(deps::Tuple{Vector{String}, Vector{Id}}, id::Id, ok::Bool) = push!(deps[2], id)
+_update_deps(deps::Vector{Id}, id::Id, ok::Bool) = push!(deps, id)
+function _update_deps(deps::Tuple{Vector{String}, Vector{Id}}, id, ok::Bool)
+    for i in id
+        _update_deps(deps, i, ok)
+    end
+end
+function _update_deps(deps::Vector{Id}, ids, ok::Bool)
+    for i in ids
+        _update_deps(deps, i, ok)
     end
 end
 
