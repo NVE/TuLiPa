@@ -210,7 +210,7 @@ end
 
 function root_causes(dependencies, errors, completed)
     failed = Set(k for k in keys(dependencies) if !(k in completed))
-    roots = Set(k for k in failed if does_not_depend_on_failed(k))
+    roots = Set(k for k in failed if does_not_depend_on_failed(k, failed))
     return error_messages(dependencies, errors, completed, failed, roots)
 end
 
