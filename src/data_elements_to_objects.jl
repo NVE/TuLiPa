@@ -163,9 +163,7 @@ function include_some_elements!(completed, dependencies, toplevel, lowlevel, ele
 
             (ok, needed_objkeys) = func(toplevel, lowlevel, elkey, elvalue)
 
-            if !haskey(dependencies, elkey)
-                dependencies[elkey] = needed_objkeys
-            end
+            dependencies[elkey] = needed_objkeys
 
             ok && push!(completed, elkey)
         end
