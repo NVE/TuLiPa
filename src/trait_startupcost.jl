@@ -152,28 +152,27 @@ function update!(p::Prob, trait::StartUpCost, start::ProbTime)
     return
 end
 
-# SimpleStartUpCost types are toplevel objects in dataset_compiler, so we must implement assemble!
 function assemble!(trait::SimpleStartUpCost)
-
-    # return if flow not assembled yet
     isnothing(gethorizon(trait.flow)) && return false
-
-    id = trait.id
-    isnothing(getub(trait.flow)) && error("Flow does not have capacity for $id")
-
+    isnothing(getub(trait.flow)) && error("Flow does not have capacity for $(trait.id)")
     return true
 end
 
 # ------ Include dataelements -------
-function includeSimpleStartUpCost!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeSimpleStartUpCost!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(toplevel, elkey)
 
-    (startcost, ok) = getdictparamvalue(lowlevel, elkey, value, STARTCOSTKEY)
-    ok || return false
-    
+    deps = Id[]
+
     flowname = getdictvalue(value, FLOW_CONCEPT, String, elkey)
     flowkey = Id(FLOW_CONCEPT, flowname)
-    haskey(toplevel, flowkey) || return false
+    push!(deps, flowkey)
+
+    (id, startcost, ok) = getdictparamvalue(lowlevel, elkey, value, STARTCOSTKEY)
+    _update_deps(deps, id, ok)
+
+    ok || return (false, deps)
+    haskey(toplevel, flowkey) || return (false, deps)
 
     msl = getdictvalue(value, "MinStableLoad", Real, elkey)
 
@@ -181,7 +180,7 @@ function includeSimpleStartUpCost!(toplevel::Dict, lowlevel::Dict, elkey::Elemen
 
     toplevel[objkey] = SimpleStartUpCost(objkey, toplevel[flowkey], startcost, msl)
     
-    return true
+    return (true, deps)
  end
 
 INCLUDEELEMENT[TypeKey(STARTUPCOST_CONCEPT, "SimpleStartUpCost")] = includeSimpleStartUpCost!

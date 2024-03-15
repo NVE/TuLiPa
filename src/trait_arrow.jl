@@ -433,7 +433,7 @@ function includeSegmentedArrow!(toplevel::Dict, lowlevel::Dict, elkey::ElementKe
     
     isingoing = getdictisingoing(value, elkey)
     balance   = toplevel[balancekey]
-    var      = toplevel[varkey]
+    var       = toplevel[varkey]
 
     arrow = SegmentedArrow(getobjkey(elkey), balance, conversions, capacities, isingoing)
     addarrow!(var, arrow)

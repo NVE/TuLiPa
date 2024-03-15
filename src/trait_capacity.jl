@@ -134,6 +134,9 @@ end
 update!(::Prob, ::Any, ::LowerZeroCapacity, ::ProbTime) = nothing
 
 # ------ Include dataelements -------
+
+# TODO: Should these be added to lowlevel (similar to BaseRHSTerm) to enable further modifications?
+
 function includePositiveCapacity!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     deps = Id[]
 
