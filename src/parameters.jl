@@ -571,14 +571,6 @@ end
 
 # ------ Include dataelements -------
 
-function _update_deps(deps, id, ok)
-    if id === nothing
-        @assert ok
-    else
-        push!(deps, id)
-    end
-end
-
 function includeFossilMCParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
 

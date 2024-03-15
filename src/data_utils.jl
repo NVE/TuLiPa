@@ -1,5 +1,20 @@
 # --- Helper functions used to include data elements -----
 
+function _update_deps(deps, id, ok)
+    if id === nothing
+        @assert ok
+    elseif id isa Id
+        push!(deps, id)
+    else
+        for i in id
+            @assert i isa Union{Id, Nothing}
+            if i isa Id
+                push!(deps, id)
+            end
+        end
+    end
+end
+
 function getdictvalue(dict::Dict, dictkey::String, @nospecialize(TYPES), elkey::ElementKey)
     haskey(dict, dictkey) || error("Key $dictkey missing for $elkey")
     value = dict[dictkey]
@@ -65,46 +80,55 @@ getdictparamvalue(::Dict, ::ElementKey, value::Param, paramname=PARAM_CONCEPT) =
 function getdictparamlist(lowlevel::Dict, elkey::ElementKey, value::Dict, paramname=PARAM_CONCEPT)
     haskey(value, paramname) || error("Missing $paramname for $elkey")
     paramlist = [getdictparamvalue(lowlevel, elkey, listvalue) for listvalue in value[paramname]]
-    paramvaluelist = [first(param) for param in paramlist]
-    parambool = [bool for (param,bool) in paramlist]
-    all(y->y==true,parambool) || return (paramvaluelist, false)
-    return (paramvaluelist, true)
+    paramvaluelist = [p for (id, p, ok) in paramlist]
+    parambools = [ok for (id, p, ok) in paramlist]
+    ids = [id for (id, p, ok) in paramlist]
+    return (ids, paramvaluelist, all(y->y==true, parambools))
 end
 
 # Parse Conversion
-# If conversion is a constant or param it should be converted to BaseConversion
 function getdictconversionvalue(lowlevel::Dict, elkey::ElementKey, value::Dict)
     haskey(value, CONVERSION_CONCEPT) || error("Missing $CONVERSION_CONCEPT for $elkey")
-    conversion = getdictconversionvalue(lowlevel, elkey, value[CONVERSION_CONCEPT])
-    return conversion
+    return getdictconversionvalue(lowlevel, elkey, value[CONVERSION_CONCEPT])
 end
 
 function getdictconversionvalue(lowlevel::Dict, elkey::ElementKey, value::String)
-    objkey = Id(CONVERSION_CONCEPT, value)
-    haskey(lowlevel, objkey) && return (lowlevel[objkey], true)
-    objkey = Id(PARAM_CONCEPT, value)
-    haskey(lowlevel, objkey) && return getdictconversionvalue(lowlevel, elkey, lowlevel[objkey])
-    return (value, false)
+    objkey_c = Id(CONVERSION_CONCEPT, value)
+    objkey_p = Id(PARAM_CONCEPT, value)
+
+    if haskey(lowlevel, objkey_c)
+        return (objkey_c, lowlevel[objkey_c], true)
+    end
+
+    if haskey(lowlevel, objkey_p)
+        (__, obj, __) = getdictconversionvalue(lowlevel, elkey, lowlevel[objkey_p])
+        return (objkey_p, obj, true)
+    end
+    return ([objkey_c, objkey_p], value, false)
 end
 
-getdictconversionvalue(::Dict, ::ElementKey, value::AbstractFloat) = (BaseConversion(ConstantParam(value)), true)
-getdictconversionvalue(::Dict, ::ElementKey, value::Param) = (BaseConversion(value), true)
-getdictconversionvalue(::Dict, ::ElementKey, value::Conversion) = (value, true)
+getdictconversionvalue(::Dict, ::ElementKey, value::AbstractFloat) = (nothing, BaseConversion(ConstantParam(value)), true)
+getdictconversionvalue(::Dict, ::ElementKey, value::Param) = (nothing, BaseConversion(value), true)
+getdictconversionvalue(::Dict, ::ElementKey, value::Conversion) = (nothing, value, true)
 
 # Parse Price
-# If price is a constant or param it should be converted to BasePrice
 function getdictpricevalue(lowlevel::Dict, elkey::ElementKey, value::Dict)
     haskey(value, PRICE_CONCEPT) || error("Missing $PRICE_CONCEPT for $elkey")
-    (id, obj, ok) = getdictpricevalue(lowlevel, elkey, value[PRICE_CONCEPT])
-    return (id, obj, ok)
+    return getdictpricevalue(lowlevel, elkey, value[PRICE_CONCEPT])
 end
 
 function getdictpricevalue(lowlevel::Dict, elkey::ElementKey, value::String)
-    objkey = Id(PRICE_CONCEPT, value)
-    haskey(lowlevel, objkey) && return (objkey, lowlevel[objkey], true)
-    objkey = Id(PARAM_CONCEPT, value)
-    haskey(lowlevel, objkey) && return (objkey, BasePrice(lowlevel[objkey]), true)
-    return (nothing, value, false)
+    objkey_price = Id(PRICE_CONCEPT, value)
+    objkey_param = Id(PARAM_CONCEPT, value)
+
+    if haskey(lowlevel, objkey_price)
+        return (objkey_price, lowlevel[objkey_price], true)
+
+    elseif haskey(lowlevel, objkey_param)
+        (__, obj, __) = getdictpricevalue(lowlevel, elkey, lowlevel[objkey_param])
+        return (objkey_param, obj, true)
+    end
+    return ([objkey_price, objkey_param], value, false)
 end
 
 getdictpricevalue(::Dict, ::ElementKey, value::AbstractFloat) = (nothing, BasePrice(ConstantParam(value)), true)
