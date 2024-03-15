@@ -134,7 +134,7 @@ end
 update!(::Prob, ::Any, ::LowerZeroCapacity, ::ProbTime) = nothing
 
 # ------ Include dataelements -------
-function includePositiveCapacity!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includePositiveCapacity!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     deps = Id[]
 
     varname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
@@ -165,7 +165,7 @@ function includePositiveCapacity!(toplevel::Dict, lowlevel::Dict, elkey::Element
     return (true, deps)    
 end
 
-function includeLowerZeroCapacity!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeLowerZeroCapacity!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
     deps = Id[]
 
     varname    = getdictvalue(value, WHICHINSTANCE, String, elkey)

@@ -15,7 +15,7 @@ getparamvalue(loss::SimpleLoss, ::ProbTime, ::TimeDelta) = loss.value
 isconstant(::SimpleLoss) = true
 
 # ------ Include dataelements -------
-function includeSimpleLoss!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeSimpleLoss!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     lossvalue = getdictvalue(value, LOSSFACTORKEY, Float64, elkey)
     @assert 0.0 <= lossvalue <= 1.0
 

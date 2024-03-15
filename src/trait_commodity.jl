@@ -13,8 +13,10 @@ getid(commodity::BaseCommodity) = commodity.id
 gethorizon(commodity::BaseCommodity) = commodity.horizon
 
 # ------ Include dataelements -------
-function includeBaseCommodity!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeBaseCommodity!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
+
+    deps = Id[]
     
     haskey(value, HORIZON_CONCEPT) || error("Missing $HORIZON_CONCEPT for $elkey")
 
@@ -22,7 +24,8 @@ function includeBaseCommodity!(::Dict, lowlevel::Dict, elkey::ElementKey, value:
 
     if horizon isa String
         horizonkey = Id(HORIZON_CONCEPT, horizon)
-        haskey(lowlevel, horizonkey) || return false
+        push!(deps, horizonkey)
+        haskey(lowlevel, horizonkey) || return (false, deps)
         horizon = lowlevel[horizonkey]
     end
    
@@ -30,7 +33,7 @@ function includeBaseCommodity!(::Dict, lowlevel::Dict, elkey::ElementKey, value:
     
     lowlevel[objkey] = BaseCommodity(objkey, horizon)
     
-    return true
+    return (true, deps)
 end
 
 INCLUDEELEMENT[TypeKey(COMMODITY_CONCEPT, "BaseCommodity")] = includeBaseCommodity!

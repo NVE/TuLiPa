@@ -371,7 +371,7 @@ function update!(p::Prob, var::Any, arrow::SegmentedArrow, start::ProbTime)
 end
 
 # ------ Include dataelements -------
-function includeBaseArrow!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeBaseArrow!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
 
     deps = Id[]
@@ -405,7 +405,7 @@ function includeBaseArrow!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, va
     return (true, deps)    
 end
 
-function includeSegmentedArrow!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeSegmentedArrow!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     deps = Id[]
     all_ok = true
 

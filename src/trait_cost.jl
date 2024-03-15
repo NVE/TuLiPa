@@ -124,15 +124,20 @@ function update!(p::Prob, var::Any, sumcost::SumCost, start::ProbTime)
 end
 
 # ------ Include dataelements -------
-function includeCostTerm!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
-    (param, ok) = getdictparamvalue(lowlevel, elkey, value)
-    ok || return false
-    @assert !isdurational(param)
+function includeCostTerm!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
+    deps = Id[]
 
     varname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
     varconcept = getdictvalue(value, WHICHCONCEPT,  String, elkey)
     varkey = Id(varconcept, varname)
-    haskey(toplevel, varkey) || return false
+    push!(deps, varkey)
+
+    (id, param, ok) = getdictparamvalue(lowlevel, elkey, value)
+    _update_deps(deps, id, ok)
+    @assert !isdurational(param)
+
+    ok || return (false, deps)
+    haskey(toplevel, varkey) || return (false, deps)
 
     var = toplevel[varkey]
 
@@ -144,7 +149,7 @@ function includeCostTerm!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, val
 
     addcost!(var, cost)
     
-    return true    
+    return (true, deps)    
 end
 
 INCLUDEELEMENT[TypeKey(COST_CONCEPT, "CostTerm")] = includeCostTerm!
