@@ -135,13 +135,18 @@ update!(::Prob, ::Any, ::LowerZeroCapacity, ::ProbTime) = nothing
 
 # ------ Include dataelements -------
 function includePositiveCapacity!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
-    (param, ok) = getdictparamvalue(lowlevel, elkey, value)
-    ok || return false
-    
+    deps = Id[]
+
     varname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
     varconcept = getdictvalue(value, WHICHCONCEPT,  String, elkey)
     varkey = Id(varconcept, varname)
-    haskey(toplevel, varkey) || return false
+    push!(deps, varkey)
+
+    (id, param, ok) = getdictparamvalue(lowlevel, elkey, value)
+    _update_deps(deps, id, ok)
+    
+    ok || return (false, deps)
+    haskey(toplevel, varkey) || return (false, deps)
 
     var = toplevel[varkey]
 
@@ -157,14 +162,18 @@ function includePositiveCapacity!(toplevel::Dict, lowlevel::Dict, elkey::Element
         setlb!(var, capacity)
     end
     
-    return true    
+    return (true, deps)    
 end
 
 function includeLowerZeroCapacity!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
+    deps = Id[]
+
     varname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
     varconcept = getdictvalue(value, WHICHCONCEPT,  String, elkey)
     varkey = BaseId(varconcept, varname)
-    haskey(toplevel, varkey) || return false
+    push!(deps, varkey)
+    
+    haskey(toplevel, varkey) || return (false, deps)
 
     var = toplevel[varkey]
 
@@ -172,7 +181,7 @@ function includeLowerZeroCapacity!(toplevel::Dict, ::Dict, elkey::ElementKey, va
 
     setlb!(var, capacity)
     
-    return true    
+    return (true, deps)    
 end
 
 INCLUDEELEMENT[TypeKey(CAPACITY_CONCEPT, "PositiveCapacity")] = includePositiveCapacity!
