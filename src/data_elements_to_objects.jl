@@ -210,11 +210,11 @@ end
 
 function root_causes(dependencies, errors, completed)
     failed = Set(k for k in keys(dependencies) if !(k in completed))
-    roots = Set(k for k in failed if does_not_depend_on_failed(k, failed))
+    roots = Set(k for k in failed if does_not_depend_on_failed(k, dependencies, failed))
     return error_messages(dependencies, errors, completed, failed, roots)
 end
 
-function does_not_depend_on_failed(k, failed)
+function does_not_depend_on_failed(k, dependencies, failed)
     for j in get(dependencies, k, ElementKey[])
         if j in failed
             return false
