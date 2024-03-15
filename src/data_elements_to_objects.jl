@@ -152,23 +152,23 @@ function include_some_elements!(completed, dependencies, toplevel, lowlevel, ele
     for element in elements
         elkey = getelkey(element)
 
-        if !(elkey in completed)
-            typekey = gettypekey(element)
+        (elkey in completed) && continue
 
-            if !haskey(INCLUDEELEMENT, typekey)
-                error("No INCLUDEELEMENT function for $typekey")
-            end
+        typekey = gettypekey(element)
 
-            func = INCLUDEELEMENT[typekey]
-
-            elvalue = getelvalue(element)
-
-            (ok, needed_objkeys) = func(toplevel, lowlevel, elkey, elvalue)
-
-            dependencies[elkey] = needed_objkeys
-
-            ok && push!(completed, elkey)
+        if !haskey(INCLUDEELEMENT, typekey)
+            error("No INCLUDEELEMENT function for $typekey")
         end
+
+        func = INCLUDEELEMENT[typekey]
+
+        elvalue = getelvalue(element)
+
+        (ok, needed_objkeys) = func(toplevel, lowlevel, elkey, elvalue)
+
+        dependencies[elkey] = needed_objkeys
+
+        ok && push!(completed, elkey)
     end
 end
 
