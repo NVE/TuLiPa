@@ -261,7 +261,7 @@ function assemble!(modelobjects::Dict)
             return modelobjects
 
         elseif numbefore == numafter
-            # TODO: Better error message
+            # TODO: Change all assemble! to support better error messages (same idea as in include_some_elements!)
             error("Some objects could not be made")
 
         end
