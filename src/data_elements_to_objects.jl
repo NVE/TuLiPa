@@ -53,7 +53,9 @@ INCLUDEELEMENT:
             must always return all its dependencies. Furthermore, 
             the INCLUDEELEMENT-functions must return ok=false only when one or 
             more dependencies are missing. Other types of failures 
-            (such as validation failures) should throw errors.
+            (such as validation failures) should throw errors, or use the special
+            dependency type Tuple{Vector{String}, Vector{Id}} where the 
+            Vector{String} part contains error messages.
 
     NB! Note about needed_objkeys: a failing elemnt may return larger set of dependencies
         than a non-failing element. This is because some dependencies can be one of multiple
@@ -83,9 +85,10 @@ The getmodelobjects function consist of 3 elements:
               associated modelobjects are assembled. Mixing this order can lead to modelobjects being partially 
               assembled several times, and therefore duplicated elements.
 
-
-TODO: Document usage for all kwargs
 """
+
+# TODO: Document usage for all kwargs
+# TODO: Explain better why dependencies types Vector{Id}/Tuple{Vector{String}, Vector{Id}}
 
 const INCLUDEELEMENT = Dict{TypeKey, Function}()
 
