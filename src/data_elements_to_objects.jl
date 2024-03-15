@@ -62,7 +62,7 @@ NB! Note about needed_objkeys: a failing elemnt may return larger set of depende
     to return both object keys.
 
 The getmodelobjects function consist of 3 elements:
-    check_duplicates(elements)
+    error_if_duplicates(elements)
         There should be no duplicates in the data elements. Throw error if duplicates.
 
     include_all_elements(elements)
@@ -89,7 +89,7 @@ const INCLUDEELEMENT = Dict{TypeKey, Function}()
 
 # TODO: remove kwarg validate::Bool=true ? INCLUDEELEMENT-function always do validation. Can do advanced validation on modelobjects, but this is hard and not top priority.
 function getmodelobjects(elements::Vector{DataElement}; validate::Bool=true, deps::Bool=false)
-    check_duplicates(elements)
+    error_if_duplicates(elements)
     (modelobjects, dependencies) = include_all_elements(elements)
     assemble!(modelobjects)
     if deps
@@ -100,7 +100,7 @@ function getmodelobjects(elements::Vector{DataElement}; validate::Bool=true, dep
     end
 end
 
-function check_duplicates(elements::Vector{DataElement})
+function error_if_duplicates(elements::Vector{DataElement})
     seen = Set{ElementKey}()
     dups = Set{ElementKey}()
 
