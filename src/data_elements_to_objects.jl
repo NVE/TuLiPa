@@ -81,13 +81,11 @@ The getmodelobjects function consist of 3 elements:
               associated modelobjects are assembled. Mixing this order can lead to modelobjects being partially 
               assembled several times, and therefore duplicated elements.
 
-TODO: Better error messages
+
+TODO: Document usage for all kwargs
 """
 
 const INCLUDEELEMENT = Dict{TypeKey, Function}()
-
-# Limit error output
-const MAXPRINTERRORS = 10000
 
 # TODO: remove kwarg validate::Bool=true ? INCLUDEELEMENT-function always do validation. Can do advanced validation on modelobjects, but this is hard and not top priority.
 function getmodelobjects(elements::Vector{DataElement}; validate::Bool=true, deps::Bool=false)
@@ -95,6 +93,7 @@ function getmodelobjects(elements::Vector{DataElement}; validate::Bool=true, dep
     (modelobjects, dependencies) = include_all_elements(elements)
     assemble!(modelobjects)
     if deps
+        dependencies = compact_dependencies(dependencies, elements)
         return (modelobjects, dependencies)
     else
         return modelobjects
@@ -139,9 +138,7 @@ function include_all_elements(elements)
             return (toplevel, dependencies)
             
         elseif numbefore == numafter
-            # TODO: use dependencies
-            msg = build_error_message(completed, toplevel, lowlevel, elements)
-            error(msg)
+            error_include_all_elements(completed, dependencies)
         end
     end    
 end
@@ -170,76 +167,82 @@ function include_some_elements!(completed, dependencies, toplevel, lowlevel, ele
     end
 end
 
-function build_error_message(completed, toplevel, lowlevel, elements)
-    errors = Dict()
-
-    numshow = MAXPRINTERRORS #min(MAXPRINTERRORS, length(errors))
-
-    numelements = length(elements)
-
-    numfailed = add_good_error_messages!(errors, numshow, completed, toplevel, lowlevel, elements)
-
-    numfailed += maybe_add_some_default_error_messages!(errors, numshow, elements, completed)
-
-    msg = join(values(errors), "\n")
-
-    msg = "Failed to include $numfailed of $numelements elements (showing $numshow):\n$msg"
-
-    return msg
+function error_include_all_elements(completed, dependencies)
+    (errors, dependencies) = parse_error_dependencies(dependencies, elements)
+    messages = root_causes(dependencies, errors, completed)
+    msg = join(messages, "\n")
+    msg = "Found $(length(messages)) errors:\n$msg"
+    error(msg)
 end
 
-# TODO: remove ELEMENTFAILED
-function add_good_error_messages!(errors, numshow, completed, toplevel, lowlevel, elements)
-    ELEMENTFAILED::Dict
-
-    numfailed = 0
-
-    for element in elements
-        elkey = getelkey(element)
-
-        if !(elkey in completed)
-        
-            typekey = gettypekey(element)
-
-            if (length(errors) < numshow) && haskey(ELEMENTFAILED, typekey)
-                numfailed += 1
-                func = ELEMENTFAILED[typekey]
-                elvalue = getelvalue(element)
-                msg = func(toplevel, lowlevel, elkey, elvalue)
-                errors[elkey] = msg
-            end
-
-        end
-
-        if length(errors) == numshow
-            break
-        end                
-    end
-    return numfailed
+function parse_error_dependencies(dependencies, elements)
+    (errors, dependencies) = split_dependencies(dependencies)
+    dependencies = objkeys_to_elkeys(dependencies, elements)
+    return (errors, dependencies)
 end
 
-function maybe_add_some_default_error_messages!(errors, numshow, elements, completed)
-    numfailed = 0
-
-    if length(errors) < numshow
-        for element in elements
-
-            elkey = getelkey(element)
-
-            if !(elkey in completed) && !(elkey in keys(errors))
-                numfailed += 1
-                msg = "Failed to include $elkey"
-                errors[elkey] = msg
-            end
-
-            if length(errors) == numshow
-                break
-            end
-
+function split_dependencies(dependencies)
+    errs = Dict{ElementKey, Vector{String}}()
+    deps = Dict{ElementKey, Vector{Id}}()
+    for (elkey, d) in dependencies
+        if d isa Tuple
+            (error_messages, id_vector) = d
+            errs[elkey] = error_messages
+            deps[elkey] = id_vector
+        else
+            deps[elkey] = d
         end
     end
+    return (errs, deps)
+end
 
-    return numfailed
+function objkeys_to_elkeys(dependencies, elements)
+    d = Dict{ElementKey, Vector{ElementKey}}()
+    m = Dict{Id, ElementKey}()
+    for e in elements
+        m[Id(e.conceptname, e.instancename)] = getelkey(e)
+    end
+    for (k, id_vector) in dependencies
+        d[k] = ElementKey[m[id] for id in id_vector]
+    end
+    return d
+end
+
+function root_causes(dependencies, errors, completed)
+    failed = Set(k for k in keys(dependencies) if !(k in completed))
+    roots = Set(k for k in failed if does_not_depend_on_failed(k))
+    return error_messages(dependencies, errors, completed, failed, roots)
+end
+
+function does_not_depend_on_failed(k, failed)
+    for j in get(dependencies, k, ElementKey[])
+        if j in failed
+            return false
+        end
+    end
+    return true
+end
+
+function error_messages(dependencies, errors, completed, failed, roots)
+    messages = String[]
+    for k in roots
+        for s in get(errors, k, String[])
+            push!(messages, s)
+        end
+        missing_deps = [d for d in get(dependencies, k, ElementKey[]) if !(d in completed)]
+        if length(missing_deps) > 0
+            for d in missing_deps
+                s = "Element $k failed due to missing dependency $(deps[1])"
+                push!(messages, s)
+            end
+        else
+            if !haskey(errors, k)
+                s = "Element $k failed due to unknown reason"
+                push!(messages, s)
+            end
+        end
+    end
+    return messages
 end
 
 function assemble!(modelobjects::Dict)
@@ -266,4 +269,14 @@ function assemble!(modelobjects::Dict)
 
         end
     end
+end
+
+function compact_dependencies(dependencies::Dict{ElementKey, Vector{Id}}, elements)
+    dependencies = objkeys_to_elkeys(dependencies, elements)
+    ix_map = Dict(getelkey(e) => i for (i, e) in enumerate(elements))
+    out = Dict{ElementKey, Vector{Int}}()
+    for (k, elkeys) in dependencies
+        out[k] = sort([ix_map[j] for j in elkeys])
+    end
+    return out
 end
