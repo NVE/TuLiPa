@@ -19,14 +19,18 @@ isdurational(price::BasePrice) = false
 getparamvalue(price::BasePrice, t::ProbTime, d::TimeDelta) = getparamvalue(price.param, t, d)
 
 # ------ Include dataelements -------
-function includeBasePrice!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeBasePrice!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
+
+    deps = Id[]
     
-    (param, ok) = getdictparamvalue(lowlevel, elkey, value)
-    ok || return false
+    (id, param, ok) = getdictparamvalue(lowlevel, elkey, value)
+    _update_deps(deps, id, ok)
+
+    ok || return (false, deps)
 
     lowlevel[getobjkey(elkey)] = BasePrice(param)
-    return true
+    return (true, deps)
 end
 
 INCLUDEELEMENT[TypeKey(PRICE_CONCEPT, "BasePrice")] = includeBasePrice!

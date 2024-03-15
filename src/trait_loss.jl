@@ -16,6 +16,8 @@ isconstant(::SimpleLoss) = true
 
 # ------ Include dataelements -------
 function includeSimpleLoss!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
+    deps = Id[]
+
     lossvalue = getdictvalue(value, LOSSFACTORKEY, Float64, elkey)
     @assert 0.0 <= lossvalue <= 1.0
 
@@ -25,20 +27,21 @@ function includeSimpleLoss!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, v
     objname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
     objconcept = getdictvalue(value, WHICHCONCEPT,  String, elkey)
     objkey = Id(objconcept, objname)
+    push!(deps, objkey)
 
     if haskey(lowlevel, objkey)
         obj = lowlevel[objkey]
     elseif haskey(toplevel, objkey)
         obj = toplevel[objkey]
     else
-        return false
+        return (false, deps)
     end
 
     loss = SimpleLoss(lossvalue, utilization)
 
     setloss!(obj, loss)
     
-    return true
+    return (true, deps)
 end
 
 INCLUDEELEMENT[TypeKey(LOSS_CONCEPT, "SimpleLoss")] = includeSimpleLoss!
