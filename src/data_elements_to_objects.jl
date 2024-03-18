@@ -239,15 +239,11 @@ function error_messages(dependencies, errors, completed, failed, roots)
     end
     for k in roots
         missing_deps = [d for d in get(dependencies, k, ElementKey[]) if !(d in completed)]
-        if length(missing_deps) > 1
+        if length(missing_deps) > 0
             for d in missing_deps
                 s = "Element $k may have failed due to missing dependency $d"
                 push!(messages, s)
             end
-        elseif length(missing_deps) == 1
-            d = missing_deps[1]
-            s = "Element $k failed due to missing dependency $d"
-            push!(messages, s)
         else
             if !haskey(errors, k)
                 s = "Element $k failed due to unknown reason"
@@ -265,10 +261,12 @@ function assemble!(modelobjects::Dict)
 
         for obj in values(modelobjects)
             id = getid(obj)
-            if !(id in completed)
-                ok = assemble!(obj)
-                ok && push!(completed, id)
-            end
+
+            (id in completed) && continue
+            
+            ok = assemble!(obj)
+
+            ok && push!(completed, id)
         end
 
         numafter = length(completed)
