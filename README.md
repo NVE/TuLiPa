@@ -100,7 +100,7 @@ Keywords to Google are “multiple dispatch”, “dynamically typed” and “j
 ### Contact:
 Julien Cabrol: jgrc@nve.no
 
-Harald Endresen:
+Harald Endresen: haen@nve.no
 
 ### Licensing:
 Copyright 2023 The Norwegian Water Resources and Energy Directorate, and contributors.
