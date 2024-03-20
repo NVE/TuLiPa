@@ -149,7 +149,7 @@ function includeBaseBalance!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, 
     commoditykey = Id(COMMODITY_CONCEPT, commodityname)
 
     deps = Id[]
-    push!(commoditykey)
+    push!(deps, commoditykey)
 
     haskey(lowlevel, commoditykey) || return (false, deps)
     
