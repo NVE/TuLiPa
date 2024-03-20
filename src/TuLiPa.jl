@@ -7,8 +7,8 @@ using CSV, Dates, DataFrames
 include("abstracttypes.jl")
 
 # Code to add and convert data elements into model objects
-include("input_utils.jl")
 include("input_system.jl")
+include("input_utils.jl")
 
 # Problem implementation around JuMP framework and HiGHS package
 include("problem_jump.jl") # with description of general problem framework
