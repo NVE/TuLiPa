@@ -51,8 +51,8 @@ getid(cost::CostTerm) = cost.id
 isingoing(cost::CostTerm) = cost.isingoing
 isingoing(cost::SumCost) = true
 
-function getparamvalue(cost::CostTerm, t::ProbTime, d::TimeDelta)
-    value = getparamvalue(cost.param, t, d)
+function getparamvalue(cost::CostTerm, t::ProbTime, d::TimeDelta; ix=0)
+    value = getparamvalue(cost.param, t, d, ix)
     if !isingoing(cost)
         return -value
     else
@@ -74,7 +74,7 @@ function setconstants!(p::Prob, var::Any, sumcost::SumCost)
             dummytime = ConstantTime()
             for t in 1:T
                 querydelta = gettimedelta(var.horizon, t)
-                sumcost.values[t, col] = getparamvalue(term, dummytime, querydelta)::Float64
+                sumcost.values[t, col] = getparamvalue(term, dummytime, querydelta, t)::Float64
                 sumcost.isupdated[t] = true
             end
         end
@@ -100,7 +100,7 @@ function update!(p::Prob, var::Any, sumcost::SumCost, start::ProbTime)
                 if mustupdate(var.horizon, t)
                     querystart = getstarttime(var.horizon, t, start)
                     querydelta = gettimedelta(var.horizon, t)
-                    sumcost.values[t, col] = getparamvalue(term, querystart, querydelta)::Float64
+                    sumcost.values[t, col] = getparamvalue(term, querystart, querydelta, t)::Float64
                     sumcost.isupdated[t] = true
                 end
             end
