@@ -206,7 +206,7 @@ function include_all_elements(elements::Vector{DataElement})
     toplevel = Dict{Id, Any}()
     lowlevel = Dict{Id, Any}()
     completed = Set{ElementKey}()
-    dependencies = Dict{Id, Any}()
+    dependencies = Dict{ElementKey, Any}()
 
     numelements = length(elements)
 
