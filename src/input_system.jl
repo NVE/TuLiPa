@@ -1,53 +1,108 @@
 """
-Our design goals for the input system:
-  Extensible: 
-    Users can add their own data elements and model objects.
-    Just register an appropriate function for your type
-    of object in the INCLUDEELEMENT function registry. 
-    Look at already defined types for examples on how to
-    do this (e.g. see timevectors.jl)
+Description of the input system we use in TuLiPa.
 
-  Low-memory: 
-    Data elements can refer to other data elements. This allow us to
-    compile model objects that points to the same data. 
-    E.g. several objects can view the same column in a large table 
-    with weather profile data.
+Why data elements and model objects:
+    TuLiPa is a modular and extensible system for creating model objects that work well 
+    with LP problems. To work well with LP problems, model objects tend to have a 
+    complicated nested structure with a lot of shared lowlevel objects. While such 
+    nested structure is good for LP problems, we found it too complicated to be used by 
+    end users to create datasets. We want such a end user system to be extensible, 
+    composable and modular, and this suggests to use a flat structure instead of a 
+    nested one. The solution we arrived at was to have a input system (data elements) 
+    with a very flat structure, and a compiler (the getmodelobjects function) that would 
+    transform simple data elements into the complicated and nested model objects.
 
-  Composable: 
-    A dataset is just a Vector{DataElement}. It is easy to store parts
+Nice properties of data elements:
+    The flat structure of data elements have some nice properties. For once, we find
+    it relatively easy to port datasets from other sources. Another nice property is
+    that since a dataset is just a Vector{DataElement}, it is easy to store parts
     of a dataset in different files and merge them together when needed. 
     E.g. we have aggregated and detailed versions of our hydropower dataset 
     and can easily swich between these without having to modify other 
     parts of the dataset. 
 
-  Modular: 
-    Users can change type of object within same concept. 
-    Add new behaviour with minimal changes to a dataset.
-    E.g. Replace a BaseArrow with a SegmentedArrow to 
-    give a Flow new behaviour.
+In short, the system works like this: 
+    This file defines the input system. It is has three major parts:
+    - The DataElement type
+    - The INCLUDEELEMENT function registry
+    - The getmodelobjects function
+    The getmodelobjects function takes a vector of data elements, use functions 
+    stored in the INCLUDEELEMENT function registry to handle data elements representing 
+    different types, and finally puts everything together and returns a 
+    vector of model objects.
 
-In this file we define:
-- The DataElement type, related key types and functions on these
-- The INCLUDEELEMENT function registry used by the getmodelobjects function
-- The getmodelobjects function, which compiles data elements into model objects
+You can extend the system:
+    The getmodelobjects function can only handle data elements that are registered in 
+    the INCLUDEELEMENT function registry. We have added getmodelobjects support to all 
+    objects defined in TuLiPa that makes sense to store in a end user dataset. See 
+    timevectors.jl or obj_balance.jl for some examples of functions stored in 
+    INCLUDEELEMENT. The system is extensible. End users can define new model objects, 
+    and add getmodelobjects support to them by defining an appropriate function and 
+    store it INCLUDEELEMENT function registry.
 
-Interface for INCLUDEELEMENT functions (f):
-  Function signature:
-    (ok, deps) = f(toplevel, lowlevel, elkey, value)
-    where:
-      ok:
-        Bool where true if the data element was successfully included
-      deps:
-        Vector{Id} or Tuple{Vector{String}, Vector{Id}}. The Vector{Id} part
-        is all possible objects that needs to exist in toplevel or lowlevel in order
-        to successfully include the element in question. Note that a include-fail may
-        list more (possibly) needed objects compared to include-success. This is because 
-        there may be several options
-            
-  Naming convention for function f:
-    include + [object name] + !
-    (e.g. includeInfiniteTimeVector!)
+The impotance of the INCLUDEELEMENT function registry:
+    It is very important that the functions stored in INCLUDEELEMENT have a particular
+    signature and behaviour. If not, the getmodelobjects will fail, or even worse, 
+    silently return errouneous results. However, it is fortunalely quite easy to define
+    compliant INCLUDEELEMENT functions. The next section explanins the INCLUDEELEMENT
+    function interface. 
 
+The INCLUDEELEMENT function interface:
+    Usage:
+    You define new model object (M) and an appropriate function (f). Methods to f 
+    implicitly define data element (E) and ways transform E to M. You then register 
+    f in the INCLUDEELEMENT function registry. Now, the getmodelobjects function 
+    will be able to use f to create M from E. 
+
+    Signature:
+    An INCLUDEELEMENT function (f) should have the following signature:
+        (ok, deps) = f(toplevel, lowlevel, elkey, value)
+    With possible types:
+        ok::Bool
+        deps::Vector{Id}
+        deps::Tuple{Vector{String}, Vector{Id}}
+        toplevel::Dict{Id, Any}
+        lowlevel::Dict{Id, Any}
+        elkey::ElementKey
+        value::Any
+
+    Naming: 
+    You can name INCLUDEELEMENT functions (f in above signature) however you want, 
+    but we use the convention:
+            include + [object type] + ! 
+    to name such functions in TuLiPa (e.g. includeInfiniteTimeVector!).
+
+    On the behaviour of an INCLUDEELEMENT function:
+    - Should return all possible dependencies, also when f returns early with ok=false
+    - Should validate dependencies and throw useful errors
+    - If ok=false for other reasons than missing dependencies, return dependencies
+      with type Tuple{Vector{String}, Vector{Id}}, where the Vector{String} part is
+      error messages explaining what went wrong. (The first part is the usual vector
+      with all possible dependencies.) Most INCLUDEELEMENT functions does not need this,
+      but some do. For an example, see the definition of includeHydroRamping! in the 
+      file trait_ramping.jl.
+    - Should either modify lowlevel, toplevel or both. One example could be to create 
+      and object and store it in either lowlevel (see e.g. includeInfiniteTimeVector!) 
+      or toplevel (see e.g. includeBaseBalance!). Another example could be to create
+      an object and store it in an existing toplevel object 
+      (see e.g. includePositiveCapacity!). A final example could be to create an object
+      and both store it into an an existing toplevel object, and store the object itself
+      in e.g. lowlevel (see e.g. includeBaseRHSTerm!).
+
+    Registration: 
+    To register a function (f) in the INCLUDEELEMENT registry, add this line to 
+    the source file below the definitions of your model object and the function f:
+        INCLUDEELEMENT[TypeKey("YourConceptName", "YourTypeName")] = f
+    Where: 
+        "YourConceptName" should be the concept name your model object
+        belongs to (e.g. "Flow" or "TimeVector"). 
+        "YourTypeName" should be the concrete type of your model object
+        (e.g. "BaseFlow" or "InfiniteTimeVector"). 
+    In TuLiPa, we usually define INCLUDEELEMENT functions and register them at 
+    the bottom of source files (see e.g. timevectors.jl).
+
+Other notes that may be useful:
+- Some data elements re-use existing types (e.g. OneYearTimeVector in timevectors.jl)
 """
 
 # ---- The DataElement type, related key types and functions on these ----
@@ -86,7 +141,6 @@ getelkey(x::DataElement) = ElementKey(x.conceptname, x.typename, x.instancename)
 getelvalue(x::DataElement) = x.value
 getobjkey(x::DataElement) = Id(x.conceptname, x.instancename)
 gettypekey(x::DataElement) = TypeKey(x.conceptname, x.typename)
-
 
 # ---- The INCLUDEELEMENT function registry used by the getmodelobjects function ----
 
