@@ -26,10 +26,10 @@ In short, the system works like this:
     - The DataElement type
     - The INCLUDEELEMENT function registry
     - The getmodelobjects function
-    The getmodelobjects function takes a vector of data elements, use functions 
-    stored in the INCLUDEELEMENT function registry to handle data elements representing 
-    different types, and finally puts everything together and returns a 
-    vector of model objects.
+    The getmodelobjects function takes a Vector{DataElement}, use functions stored in 
+    the INCLUDEELEMENT function registry to handle data elements representing 
+    different types, and finally puts everything together and returns a Dict{Id, Any}
+    of model objects.
 
 You can extend the system:
     The getmodelobjects function can only handle data elements that are registered in 
