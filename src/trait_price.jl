@@ -45,7 +45,7 @@ end
 function includeVectorPrice!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
 
-    values = getdictvalue(value, "values", Vector{Float64}, elkey)
+    values = getdictvalue(value, "Vector", Vector{Float64}, elkey)
 
     lowlevel[getobjkey(elkey)] = VectorPrice(values)
     return true
