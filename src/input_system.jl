@@ -29,7 +29,7 @@ In short, the system works like this:
     The getmodelobjects function takes a Vector{DataElement}, use functions stored in 
     the INCLUDEELEMENT function registry to handle data elements representing 
     different types, and finally puts everything together and returns a Dict{Id, Any}
-    of model objects.
+    of model objects. 
 
 You can extend the system:
     The getmodelobjects function can only handle data elements that are registered in 
@@ -130,6 +130,9 @@ struct Id
     instancename::String
 end
 
+# to have more readable signatures
+const ElementIx = Int
+
 getinstancename(x::Id) = x.instancename
 getconceptname(x::Id) = x.conceptname
 getname(x::Id) = "$(x.conceptname)$(x.instancename)"
@@ -164,10 +167,10 @@ end
 
 # TODO: Rule out empty balance objects
 # TODO: Add more stuff
-validate_modelobjects(modelobjects) = nothing
+validate_modelobjects(modelobjects::Dict{Id, Any}) = nothing
 
-function assemble!(modelobjects::Dict)
-    completed = Set()
+function assemble!(modelobjects::Dict{Id, Any})
+    completed = Set{Id}()
     while true
         numbefore = length(completed)
 
@@ -192,21 +195,21 @@ function assemble!(modelobjects::Dict)
     end
 end
 
-function compact_dependencies(dependencies::Dict{ElementKey, Vector{Id}}, elements)
+function compact_dependencies(dependencies::Dict{ElementKey, Vector{Id}}, elements::Vector{DataElement})
     dependencies = objkeys_to_elkeys(dependencies, elements)
     ix_map = Dict(getelkey(e) => i for (i, e) in enumerate(elements))
-    out = Dict{ElementKey, Vector{Int}}()
+    out = Dict{ElementKey, Vector{ElementIx}}()
     for (k, elkeys) in dependencies
         out[k] = sort([ix_map[j] for j in elkeys])
     end
     return out
 end
 
-function include_all_elements(elements)
-    toplevel = Dict()
-    lowlevel = Dict()
-    completed = Set()
-    dependencies = Dict()
+function include_all_elements(elements::Vector{DataElement})
+    toplevel = Dict{Id, Any}()
+    lowlevel = Dict{Id, Any}()
+    completed = Set{ElementKey}()
+    dependencies = Dict{Id, Any}()
 
     numelements = length(elements)
 
@@ -226,7 +229,7 @@ function include_all_elements(elements)
     end    
 end
 
-function include_some_elements!(completed, dependencies, toplevel, lowlevel, elements)
+function include_some_elements!(completed::Set{ElementKey}, dependencies::Dict{Id, Any}, toplevel::Dict{Id, Any}, lowlevel::Dict{Id, Any}, elements::Vector{DataElement})
     for element in elements
         elkey = getelkey(element)
 
@@ -269,21 +272,48 @@ function error_if_duplicates(elements::Vector{DataElement})
     end
 end
 
-function error_include_all_elements(completed, dependencies)
+function error_include_all_elements(completed::Set{ElementKey}, dependencies::Dict{Id, Any})
     (errors, dependencies) = parse_error_dependencies(dependencies, elements)
-    messages = root_causes(dependencies, errors, completed)
+
+    failed = Set{ElementKey}(k for k in keys(dependencies) if !(k in completed))
+    root_causes = Set{ElementKey}(k for k in failed if does_not_depend_on_failed(k, dependencies, failed))
+
+    messages = String[]
+    for k in failed
+        if haskey(errors, k)
+            for s in errors[k]
+                push!(messages, s)
+            end
+        end
+    end
+    for k in root_causes
+        missing_deps = [d for d in get(dependencies, k, ElementKey[]) if !(d in completed)]
+        if length(missing_deps) > 0
+            for d in missing_deps
+                s = "Element $k may have failed due to missing dependency $d"
+                push!(messages, s)
+            end
+        else
+            if !haskey(errors, k)
+                s = "Element $k failed due to unknown reason"
+                push!(messages, s)
+            end
+        end
+    end
+
     msg = join(messages, "\n")
     msg = "Found $(length(messages)) errors:\n$msg"
+
     error(msg)
 end
 
-function parse_error_dependencies(dependencies, elements)
+function parse_error_dependencies(dependencies::Dict{Id, Any}, elements::Vector{DataElement})
     (errors, dependencies) = split_dependencies(dependencies)
     dependencies = objkeys_to_elkeys(dependencies, elements)
     return (errors, dependencies)
 end
 
-function split_dependencies(dependencies)
+function split_dependencies(dependencies::Dict{Id, Any})
     errs = Dict{ElementKey, Vector{String}}()
     deps = Dict{ElementKey, Vector{Id}}()
     for (elkey, d) in dependencies
@@ -298,7 +328,7 @@ function split_dependencies(dependencies)
     return (errs, deps)
 end
 
-function objkeys_to_elkeys(dependencies, elements)
+function objkeys_to_elkeys(dependencies::Dict{Id, Vector{Id}}, elements::Vector{DataElement})
     d = Dict{ElementKey, Vector{ElementKey}}()
     m = Dict{Id, ElementKey}()
     for e in elements
@@ -310,43 +340,13 @@ function objkeys_to_elkeys(dependencies, elements)
     return d
 end
 
-function root_causes(dependencies, errors, completed)
-    failed = Set(k for k in keys(dependencies) if !(k in completed))
-    roots = Set(k for k in failed if does_not_depend_on_failed(k, dependencies, failed))
-    return error_messages(dependencies, errors, completed, failed, roots)
-end
-
-function does_not_depend_on_failed(k, dependencies, failed)
-    for j in get(dependencies, k, ElementKey[])
-        if j in failed
-            return false
+function does_not_depend_on_failed(k::ElementKey, dependencies::Dict{ElementKey, Vector{ElementKey}}, failed::Set{ElementKey})
+    if haskey(dependencies, k)
+        for elkey in dependencies[k]
+            if elkey in failed
+                return false
+            end
         end
     end
     return true
-end
-
-function error_messages(dependencies, errors, completed, failed, roots)
-    messages = String[]
-    for k in failed
-        if haskey(errors, k)
-            for s in errors[k]
-                push!(messages, s)
-            end
-        end
-    end
-    for k in roots
-        missing_deps = [d for d in get(dependencies, k, ElementKey[]) if !(d in completed)]
-        if length(missing_deps) > 0
-            for d in missing_deps
-                s = "Element $k may have failed due to missing dependency $d"
-                push!(messages, s)
-            end
-        else
-            if !haskey(errors, k)
-                s = "Element $k failed due to unknown reason"
-                push!(messages, s)
-            end
-        end
-    end
-    return messages
 end
