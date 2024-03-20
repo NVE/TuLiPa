@@ -187,10 +187,7 @@ function assemble!(modelobjects::Dict{Id, Any})
             return modelobjects
 
         elseif numbefore == numafter
-            # TODO: Change all assemble! to support better error messages 
-            #       (use same idea as in include_some_elements!)
-            error("Some objects could not be made")
-
+            error_assemble(modelobjects, completed)
         end
     end
 end
@@ -251,6 +248,19 @@ function include_some_elements!(completed::Set{ElementKey}, dependencies::Dict{I
 
         ok && push!(completed, elkey)
     end
+end
+
+# TODO: Change assemble! interface to support better error messages (i.e. informing why assemble failed)?
+function error_assemble(modelobjects::Dict{Id, Any}, completed::Set{Id})
+    messages = String[]
+    for id in keys(modelobjects)
+        (id in completed) && continue
+        s = "Could not assemble $id"
+        push!(messages, s)
+    end
+    msg = join(messages, "\n")
+    msg = "Found $(length(messages)) errors:\n$msg"
+    error(msg)
 end
 
 function error_if_duplicates(elements::Vector{DataElement})
