@@ -226,7 +226,7 @@ function include_all_elements(elements::Vector{DataElement})
     end    
 end
 
-function include_some_elements!(completed::Set{ElementKey}, dependencies::Dict{Id, Any}, toplevel::Dict{Id, Any}, lowlevel::Dict{Id, Any}, elements::Vector{DataElement})
+function include_some_elements!(completed::Set{ElementKey}, dependencies::Dict{ElementKey, Any}, toplevel::Dict{Id, Any}, lowlevel::Dict{Id, Any}, elements::Vector{DataElement})
     for element in elements
         elkey = getelkey(element)
 
@@ -282,7 +282,7 @@ function error_if_duplicates(elements::Vector{DataElement})
     end
 end
 
-function error_include_all_elements(completed::Set{ElementKey}, dependencies::Dict{Id, Any})
+function error_include_all_elements(completed::Set{ElementKey}, dependencies::Dict{ElementKey, Any})
     (errors, dependencies) = parse_error_dependencies(dependencies, elements)
 
     failed = Set{ElementKey}(k for k in keys(dependencies) if !(k in completed))
@@ -317,13 +317,13 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
     error(msg)
 end
 
-function parse_error_dependencies(dependencies::Dict{Id, Any}, elements::Vector{DataElement})
+function parse_error_dependencies(dependencies::Dict{ElementKey, Any}, elements::Vector{DataElement})
     (errors, dependencies) = split_dependencies(dependencies)
     dependencies = objkeys_to_elkeys(dependencies, elements)
     return (errors, dependencies)
 end
 
-function split_dependencies(dependencies::Dict{Id, Any})
+function split_dependencies(dependencies::Dict{ElementKey, Any})
     errs = Dict{ElementKey, Vector{String}}()
     deps = Dict{ElementKey, Vector{Id}}()
     for (elkey, d) in dependencies
@@ -338,7 +338,7 @@ function split_dependencies(dependencies::Dict{Id, Any})
     return (errs, deps)
 end
 
-function objkeys_to_elkeys(dependencies::Dict{Id, Vector{Id}}, elements::Vector{DataElement})
+function objkeys_to_elkeys(dependencies::Dict{ElementKey, Vector{Id}}, elements::Vector{DataElement})
     d = Dict{ElementKey, Vector{ElementKey}}()
     m = Dict{Id, ElementKey}()
     for e in elements
