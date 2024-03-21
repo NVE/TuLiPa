@@ -1,35 +1,32 @@
 """
-Description of the input system we use in TuLiPa.
+Description of the input system in TuLiPa.
 
 Why data elements and model objects:
-    TuLiPa is a modular and extensible system for creating model objects that work well 
-    with LP problems. To work well with LP problems, model objects tend to have a 
-    complicated nested structure with a lot of shared lowlevel objects. While such 
-    nested structure is good for LP problems, we found it too complicated to be used by 
-    end users to create datasets. We want such a end user system to be extensible, 
-    composable and modular, and this suggests to use a flat structure instead of a 
-    nested one. The solution we arrived at was to have a input system (data elements) 
-    with a very flat structure, and a compiler (the getmodelobjects function) that would 
-    transform simple data elements into the complicated and nested model objects.
+    TuLiPa is a for creating model objects that work well with LP problems. 
+    To work well with LP problems, model objects tend to have a complicated 
+    nested structure with a lot of shared lowlevel objects. While such nested 
+    structure is good for LP problems, we found it too complicated to be used 
+    by end users to create datasets. We want such a end user system to be 
+    extensible, composable and modular, and this suggests to use a flat 
+    structure instead of a nested one. The solution we arrived at was to have 
+    an data elements with a very flat structure, and a compiler 
+    (the getmodelobjects function) that would transform simple data elements 
+    into the complicated and nested model objects.
 
 Nice properties of data elements:
-    The flat structure of data elements have some nice properties. For once, we find
-    it relatively easy to port datasets from other sources. Another nice property is
-    that since a dataset is just a Vector{DataElement}, it is easy to store parts
-    of a dataset in different files and merge them together when needed. 
-    E.g. we have aggregated and detailed versions of our hydropower dataset 
-    and can easily swich between these without having to modify other 
-    parts of the dataset. 
+    The flat structure of data elements have some nice properties. For once, 
+    we find it relatively easy to port datasets from other sources. Another 
+    nice property is that since a dataset is just a Vector{DataElement}, 
+    it is easy to store parts of a dataset in different files and merge them 
+    together when needed. E.g. we have aggregated and detailed versions of 
+    our hydropower dataset and can easily swich between these without 
+    having to modify other parts of the dataset. 
 
 In short, the system works like this: 
-    This file defines the input system. It is has three major parts:
-    - The DataElement type
-    - The INCLUDEELEMENT function registry
-    - The getmodelobjects function
-    The getmodelobjects function takes a Vector{DataElement}, use functions stored in 
-    the INCLUDEELEMENT function registry to handle data elements representing 
-    different types, and finally puts everything together and returns a Dict{Id, Any}
-    of model objects. 
+    The getmodelobjects function takes a Vector{DataElement}, use functions 
+    stored in the INCLUDEELEMENT function registry to handle data elements 
+    representing different types, and finally puts everything together and 
+    returns a Dict{Id, Any} of model objects. 
 
 You can extend the system:
     The getmodelobjects function can only handle data elements that are registered in 
