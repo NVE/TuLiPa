@@ -251,7 +251,7 @@ function include_some_elements!(completed::Set{ElementKey}, dependencies::Dict{E
         ret = func(toplevel, lowlevel, elkey, elvalue)
         
         if !(typeof(ret) <: Tuple{Bool, Any})
-            error("Unexpected return type for $elkey. Got $(typeof(ret))")
+            error("Unexpected return type for $elkey. Expected <:Tuple{Bool, Any}}, got $(typeof(ret))")
         end
 
         (ok, needed_objkeys) = ret
