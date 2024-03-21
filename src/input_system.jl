@@ -100,7 +100,8 @@ The INCLUDEELEMENT function interface:
         INCLUDEELEMENT[TypeKey("YourConceptName", "YourTypeName")] = f
     Where: 
         "YourConceptName" should be the concept name your model object
-        belongs to (e.g. "Flow" or "TimeVector"). 
+        belongs to (e.g. "Flow" or "TimeVector"). Note, it must not be an
+        existing concept. You can create a new concept as well.
         "YourTypeName" should be the concrete type of your model object
         (e.g. "BaseFlow" or "InfiniteTimeVector"). 
     In TuLiPa, we usually define INCLUDEELEMENT functions and register them at 
