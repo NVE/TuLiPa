@@ -201,12 +201,16 @@ end
 
 function compact_dependencies(dependencies::Dict{ElementKey, Vector{Id}}, elements::Vector{DataElement})
     (dependencies, missings) = objkeys_to_elkeys(dependencies, elements)
+
     @assert all(length(x) == 0 for x in values(missings))
+
     ix_map = Dict(getelkey(e) => i for (i, e) in enumerate(elements))
+
     out = Dict{ElementKey, Vector{ElementIx}}()
     for (k, elkeys) in dependencies
         out[k] = sort([ix_map[j] for j in elkeys])
     end
+
     return out
 end
 
@@ -242,25 +246,36 @@ function include_some_elements!(completed::Set{ElementKey}, dependencies::Dict{E
 
         typekey = gettypekey(element)
 
-        if !haskey(INCLUDEELEMENT, typekey)
-            error("No INCLUDEELEMENT function for $typekey")
-        end
+        error_if_unknown_element_type(typekey)
 
         func = INCLUDEELEMENT[typekey]
 
         elvalue = getelvalue(element)
 
         ret = func(toplevel, lowlevel, elkey, elvalue)
-        
-        if !(typeof(ret) <: Tuple{Bool, Any})
-            error("Unexpected INCLUDEELEMENT function return type for $elkey.\nExpected T <: Tuple{Bool, Any}}, got $(typeof(ret)).")
-        end
+
+        error_if_unexpected_return_type(ret, elkey)
 
         (ok, needed_objkeys) = ret
 
         dependencies[elkey] = needed_objkeys
 
         ok && push!(completed, elkey)
+    end
+end
+
+function error_if_unknown_element_type(typekey)
+    if !haskey(INCLUDEELEMENT, typekey)
+        error("No INCLUDEELEMENT function for $typekey")
+    end
+end
+
+function error_if_unexpected_return_type(ret::Tuple{Bool, Any}, elkey::ElementKey)
+    if !(typeof(ret) <: Tuple{Bool, Any})
+        s1 = "Unexpected INCLUDEELEMENT function return type for $elkey.\n"
+        s2 = "Expected T <: Tuple{Bool, Any}}, got $(typeof(ret))."
+        msg = string(s1, s2)
+        error(msg)
     end
 end
 
@@ -302,9 +317,11 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
     (dependencies, missings) = objkeys_to_elkeys(dependencies, elements)
 
     failed = Set{ElementKey}(k for k in keys(dependencies) if !(k in completed))
+
     root_causes = Set{ElementKey}(k for k in failed if does_not_depend_on_failed(k, dependencies, failed))
 
     messages = String[]
+
     for k in failed
         if haskey(errors, k)
             for s in errors[k]
@@ -312,14 +329,11 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
             end
         end
     end
-    T = Union{ElementKey, Id}
+
     for k in root_causes
-        missing_deps = T[d for d in get(dependencies, k, ElementKey[]) if !(d in completed)]
-        for id in missings[k]
-            push!(missing_deps, id)
-        end
-        if length(missing_deps) > 0
-            for d in missing_deps
+        missing_dependencies = get_missing_dependencies(k, dependencies, missings, completed)
+        if length(missing_dependencies) > 0
+            for d in missing_dependencies
                 s = "Element $k may have failed due to missing dependency $d"
                 push!(messages, s)
             end
@@ -335,6 +349,26 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
     msg = "Found $(length(messages)) errors:\n$msg"
 
     error(msg)
+end
+
+function get_missing_dependencies(k::ElementKey, dependencies::Dict{ElementKey, Vector{ElementKey}}, missings::Dict{ElementKey, Vector{Id}}, completed::Set{ElementKey})
+    out = Union{ElementKey, Id}[]
+
+    if haskey(dependencies, k)
+        for elkey in dependencies[k]
+            if !(elkey in completed)
+                push!(out, elkey)
+            end
+        end
+    end
+
+    if haskey(missings, k)
+        for id in missings[k]
+            push!(out, id)
+        end
+    end
+    
+    return out
 end
 
 function split_dependencies(dependencies::Dict{ElementKey, Any})
@@ -353,26 +387,31 @@ function split_dependencies(dependencies::Dict{ElementKey, Any})
 end
 
 function objkeys_to_elkeys(dependencies::Dict{ElementKey, Vector{Id}}, elements::Vector{DataElement})
-    converted = Dict{ElementKey, Vector{ElementKey}}()
-    missings = Dict{ElementKey, Vector{Id}}()
-    m = Dict{Id, ElementKey}()
+    elkey_dependencies = Dict{ElementKey, Vector{ElementKey}}()
+    missing_ids = Dict{ElementKey, Vector{Id}}()
+
+    id_to_elkey = Dict{Id, ElementKey}()
     for e in elements
-        m[Id(e.conceptname, e.instancename)] = getelkey(e)
+        id = Id(e.conceptname, e.instancename)
+        id_to_elkey[id] = getelkey(e)
     end
+
     for (k, id_vector) in dependencies
         missing_vec = Id[]
         elkey_vec = ElementKey[]
         for id in id_vector
-            if haskey(m, id)
-                push!(elkey_vec, m[id])
+            if haskey(id_to_elkey, id)
+                elkey = id_to_elkey[id]
+                push!(elkey_vec, elkey)
             else
                 push!(missing_vec, id)
             end
         end
-        converted[k] = elkey_vec
-        missings[k] = missing_vec
+        elkey_dependencies[k] = elkey_vec
+        missing_ids[k] = missing_vec
     end
-    return (converted, missings)
+
+    return (elkey_dependencies, missing_ids)
 end
 
 function does_not_depend_on_failed(k::ElementKey, dependencies::Dict{ElementKey, Vector{ElementKey}}, failed::Set{ElementKey})
