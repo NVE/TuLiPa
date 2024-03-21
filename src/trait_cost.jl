@@ -134,10 +134,11 @@ function includeCostTerm!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, val
 
     (id, param, ok) = getdictparamvalue(lowlevel, elkey, value)
     _update_deps(deps, id, ok)
-    @assert !isdurational(param)
 
     ok || return (false, deps)
     haskey(toplevel, varkey) || return (false, deps)
+
+    @assert !isdurational(param)
 
     var = toplevel[varkey]
 
