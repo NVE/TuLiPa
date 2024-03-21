@@ -357,7 +357,7 @@ function objkeys_to_elkeys(dependencies::Dict{ElementKey, Vector{Id}}, elements:
         m[Id(e.conceptname, e.instancename)] = getelkey(e)
     end
     for (k, id_vector) in dependencies
-        d[k] = ElementKey[m[id] for id in id_vector]
+        d[k] = ElementKey[m[id] for id in id_vector if haskey(m, id)]
     end
     return d
 end
