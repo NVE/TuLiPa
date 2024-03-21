@@ -6,10 +6,10 @@ Why data elements and model objects:
     To work well with LP problems, model objects tend to have a complicated 
     nested structure with a lot of shared lowlevel objects. While such nested 
     structure is good for LP problems, we found it too complicated to be used 
-    by end users to create datasets. We want such a end user system to be 
-    extensible, composable and modular, and this suggests to use a flat 
+    by end users to create datasets. We wanted an input system that was 
+    extensible, composable and modular, and this suggested to use a flat 
     structure instead of a nested one. The solution we arrived at was to have 
-    an data elements with a very flat structure, and a compiler 
+    data elements with a very flat structure, and a compiler 
     (the getmodelobjects function) that would transform simple data elements 
     into the complicated and nested model objects.
 
@@ -227,7 +227,7 @@ function include_all_elements(elements::Vector{DataElement})
             return (toplevel, dependencies)
             
         elseif numbefore == numafter
-            error_include_all_elements(completed, dependencies)
+            error_include_all_elements(completed, dependencies, elements)
         end
     end    
 end
@@ -294,7 +294,7 @@ function error_if_duplicates(elements::Vector{DataElement})
     end
 end
 
-function error_include_all_elements(completed::Set{ElementKey}, dependencies::Dict{ElementKey, Any})
+function error_include_all_elements(completed::Set{ElementKey}, dependencies::Dict{ElementKey, Any}, elements::Vector{DataElement})
     (errors, dependencies) = parse_error_dependencies(dependencies, elements)
 
     failed = Set{ElementKey}(k for k in keys(dependencies) if !(k in completed))
