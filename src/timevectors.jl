@@ -590,6 +590,8 @@ end
 # --- InfiniteTimeVectors ---
 function includeInfiniteTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
+
+    deps = Id[]
     
     indexname  = getdictvalue(value, TIMEINDEX_CONCEPT,  String, elkey)
     valuesname = getdictvalue(value, TIMEVALUES_CONCEPT, String, elkey)
@@ -615,6 +617,8 @@ end
 
 function includeMutableInfiniteTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
+
+    deps = Id[]
     
     indexname  = getdictvalue(value, TIMEINDEX_CONCEPT,  String, elkey)
     valuesname = getdictvalue(value, TIMEVALUES_CONCEPT, String, elkey)
