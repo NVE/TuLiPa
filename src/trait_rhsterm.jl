@@ -51,10 +51,11 @@ function includeBaseRHSTerm!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, 
 
     (id, param, ok) = getdictparamvalue(lowlevel, elkey, value)
     _update_deps(deps, id, ok)
-    @assert isdurational(param)
 
     ok || return (false, deps)
     haskey(toplevel, balancekey) || return (false, deps)
+
+    @assert isdurational(param)
     
     isingoing = getdictisingoing(value, elkey)
 
