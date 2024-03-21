@@ -29,20 +29,21 @@ In short, the system works like this:
     returns a Dict{Id, Any} of model objects. 
 
 You can extend the system:
-    The getmodelobjects function can only handle data elements that are registered in 
-    the INCLUDEELEMENT function registry. We have added getmodelobjects support to all 
-    objects defined in TuLiPa that makes sense to store in a end user dataset. See 
-    timevectors.jl or obj_balance.jl for some examples of functions stored in 
-    INCLUDEELEMENT. The system is extensible. End users can define new model objects, 
-    and add getmodelobjects support to them by defining an appropriate function and 
-    store it INCLUDEELEMENT function registry.
+    The getmodelobjects function can only handle data elements that are 
+    registered in the INCLUDEELEMENT function registry. We have added 
+    getmodelobjects support to all objects defined in TuLiPa that makes 
+    sense to store in a end user dataset. See timevectors.jl or obj_balance.jl 
+    for some examples of functions stored in INCLUDEELEMENT. The system is 
+    extensible. End users can define new model objects, and add getmodelobjects 
+    support to them by defining an appropriate function and store it the
+    INCLUDEELEMENT function registry.
 
 The impotance of the INCLUDEELEMENT function registry:
-    It is very important that the functions stored in INCLUDEELEMENT have a particular
-    signature and behaviour. If not, the getmodelobjects will fail, or even worse, 
-    silently return errouneous results. However, it is fortunalely quite easy to define
-    compliant INCLUDEELEMENT functions. The next section explanins the INCLUDEELEMENT
-    function interface. 
+    It is very important that the functions stored in INCLUDEELEMENT have a 
+    particular signature and behaviour. If not, the getmodelobjects will fail, 
+    or even worse, silently return errouneous results. Fortunately, it is not too 
+    hard to define compliant INCLUDEELEMENT functions. The next section explanins 
+    the INCLUDEELEMENT function interface. 
 
 The INCLUDEELEMENT function interface:
     Usage:
@@ -70,21 +71,28 @@ The INCLUDEELEMENT function interface:
     to name such functions in TuLiPa (e.g. includeInfiniteTimeVector!).
 
     On the behaviour of an INCLUDEELEMENT function:
-    - Should return all possible dependencies, also when f returns early with ok=false
+    - Should return all possible dependencies, also when f returns 
+      early with ok=false
+
     - Should validate dependencies and throw useful errors
-    - If ok=false for other reasons than missing dependencies, return dependencies
-      with type Tuple{Vector{String}, Vector{Id}}, where the Vector{String} part is
-      error messages explaining what went wrong. (The first part is the usual vector
-      with all possible dependencies.) Most INCLUDEELEMENT functions does not need this,
-      but some do. For an example, see the definition of includeHydroRamping! in the 
+
+    - If ok=false for other reasons than missing dependencies, 
+      return dependencies with type Tuple{Vector{String}, Vector{Id}}, 
+      where the Vector{String} part is error messages explaining what went wrong. 
+      (The first part is the usual vector with all possible dependencies.) 
+      Most INCLUDEELEMENT functions does not need this, but some do. 
+      For an example, see the definition of includeHydroRamping! in the 
       file trait_ramping.jl.
-    - Should either modify lowlevel, toplevel or both. One example could be to create 
-      and object and store it in either lowlevel (see e.g. includeInfiniteTimeVector!) 
-      or toplevel (see e.g. includeBaseBalance!). Another example could be to create
+
+    - Should either modify lowlevel, toplevel or both. One example could be 
+      to create and object and store it in either lowlevel 
+      (see e.g. includeInfiniteTimeVector!) or toplevel 
+      (see e.g. includeBaseBalance!). Another example could be to create
       an object and store it in an existing toplevel object 
-      (see e.g. includePositiveCapacity!). A final example could be to create an object
-      and both store it into an an existing toplevel object, and store the object itself
-      in e.g. lowlevel (see e.g. includeBaseRHSTerm!).
+      (see e.g. includePositiveCapacity!). 
+      A final example could be to create an object
+      and both store it into an an existing toplevel object, 
+      and store the object itself in e.g. lowlevel (see e.g. includeBaseRHSTerm!).
 
     Registration: 
     To register a function (f) in the INCLUDEELEMENT registry, add this line to 
@@ -99,7 +107,8 @@ The INCLUDEELEMENT function interface:
     the bottom of source files (see e.g. timevectors.jl).
 
 Other notes that may be useful:
-- Some data elements re-use existing types (e.g. OneYearTimeVector in timevectors.jl)
+- Some data elements re-use existing types 
+  (e.g. OneYearTimeVector in timevectors.jl)
 """
 
 # ---- The DataElement type, related key types and functions on these ----
@@ -239,7 +248,13 @@ function include_some_elements!(completed::Set{ElementKey}, dependencies::Dict{E
 
         elvalue = getelvalue(element)
 
-        (ok, needed_objkeys) = func(toplevel, lowlevel, elkey, elvalue)
+        ret = func(toplevel, lowlevel, elkey, elvalue)
+        
+        if !(typeof(ret) <: Tuple{Bool, Any})
+            error("Unexpected return type for $elkey. Got $(typeof(ret))")
+        end
+
+        (ok, needed_objkeys) = ret
 
         dependencies[elkey] = needed_objkeys
 
