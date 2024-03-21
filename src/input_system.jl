@@ -312,7 +312,7 @@ function error_if_duplicates(elements::Vector{DataElement})
 end
 
 function error_include_all_elements(completed::Set{ElementKey}, dependencies::Dict{ElementKey, Any}, elements::Vector{DataElement})
-    (errors, dependencies, missings) = split_dependencies(dependencies)
+    (errors, dependencies, missings) = split_dependencies(dependencies, elements)
 
     failed = Set{ElementKey}(k for k in keys(dependencies) if !(k in completed))
 
@@ -369,10 +369,10 @@ function get_missing_dependencies(k::ElementKey, dependencies::Dict{ElementKey, 
     return out
 end
 
-function split_dependencies(dependencies::Dict{ElementKey, Any})
+function split_dependencies(dependencies::Dict{ElementKey, Any}, elements::Vector{DataElement})
     errs = Dict{ElementKey, Vector{String}}()
     deps = Dict{ElementKey, Vector{Id}}()
-    
+
     for (elkey, d) in dependencies
         if d isa Tuple
             (error_messages, id_vector) = d
