@@ -2,7 +2,7 @@
 Description of the input system in TuLiPa.
 
 Why data elements and model objects:
-    TuLiPa is a for creating model objects that work well with LP problems. 
+    TuLiPa about creating model objects that work well with LP problems. 
     To work well with LP problems, model objects tend to have a complicated 
     nested structure with a lot of shared lowlevel objects. While such nested 
     structure is good for LP problems, we found it too complicated to be used 
@@ -251,7 +251,7 @@ function include_some_elements!(completed::Set{ElementKey}, dependencies::Dict{E
         ret = func(toplevel, lowlevel, elkey, elvalue)
         
         if !(typeof(ret) <: Tuple{Bool, Any})
-            error("Unexpected return type for $elkey. Expected <:Tuple{Bool, Any}}, got $(typeof(ret))")
+            error("Unexpected INCLUDEELEMENT function return type for $elkey.\nExpected T <: Tuple{Bool, Any}}, got $(typeof(ret)).")
         end
 
         (ok, needed_objkeys) = ret
