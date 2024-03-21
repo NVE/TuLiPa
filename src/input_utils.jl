@@ -111,15 +111,16 @@ end
 
 # ---- Utility functions for parsing and verification in INCLUDEELEMENT functions ----
 
-_update_deps(deps::Any, id::Nothing, ok::Bool) = @assert ok
-_update_deps(deps::Tuple{Vector{String}, Vector{Id}}, id::Id, ok::Bool) = push!(deps[2], id)
+_update_deps(deps::Vector{Id}, id::Nothing, ok::Bool) = @assert ok
 _update_deps(deps::Vector{Id}, id::Id, ok::Bool) = push!(deps, id)
-function _update_deps(deps::Tuple{Vector{String}, Vector{Id}}, id, ok::Bool)
-    for i in id
+function _update_deps(deps::Vector{Id}, ids, ok::Bool)
+    for i in ids
         _update_deps(deps, i, ok)
     end
 end
-function _update_deps(deps::Vector{Id}, ids, ok::Bool)
+_update_deps(deps::Tuple{Vector{String}, Vector{Id}}, id::Nothing, ok::Bool) = @assert ok
+_update_deps(deps::Tuple{Vector{String}, Vector{Id}}, id::Id, ok::Bool) = push!(deps[2], id)
+function _update_deps(deps::Tuple{Vector{String}, Vector{Id}}, ids, ok::Bool)
     for i in ids
         _update_deps(deps, i, ok)
     end
