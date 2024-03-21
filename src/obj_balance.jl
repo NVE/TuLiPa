@@ -165,19 +165,14 @@ function includeExogenBalance!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey
 
     deps = Id[]
 
-    (objkey, price, ok) = getdictpricevalue(lowlevel, elkey, value)
-
-    if objkey === nothing
-        @assert ok
-    else
-        push!(deps, objkey)
-    end
-
-    ok || return (false, deps)
-    
     commodityname = getdictvalue(value, COMMODITY_CONCEPT, String, elkey)
     commoditykey = Id(COMMODITY_CONCEPT, commodityname)
     push!(deps, commoditykey)
+
+    (id, price, ok) = getdictpricevalue(lowlevel, elkey, value)
+    _update_deps(deps, id, ok)
+
+    ok || return (false, deps)
     haskey(lowlevel, commoditykey) || return (false, deps)
     
     id = getobjkey(elkey)
