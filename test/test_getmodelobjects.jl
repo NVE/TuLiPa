@@ -21,7 +21,7 @@ end
 
 function test_getmodelobjects_kwarg_deps_true(elements)
     (modelobjects, deps) = getmodelobjects(elements, deps=true)
-    @test typeof(deps) isa Dict{ElementKey, Vector{Int}}
+    @test typeof(deps) <: Dict{ElementKey, Vector{Int}}
     N = length(elements)
     @test modelobjects isa Dict{Id, Any}
     @test all(1 <= i <= N for e in elements for i in deps[getelkey(e)])
