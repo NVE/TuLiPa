@@ -21,7 +21,7 @@ end
 
 function test_getmodelobjects_kwarg_deps_true(elements)
     (modelobjects, deps) = getmodelobjects(elements, deps=true)
-    @test typeof(deps) <: Dict{ElementKey, Vector{Int}}
+    @test typeof(deps) isa Dict{ElementKey, Vector{Int}}
     N = length(elements)
     @test modelobjects isa Dict{Id, Any}
     @test all(1 <= i <= N for e in elements for i in deps[getelkey(e)])
@@ -54,7 +54,7 @@ function includeDummyAssembleError!(toplevel, lowlevel, elkey, value::DummyAssem
     toplevel[Id("testconcept", "MyDummyInstance")] = value
     return (true, Id[])
 end
-assemble!(obj:DummyWillNotAssemble) = obj.retval
+assemble!(obj::DummyWillNotAssemble) = obj.retval
 INCLUDEELEMENT[TypeKey("testconcept", "DummyAssembleError")] = includeDummyAssembleError!
 
 function test_getmodelobjects_assemble_error(elements)
