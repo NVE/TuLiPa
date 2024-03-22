@@ -176,10 +176,6 @@ function getmodelobjects(elements::Vector{DataElement}; validate::Bool=true, dep
     return modelobjects
 end
 
-# TODO: Rule out empty balance objects
-# TODO: Add more stuff
-validate_modelobjects(modelobjects::Dict{Id, Any}) = nothing
-
 function assemble!(modelobjects::Dict{Id, Any})
     completed = Set{Id}()
     while true
@@ -331,6 +327,8 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
         end
     end
 
+    # TODO: check for error messages in non-failing elements?
+
     messages = String[]
 
     for k in failed
@@ -358,7 +356,7 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
     end
 
     msg = join(messages, "\n")
-    msg = "Found $(length(messages)) errors:\n$msg"
+    msg = "\nFound $(length(messages)) errors:\n$msg\n"
 
     error(msg)
 end
@@ -439,4 +437,10 @@ function does_not_depend_on_failed(k::ElementKey, dependencies::Dict{ElementKey,
         end
     end
     return true
+end
+
+# TODO: Rule out empty balance objects
+# TODO: Add more stuff
+function validate_modelobjects(modelobjects::Dict{Id, Any})
+    nothing
 end
