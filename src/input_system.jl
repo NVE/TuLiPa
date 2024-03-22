@@ -162,6 +162,24 @@ const INCLUDEELEMENT = Dict{TypeKey, Function}()
 
 # ---- The getmodelobjects function, which compiles data elements into model objects ----
 
+"""
+Compiles data elements into modelobjects. 
+
+Inputs:
+  elements::Vector{DataElement}
+
+Optional keyword arguments:
+  validate::Bool - true by default. if true (default) we call the 
+                   validate_modelobjects function on modelobjects before returning
+
+  deps::Bool - false by default. When true, we return (modelobjects, dependencies)
+               where dependencies::Dict{ElementKey, Vector{Int}} containing
+               information about which indices in elements are direct dependencies
+               of elements. This can be used to identify all elements belonging to
+               a subset of data elements or model objects. E.g. we use til to find
+               all data elements belonging to model objects in a storage system. 
+
+"""
 function getmodelobjects(elements::Vector{DataElement}; validate::Bool=true, deps::Bool=false)
     error_if_duplicates(elements)
     (modelobjects, dependencies) = include_all_elements(elements)
