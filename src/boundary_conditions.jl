@@ -305,6 +305,23 @@ mutable struct SimpleSingleCuts <: BoundaryCondition
     end
 end
 
+function getlightweightself(x::SimpleSingleCuts)
+    return SimpleSingleCuts(
+        x.id
+        [],
+        x.statevars,
+        [],
+        x.constants,
+        [],
+        x.slopes,
+        [],
+        x.maxcuts,
+        -1,
+        -1,
+        x.lower_bound
+    )
+end
+
 getid(x::SimpleSingleCuts) = x.id
 
 isinitialcondition(::SimpleSingleCuts)  = false
@@ -325,13 +342,13 @@ getcutix(x::SimpleSingleCuts) = x.cutix
 
 getparent(::SimpleSingleCuts) = nothing
 
-function getfuturecostvarid(x::SimpleSingleCuts)
-    return Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "FutureCost"))
-end
+getfuturecostvarid(x::SimpleSingleCuts) = Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "FutureCost"))
 
-function getcutconid(x::SimpleSingleCuts)
-    return Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "CutConstraint"))
-end
+getcutconid(x::SimpleSingleCuts) = Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "CutConstraint"))
+
+# Needed to use setrhsterm! in setconstants!
+# TODO: Extend Prob interface to allow setrhs!(prob, conid, value) instead of setrhsterms!
+getcutconstantid(x::SimpleSingleCuts) = Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "CutConstant"))
 
 function build!(p::Prob, x::SimpleSingleCuts)
     # add single future cost variable
@@ -342,10 +359,6 @@ function build!(p::Prob, x::SimpleSingleCuts)
 
     return
 end
-
-# Needed to use setrhsterm! in setconstants!
-# TODO: Extend Prob interface to allow setrhs!(prob, conid, value) instead of setrhsterms!
-getcutconstantid(x::SimpleSingleCuts) = Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "CutConstant"))
 
 function setconstants!(p::Prob, x::SimpleSingleCuts)
     # set future cost variable objective function
@@ -368,7 +381,7 @@ function setconstants!(p::Prob, x::SimpleSingleCuts)
 end
 
 # Variation where a cut from another problem is used (different state variables due to different time resolutions)
-function setconstants!(p::Prob, x::SimpleSingleCuts, varendperiod::Dict)
+function setconstants!(p::Prob, x::SimpleSingleCuts, varendperiod::Dict) # TODO: Not needed in JulES redesign
     # set future cost variable objective function
     setobjcoeff!(p, getfuturecostvarid(x), 1, 1.0)
 
@@ -458,7 +471,7 @@ function updatecuts!(p::Prob, x::SimpleSingleCuts)
 end
 
 # Variation where a cut from another problem is used (different state variables due to different time resolutions)
-function updatecuts!(p::Prob, x::SimpleSingleCuts, varendperiod::Dict)
+function updatecuts!(p::Prob, x::SimpleSingleCuts, varendperiod::Dict) # TODO: Not needed in JulES redesign
     # get internal storage for cut parameters
     avgconstants = getconstants(x)
     avgslopes = getslopes(x)
