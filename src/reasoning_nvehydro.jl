@@ -373,40 +373,58 @@ function updateheadlosscosts!(method::ReservoirCurveSlopeMethod, clearing::Prob,
     reffactor = 0.67 
 
     # Assumes all reservoirs in master problems are also in clearing problem
-    for master in masters 
+    for master in masters
         for obj in getobjects(master)
-            if obj isa Storage
-                if haskey(obj.metadata, RESERVOIRCURVEKEY) # also implies hydro storage
-                    resid = getid(obj)
-                    balid = getid(getbalance(obj))
-                    T = getnumperiods(gethorizon(obj))
+            if haskey(obj.metadata, RESERVOIRCURVEKEY) # also implies hydro storage
+                (resid, headlosscost, T) = get_headlosscost_data_obj(method, master, t, dummydelta, reffactor, obj)
 
-                    rescurve = obj.metadata[RESERVOIRCURVEKEY]
-                    resend = getvarvalue(master, resid, T)
-                    resmax = getparamvalue(getub(obj), t, dummydelta)
-                    watervalue = getcondual(master, balid, T)
-
-                    R = resmax * reffactor
-                    H = yvalue(rescurve, R)
-
-                    R1 = resend + resmax*0.01
-                    R0 = resend - resmax*0.01
-
-                    H1 = yvalue(rescurve, R1)
-                    H0 = yvalue(rescurve, R0)
-
-                    dH = (H1 - H0) / H
-                    dR = (R1 - R0) / R
-            
-                    F = dH/dR
-            
-                    headlosscost = watervalue * F
-            
-                    setobjcoeff!(clearing, resid, T, headlosscost)
-                end
+                setobjcoeff!(clearing, resid, T, headlosscost) # TODO: Condition that T is the same in clearing and master
             end
         end
     end
+end
+
+function get_headlosscost_data(method::ReservoirCurveSlopeMethod, master::Prob, t::ProbTime)
+    dummydelta = MsTimeDelta(Millisecond(0))
+    reffactor = 0.67 
+    ret = []
+
+    for obj in getobjects(master)
+        if haskey(obj.metadata, RESERVOIRCURVEKEY) # also implies hydro storage
+            push!(ret, get_headlosscost_data_obj(method, master, t, dummydelta, reffactor, obj))
+        end
+    end
+
+    return ret
+end
+
+function get_headlosscost_data_obj(method::ReservoirCurveSlopeMethod, master::Prob, t::ProbTime, dummydelta::TimeDelta, reffactor::Float64, obj::Any)
+    resid = getid(obj)
+    balid = getid(getbalance(obj))
+    T = getnumperiods(gethorizon(obj))
+
+    rescurve = obj.metadata[RESERVOIRCURVEKEY]
+    resend = getvarvalue(master, resid, T)
+    resmax = getparamvalue(getub(obj), t, dummydelta)
+    watervalue = getcondual(master, balid, T)
+
+    R = resmax * reffactor
+    H = yvalue(rescurve, R)
+
+    R1 = resend + resmax*0.01
+    R0 = resend - resmax*0.01
+
+    H1 = yvalue(rescurve, R1)
+    H0 = yvalue(rescurve, R0)
+
+    dH = (H1 - H0) / H
+    dR = (R1 - R0) / R
+
+    F = dH/dR
+
+    headlosscost = watervalue * F
+
+    return (resid, headlosscost, T)
 end
 
 function resetheadlosscosts!(problem::Prob)
