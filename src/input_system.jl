@@ -43,18 +43,12 @@ But you can extend the system:
 
 INCLUDEELEMENT functions must behave a certain way:
     It is very important that the functions stored in INCLUDEELEMENT have a 
-    particular signature and behaviour. If not, the getmodelobjects will fail, 
-    or even worse, silently return errouneous results. Fortunately, it is not too 
-    hard to define compliant INCLUDEELEMENT functions. The next section explanins 
-    the INCLUDEELEMENT function interface. 
+    particular signature and behaviour. If not, the getmodelobjects function
+    will fail, or even worse, silently return errouneous results. Fortunately, 
+    it is not too hard to define compliant INCLUDEELEMENT functions. The next 
+    section explanins the INCLUDEELEMENT function interface. 
 
 The INCLUDEELEMENT function interface:
-    Usage:
-    You define new model object (M) and an appropriate function (f). Methods to f 
-    implicitly define data element (E) and ways transform E to M. You then register 
-    f in the INCLUDEELEMENT function registry. Now, the getmodelobjects function 
-    will be able to use f to create M from E. 
-
     Signature:
     An INCLUDEELEMENT function (f) should have the following signature:
         (ok, deps) = f(toplevel, lowlevel, elkey, value)
