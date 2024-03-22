@@ -290,7 +290,7 @@ end
 
 function error_if_unexpected_return_type(ret, elkey::ElementKey)
     if !(typeof(ret) <: Tuple{Bool, Any})
-        s1 = "Unexpected INCLUDEELEMENT function return type for $elkey.\n"
+        s1 = "Unexpected INCLUDEELEMENT function return type for\n$elkey\n"
         s2 = "Expected T <: Tuple{Bool, Any}}, got $(typeof(ret))."
         msg = string(s1, s2)
         error(msg)
