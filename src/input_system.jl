@@ -211,7 +211,7 @@ function assemble!(modelobjects::Dict{Id, Any})
     end
 end
 
-function compact_dependencies(dependencies::Dict{ElementKey, Vector{Id}}, elements::Vector{DataElement})
+function compact_dependencies(dependencies::Dict{ElementKey, Any}, elements::Vector{DataElement})
     (dependencies, missings) = objkeys_to_elkeys(dependencies, elements)
 
     @assert all(length(x) == 0 for x in values(missings))
