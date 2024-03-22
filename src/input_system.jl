@@ -356,7 +356,7 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
     end
 
     msg = join(messages, "\n")
-    msg = "\nFound $(length(messages)) errors:\n$msg\n"
+    msg = "include_all_elements found $(length(messages)) errors:\n$msg\n"
 
     error(msg)
 end
