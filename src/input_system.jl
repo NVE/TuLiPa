@@ -115,6 +115,10 @@ Other notes that may be useful:
   (e.g. OneYearTimeVector in timevectors.jl)
 """
 
+# TODO: Add tests for all kwargs of getmodelobjects
+# TODO: Add tests for all methods and functions in INCLUDEELEMENT
+# TODO: Add tests for all error situations in getmodelobjects
+
 # ---- The DataElement type, related key types and functions on these ----
 
 struct DataElement
@@ -345,8 +349,10 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
     for k in failed
         if !(k in explained_by_missing)
             if !haskey(errors, k)
-                s = "Element $k failed due to unknown reason"
-                push!(messages, s)
+                if !(k in root_causes)
+                    s = "Element $k failed due to unknown reason"
+                    push!(messages, s)
+                end
             end
         end
     end
