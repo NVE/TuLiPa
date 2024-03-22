@@ -163,7 +163,7 @@ const INCLUDEELEMENT = Dict{TypeKey, Function}()
 # ---- The getmodelobjects function, which compiles data elements into model objects ----
 
 """
-Compiles data elements into modelobjects. 
+Compiles data elements into model objects. 
 
 Inputs:
   elements::Vector{DataElement}
@@ -358,7 +358,12 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
     end
 
     for (d, n) in missing_report
-        s = "Missing dependency $d referred to by $n failing elements"
+        if n == 1
+            maybe_plural = "element"
+        else
+            maybe_plural = "elements"
+        end
+        s = "Missing dependency $d referred to by $n failing $maybe_plural"
         push!(messages, s)
     end
 
@@ -376,7 +381,13 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
     messages = [string(" -> ", s) for s in messages]
 
     msg = join(messages, "\n")
-    msg = "include_all_elements found $(length(messages)) errors:\n$msg\n"
+    n = length(messages)
+    if n == 1
+        maybe_plural = "error"
+    else
+        maybe_plural = "errors"
+    end
+    msg = "include_all_elements found $n $maybe_plural:\n$msg\n"
 
     error(msg)
 end
