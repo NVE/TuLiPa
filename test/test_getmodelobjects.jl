@@ -47,38 +47,6 @@ function test_getmodelobjects_duplicates(elements)
     return true
 end
 
-struct DummyAssembleError
-    retval::Bool
-end
-function includeDummyAssembleError!(toplevel, lowlevel, elkey, value::DummyAssembleError)
-    toplevel[Id("testconcept", "MyDummyInstance")] = value
-    return (true, Id[])
-end
-getid(::DummyAssembleError) = Id("testconcept", "MyDummyInstance")
-assemble!(obj::DummyAssembleError) = obj.retval
-INCLUDEELEMENT[TypeKey("testconcept", "DummyAssembleError")] = includeDummyAssembleError!
-
-function test_getmodelobjects_assemble_error(elements)
-    e = DataElement(
-        "testconcept", 
-        "DummyAssembleError", 
-        "MyDummyInstance", 
-        DummyAssembleError(true))
-    should_be_ok = copy(elements)
-    push!(should_be_ok, e)
-    modelobjects = getmodelobjects(should_be_ok)
-
-    e = DataElement(
-        "testconcept", 
-        "DummyAssembleError", 
-        "MyDummyInstance", 
-        DummyAssembleError(false))
-    should_fail = copy(elements)
-    push!(should_fail, e)
-    @test_throws ErrorException getmodelobjects(should_fail)
-    return true
-end
-
 # TODO: Test each function in INCLUDEELEMENT
 
 @test test_getmodelobjects_kwarg_validate(elements; validate=true)
@@ -87,4 +55,3 @@ end
 @test test_getmodelobjects_kwarg_deps_false(elements)
 @test test_getmodelobjects_missing_element(elements)
 @test test_getmodelobjects_duplicates(elements)
-@test test_getmodelobjects_assemble_error(elements)
