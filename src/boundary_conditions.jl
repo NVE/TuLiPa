@@ -454,6 +454,13 @@ function updatecutparameters!(p::Prob, x::SimpleSingleCuts)
 end
 
 # Updates all cuts in problem
+function updatecuts!(p::Prob)
+    for obj in getobjects(prob)
+        updatecuts!(p, obj)
+    end
+    return
+end
+
 function updatecuts!(p::Prob, x::SimpleSingleCuts)
     # get internal storage for cut parameters
     avgconstants = getconstants(x)
