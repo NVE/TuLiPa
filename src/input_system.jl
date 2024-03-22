@@ -288,7 +288,7 @@ function error_if_unknown_element_type(typekey)
     end
 end
 
-function error_if_unexpected_return_type(ret::Tuple{Bool, Any}, elkey::ElementKey)
+function error_if_unexpected_return_type(ret, elkey::ElementKey)
     if !(typeof(ret) <: Tuple{Bool, Any})
         s1 = "Unexpected INCLUDEELEMENT function return type for $elkey.\n"
         s2 = "Expected T <: Tuple{Bool, Any}}, got $(typeof(ret))."
