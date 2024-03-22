@@ -2,10 +2,10 @@
 Description of the input system in TuLiPa.
 
 In short, the system works like this: 
-    The getmodelobjects function takes a Vector{DataElement}, use functions 
-    stored in the INCLUDEELEMENT function registry to handle data elements 
-    representing different types, and finally puts everything together and 
-    returns a Dict{Id, Any} of model objects. 
+    The getmodelobjects function takes a Vector{DataElement} as input, 
+    use functions stored in the INCLUDEELEMENT function registry to 
+    handle data elements representing different types, and finally puts 
+    everything together and returns a Dict{Id, Any} of model objects. 
 
 Why data elements and model objects:
     To work well with LP problems, model objects tend to have a complicated 
