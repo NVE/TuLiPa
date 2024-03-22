@@ -349,7 +349,7 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
     for k in failed
         if !(k in explained_by_missing)
             if !haskey(errors, k)
-                if !(k in root_causes)
+                if (k in root_causes)
                     s = "Element $k failed due to unknown reason"
                     push!(messages, s)
                 end
