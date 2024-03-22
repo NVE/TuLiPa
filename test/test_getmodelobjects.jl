@@ -74,7 +74,7 @@ function test_getmodelobjects_assemble_error(elements)
         DummyAssembleError(false))
     should_fail = copy(elements)
     push!(should_fail, e)
-    @test_throws ErrorException getmodelobjects(should_be_ok)
+    @test_throws ErrorException getmodelobjects(should_fail)
     return true
 end
 
