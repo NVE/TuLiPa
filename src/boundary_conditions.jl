@@ -500,7 +500,7 @@ end
 
 # register INCLUDEELEMENT functions
 
-function includeStartEqualStop!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeStartEqualStop!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
     checkkey(toplevel, elkey)
 
     deps = Id[]
