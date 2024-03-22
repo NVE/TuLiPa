@@ -54,6 +54,7 @@ function includeDummyAssembleError!(toplevel, lowlevel, elkey, value::DummyAssem
     toplevel[Id("testconcept", "MyDummyInstance")] = value
     return (true, Id[])
 end
+getid(obj::DummyAssembleError) = Id("testconcept", "MyDummyInstance")
 assemble!(obj::DummyAssembleError) = obj.retval
 INCLUDEELEMENT[TypeKey("testconcept", "DummyAssembleError")] = includeDummyAssembleError!
 
