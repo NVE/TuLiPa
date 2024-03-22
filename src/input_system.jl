@@ -212,9 +212,10 @@ function assemble!(modelobjects::Dict{Id, Any})
 end
 
 function compact_dependencies(dependencies::Dict{ElementKey, Any}, elements::Vector{DataElement})
-    (dependencies, missings) = objkeys_to_elkeys(dependencies, elements)
+    (errors, dependencies, missings) = split_dependencies(dependencies, elements)
 
     @assert all(length(x) == 0 for x in values(missings))
+    @assert all(length(x) == 0 for x in values(errors))
 
     ix_map = Dict(getelkey(e) => i for (i, e) in enumerate(elements))
 
