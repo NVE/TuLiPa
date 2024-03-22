@@ -1,44 +1,47 @@
 """
 Description of the input system in TuLiPa.
 
-Why data elements and model objects:
-    TuLiPa about creating model objects that work well with LP problems. 
-    To work well with LP problems, model objects tend to have a complicated 
-    nested structure with a lot of shared lowlevel objects. While such nested 
-    structure is good for LP problems, we found it too complicated to be used 
-    by end users to create datasets. We wanted an input system that was 
-    extensible, composable and modular, and this suggested to use a flat 
-    structure instead of a nested one. The solution we arrived at was to have 
-    data elements with a very flat structure, and a compiler 
-    (the getmodelobjects function) that would transform simple data elements 
-    into the complicated and nested model objects.
-
-Nice properties of data elements:
-    The flat structure of data elements have some nice properties. For once, 
-    we find it relatively easy to port datasets from other sources. Another 
-    nice property is that since a dataset is just a Vector{DataElement}, 
-    it is easy to store parts of a dataset in different files and merge them 
-    together when needed. E.g. we have aggregated and detailed versions of 
-    our hydropower dataset and can easily swich between these without 
-    having to modify other parts of the dataset. 
-
 In short, the system works like this: 
     The getmodelobjects function takes a Vector{DataElement}, use functions 
     stored in the INCLUDEELEMENT function registry to handle data elements 
     representing different types, and finally puts everything together and 
     returns a Dict{Id, Any} of model objects. 
 
-You can extend the system:
-    The getmodelobjects function can only handle data elements that are 
-    registered in the INCLUDEELEMENT function registry. We have added 
-    getmodelobjects support to all objects defined in TuLiPa that makes 
-    sense to store in a end user dataset. See timevectors.jl or obj_balance.jl 
-    for some examples of functions stored in INCLUDEELEMENT. The system is 
-    extensible. End users can define new model objects, and add getmodelobjects 
-    support to them by defining an appropriate function and store it the
-    INCLUDEELEMENT function registry.
+Why data elements and model objects:
+    To work well with LP problems, model objects tend to have a complicated 
+    nested structure with a lot of shared lowlevel objects. While such nested 
+    structure is good for LP problems, we found it too complicated to be used 
+    by end users to create datasets. We wanted an input system that was 
+    extensible, composable and modular, and this suggested to use a flat 
+    structure instead of a nested one. 
 
-The impotance of the INCLUDEELEMENT function registry:
+Some nice properties of data elements:
+    Easy to port datasets from other sources. Since data elements are small
+    and use references to other data elements, it is usually a matter of 
+    looping over objects in the source, create needed data elements 
+    and add them as you go.
+
+    Easy to store dataset in replaceable parts. E.g. have different 
+    hydropower datasets with different aggregation levels.
+    E.g. have exogeneous or endogenous represenation of the 
+    continental power system.
+    
+    Easy to add functionality. E.g. give an existing Flow element 
+    SoftBound constraint by adding SoftBound data elements referring 
+    to the Flow element. E.g. replace BaseArrow with SegmentedArrow
+    to model PQ-curves for an existing Flow element.
+
+We have already added INCLUDEELEMENT functions to many objects:
+    We have added INCLUDEELEMENT functions to all objects defined in TuLiPa 
+    that makes sense to store in a end user dataset. See timevectors.jl 
+    or obj_balance.jl for some examples of functions stored in INCLUDEELEMENT.         
+
+But you can extend the system:
+    You can define new objects and add getmodelobjects support to them by 
+    defining an appropriate function and store it the INCLUDEELEMENT 
+    function registry.
+
+INCLUDEELEMENT functions must behave a certain way:
     It is very important that the functions stored in INCLUDEELEMENT have a 
     particular signature and behaviour. If not, the getmodelobjects will fail, 
     or even worse, silently return errouneous results. Fortunately, it is not too 
@@ -137,9 +140,6 @@ struct Id
     instancename::String
 end
 
-# to have more readable signatures
-const ElementIx = Int
-
 getinstancename(x::Id) = x.instancename
 getconceptname(x::Id) = x.conceptname
 getname(x::Id) = "$(x.conceptname)$(x.instancename)"
@@ -206,7 +206,7 @@ function compact_dependencies(dependencies::Dict{ElementKey, Vector{Id}}, elemen
 
     ix_map = Dict(getelkey(e) => i for (i, e) in enumerate(elements))
 
-    out = Dict{ElementKey, Vector{ElementIx}}()
+    out = Dict{ElementKey, Vector{Int}}()
     for (k, elkeys) in dependencies
         out[k] = sort([ix_map[j] for j in elkeys])
     end
@@ -318,6 +318,15 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
 
     root_causes = Set{ElementKey}(k for k in failed if does_not_depend_on_failed(k, dependencies, failed))
 
+    explained_by_missing = Set{ElementKey}()
+    missing_report = Dict{Union{ElementKey,Id}, Int}()
+    for k in root_causes
+        for d in get_missing_dependencies(k, dependencies, missings, completed)
+            missing_report[d] = 1 + get(missing_report, d, 0)
+            push!(explained_by_missing, k)
+        end
+    end
+
     messages = String[]
 
     for k in failed
@@ -328,14 +337,13 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
         end
     end
 
-    for k in root_causes
-        missing_dependencies = get_missing_dependencies(k, dependencies, missings, completed)
-        if length(missing_dependencies) > 0
-            for d in missing_dependencies
-                s = "Element $k may have failed due to missing dependency $d"
-                push!(messages, s)
-            end
-        else
+    for (d, n) in missing_report
+        s = "Missing dependency $d referred to by $n failing elements"
+        push!(messages, s)
+    end
+
+    for k in failed
+        if !(k in explained_by_missing)
             if !haskey(errors, k)
                 s = "Element $k failed due to unknown reason"
                 push!(messages, s)
