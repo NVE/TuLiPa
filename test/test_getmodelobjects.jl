@@ -49,9 +49,49 @@ end
 
 # TODO: Test each function in INCLUDEELEMENT
 
+function includeVectorTimeIndex!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
+    vector = getdictvalue(value, "Vector", AbstractVector{DateTime}, elkey)
+    includeVectorTimeIndex!(toplevel, lowlevel, elkey, vector)
+end
+
+function test_includeVectorTimeIndex!()
+    # tests method when value::AbstractVector{DateTime}
+    (tl, ll) = (Dict(), Dict())
+    k = ElementKey(TIMEVECTOR_CONCEPT, "VectorTimeIndex", "test")
+    # empty vector
+    @test_throws ErrorException includeVectorTimeIndex!(tl, ll, k, DateTime[])
+    # not sorted
+    v = [DateTime(2024, 3, 23), DateTime(1985, 7, 1)]
+    @test_throws ErrorException includeVectorTimeIndex!(tl, ll, k, v)
+    # should be ok
+    v = [DateTime(1985, 7, 1)]
+    (ok, deps) = includeVectorTimeIndex!(tl, ll, k, [DateTime(1985, 7, 1)])
+    @test ok
+    @test deps isa Vector{Id}
+    @test length(deps) == 0
+    # same id already stored in lowlevel
+    ll[k] = 1
+    @test_throws ErrorException includeVectorTimeIndex!(tl, ll, k, [DateTime(1985, 7, 1)])
+
+    # tests method when value::Dict
+    (tl, ll) = (Dict(), Dict())
+    # missing vector in dict
+    @test_throws ErrorException includeVectorTimeIndex!(tl, ll, k, Dict())
+    # should be ok
+    d = Dict()
+    d["Vector"] = v
+    (ok, deps) = includeVectorTimeIndex!(tl, ll, k, d)
+    @test ok
+    @test deps isa Vector{Id}
+    @test length(deps) == 0
+    return true
+end
+
 @test test_getmodelobjects_kwarg_validate(elements; validate=true)
 @test test_getmodelobjects_kwarg_validate(elements; validate=false)
 @test test_getmodelobjects_kwarg_deps_true(elements)
 @test test_getmodelobjects_kwarg_deps_false(elements)
 @test test_getmodelobjects_missing_element(elements)
 @test test_getmodelobjects_duplicates(elements)
+
+@test test_includeVectorTimeIndex!()
