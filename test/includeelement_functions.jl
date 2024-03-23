@@ -12,31 +12,31 @@ end
 
 function test_includeVectorTimeIndex!()
     # tests method when value::AbstractVector{DateTime}
-    (tl, ll) = (Dict(), Dict())
+    (TL, LL) = (Dict(), Dict())
     k = ElementKey(TIMEVECTOR_CONCEPT, "VectorTimeIndex", "test")
     # empty vector
-    @test_throws ErrorException includeVectorTimeIndex!(tl, ll, k, DateTime[])
+    @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, DateTime[])
     # not sorted
     v = [DateTime(2024, 3, 23), DateTime(1985, 7, 1)]
-    @test_throws ErrorException includeVectorTimeIndex!(tl, ll, k, v)
+    @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, v)
     # should be ok
     v = [DateTime(1985, 7, 1)]
-    (ok, deps) = includeVectorTimeIndex!(tl, ll, k, [DateTime(1985, 7, 1)])
+    (ok, deps) = includeVectorTimeIndex!(TL, LL, k, [DateTime(1985, 7, 1)])
     @test ok
     @test deps isa Vector{Id}
     @test length(deps) == 0
     # same id already stored in lowlevel
-    ll[Id(k.conceptname, k.instancename)] = 1
-    @test_throws ErrorException includeVectorTimeIndex!(tl, ll, k, [DateTime(1985, 7, 1)])
+    LL[Id(k.conceptname, k.instancename)] = 1
+    @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, [DateTime(1985, 7, 1)])
 
     # tests method when value::Dict
-    (tl, ll) = (Dict(), Dict())
+    (TL, LL) = (Dict(), Dict())
     # missing vector in dict
-    @test_throws ErrorException includeVectorTimeIndex!(tl, ll, k, Dict())
+    @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, Dict())
     # should be ok
     d = Dict()
     d["Vector"] = v
-    (ok, deps) = includeVectorTimeIndex!(tl, ll, k, d)
+    (ok, deps) = includeVectorTimeIndex!(TL, LL, k, d)
     @test ok
     @test deps isa Vector{Id}
     @test length(deps) == 0
