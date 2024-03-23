@@ -49,7 +49,7 @@ function test_all_INCLUDEELEMENT_tested()
     actual = Set(ACTUAL_INCLUDE_METHODS)
     untested = setdiff(actual, tested)
     if length(untested) > 0
-        ns = Dict(f => n for (f, n) in actual)
+        ns = Dict(f => n for (f, n) in tested)
         for (f, n) in untested
             diff = n - get(ns, f, 0)
             println("Missing tests for $diff methods for $f")
