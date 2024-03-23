@@ -49,11 +49,6 @@ end
 
 # TODO: Test each function in INCLUDEELEMENT
 
-function includeVectorTimeIndex!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
-    vector = getdictvalue(value, "Vector", AbstractVector{DateTime}, elkey)
-    includeVectorTimeIndex!(toplevel, lowlevel, elkey, vector)
-end
-
 function test_includeVectorTimeIndex!()
     # tests method when value::AbstractVector{DateTime}
     (tl, ll) = (Dict(), Dict())
