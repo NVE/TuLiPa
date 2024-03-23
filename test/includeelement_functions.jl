@@ -52,7 +52,8 @@ function test_all_INCLUDEELEMENT_tested()
         ns = Dict(f => n for (f, n) in tested)
         for (f, n) in untested
             diff = n - get(ns, f, 0)
-            println("Missing tests for $diff methods for $f")
+            s = diff > 1 ? "s" : ""
+            println("Missing test$s for $diff method$s for $f")
         end
         return false
     end
