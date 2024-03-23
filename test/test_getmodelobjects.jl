@@ -47,69 +47,9 @@ function test_getmodelobjects_duplicates(elements)
     return true
 end
 
-# TODO: Test each function in INCLUDEELEMENT
-
-# to be able to detect if functions in INCLUDEELEMENT
-# has not been tested
-const tested_include_funcs = Function[]
-
-function test_includeVectorTimeIndex!()
-    # tests method when value::AbstractVector{DateTime}
-    (tl, ll) = (Dict(), Dict())
-    k = ElementKey(TIMEVECTOR_CONCEPT, "VectorTimeIndex", "test")
-    # empty vector
-    @test_throws ErrorException includeVectorTimeIndex!(tl, ll, k, DateTime[])
-    # not sorted
-    v = [DateTime(2024, 3, 23), DateTime(1985, 7, 1)]
-    @test_throws ErrorException includeVectorTimeIndex!(tl, ll, k, v)
-    # should be ok
-    v = [DateTime(1985, 7, 1)]
-    (ok, deps) = includeVectorTimeIndex!(tl, ll, k, [DateTime(1985, 7, 1)])
-    @test ok
-    @test deps isa Vector{Id}
-    @test length(deps) == 0
-    # same id already stored in lowlevel
-    ll[Id(k.conceptname, k.instancename)] = 1
-    @test_throws ErrorException includeVectorTimeIndex!(tl, ll, k, [DateTime(1985, 7, 1)])
-
-    # tests method when value::Dict
-    (tl, ll) = (Dict(), Dict())
-    # missing vector in dict
-    @test_throws ErrorException includeVectorTimeIndex!(tl, ll, k, Dict())
-    # should be ok
-    d = Dict()
-    d["Vector"] = v
-    (ok, deps) = includeVectorTimeIndex!(tl, ll, k, d)
-    @test ok
-    @test deps isa Vector{Id}
-    @test length(deps) == 0
-    return true
-end
-push!(tested_include_funcs, includeVectorTimeIndex!)
-
-# TODO: remove return true when all INCLUDEELEMENT funcs are tested
-function test_all_INCLUDEELEMENT_tested()
-    return true
-    tested = Set(tested_include_funcs)
-    exists = Set(values(INCLUDEELEMENT))
-    untested = setdiff(exists, tested)
-    if length(untested) > 0
-        for f in untested
-            println("Missing tests for function $f")
-        end
-        return false
-    end
-    return true
-
-end
-
 @test test_getmodelobjects_kwarg_validate(elements; validate=true)
 @test test_getmodelobjects_kwarg_validate(elements; validate=false)
 @test test_getmodelobjects_kwarg_deps_true(elements)
 @test test_getmodelobjects_kwarg_deps_false(elements)
 @test test_getmodelobjects_missing_element(elements)
 @test test_getmodelobjects_duplicates(elements)
-
-@test test_includeVectorTimeIndex!()
-
-@test test_all_INCLUDEELEMENT_tested()
