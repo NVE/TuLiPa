@@ -1,4 +1,4 @@
-using DataFrames, Statistics, JSON, Dates, CSV
+using DataFrames, Statistics, Dates, CSV
 using TuLiPa
 
 # DataElements for a Thermal power plant
