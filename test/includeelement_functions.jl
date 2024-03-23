@@ -1,3 +1,18 @@
+"""
+Add test function with name test_[INCLUDEELEMENT function name]
+(e.g. test_includeVectorTimeIndex!) for each function in the
+INCLUDEELEMENT function registry.
+
+A test function should test both expected error and success,
+and should cover all known methods of the function.
+
+Right below the definition of a test function, push a 
+tuple of the INCLUDEELEMENT function name and the number
+of methods tested into TESTED_INCLUDE_METHODS. This is 
+neccesary for the final test_all_INCLUDEELEMENT_tested
+test function to work.
+"""
+
 # To catch new functions and methods without tests
 # Tuple of include func and num methods tested
 const TESTED_INCLUDE_METHODS = Tuple{Function, Int}[]
@@ -42,7 +57,7 @@ function test_includeVectorTimeIndex!()
     @test length(deps) == 0
     return true
 end
-push!(TESTED_INCLUDE_METHODS, (includeVectorTimeIndex!, 1))
+push!(TESTED_INCLUDE_METHODS, (includeVectorTimeIndex!, 2))
 
 function test_all_INCLUDEELEMENT_tested()
     tested = Set(TESTED_INCLUDE_METHODS)
