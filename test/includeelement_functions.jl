@@ -25,6 +25,28 @@ for f in values(INCLUDEELEMENT)
     push!(ACTUAL_INCLUDE_METHODS, (f, length(methods(f))))
 end
 
+function test_all_INCLUDEELEMENT_tested()
+    tested = Set(TESTED_INCLUDE_METHODS)
+    actual = Set(ACTUAL_INCLUDE_METHODS)
+    untested = setdiff(actual, tested)
+    if length(untested) > 0
+        ns = Dict(f => n for (f, n) in tested)
+        for (f, n) in untested
+            diff = n - get(ns, f, 0)
+            s = diff > 1 ? "s" : ""
+            println("Missing test$s for $diff method$s for $f")
+        end
+        return false
+    end
+    return true
+end
+
+function test_includeelement_functions()
+    @test test_includeVectorTimeIndex!()
+    @test test_all_INCLUDEELEMENT_tested()
+end
+
+
 function test_includeVectorTimeIndex!()
     # tests method when value::AbstractVector{DateTime}
     (TL, LL) = (Dict(), Dict())
@@ -59,22 +81,4 @@ function test_includeVectorTimeIndex!()
 end
 push!(TESTED_INCLUDE_METHODS, (includeVectorTimeIndex!, 2))
 
-function test_all_INCLUDEELEMENT_tested()
-    tested = Set(TESTED_INCLUDE_METHODS)
-    actual = Set(ACTUAL_INCLUDE_METHODS)
-    untested = setdiff(actual, tested)
-    if length(untested) > 0
-        ns = Dict(f => n for (f, n) in tested)
-        for (f, n) in untested
-            diff = n - get(ns, f, 0)
-            s = diff > 1 ? "s" : ""
-            println("Missing test$s for $diff method$s for $f")
-        end
-        return false
-    end
-    return true
-end
-
-@test test_includeVectorTimeIndex!()
-
-@test test_all_INCLUDEELEMENT_tested()
+test_includeelement_functions()
