@@ -49,6 +49,10 @@ end
 
 # TODO: Test each function in INCLUDEELEMENT
 
+# to be able to detect if functions in INCLUDEELEMENT
+# has not been tested
+const tested_include_funcs = Function[]
+
 function test_includeVectorTimeIndex!()
     # tests method when value::AbstractVector{DateTime}
     (tl, ll) = (Dict(), Dict())
@@ -81,6 +85,23 @@ function test_includeVectorTimeIndex!()
     @test length(deps) == 0
     return true
 end
+push!(tested_include_funcs, includeVectorTimeIndex!)
+
+# TODO: remove return true when all INCLUDEELEMENT funcs are tested
+function test_all_INCLUDEELEMENT_tested()
+    return true
+    tested = Set(tested_include_funcs)
+    exists = Set(values(INCLUDEELEMENT))
+    untested = setdiff(exists, tested)
+    if length(untested) > 0
+        for f in untested
+            println("Missing tests for function $f")
+        end
+        return false
+    end
+    return true
+
+end
 
 @test test_getmodelobjects_kwarg_validate(elements; validate=true)
 @test test_getmodelobjects_kwarg_validate(elements; validate=false)
@@ -90,3 +111,5 @@ end
 @test test_getmodelobjects_duplicates(elements)
 
 @test test_includeVectorTimeIndex!()
+
+@test test_all_INCLUDEELEMENT_tested()
