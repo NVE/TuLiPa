@@ -52,7 +52,7 @@ end
 *(d::MsTimeDelta, i::Int) = MsTimeDelta(getduration(d)*i)
 
 # ------ Include dataelements -------
-# TODO: Is this ever used? Can it be removed?
+
 function includeMsTimeDelta!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
 
