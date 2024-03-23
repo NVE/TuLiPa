@@ -97,11 +97,11 @@ offset_time = getoffsettime(prob_time, td_offset)
 # between them can still be done, using scenarioOffset or IsoYearOffset.
 # Create mock data and test that phaseintwotime gives the same values.
 
-values = Array([sin(x) + 1 for x in 1:17641])
-values[1:8820] .*= 1.2
+vals = Array([sin(x) + 1 for x in 1:17641])
+vals[1:8820] .*= 1.2
 level = InfiniteTimeVector{Vector{DateTime},Vector{Float64}}([DateTime("2021-01-04T00:00:00"), DateTime("2024-12-30T00:00:00")], [100.0, 100.0])
 index = DateTime("1980-12-29T00:00:00"):Millisecond(3600000):DateTime("1983-01-03T00:00:00")
-profile = RotatingTimeVector(index, values, DateTime("1980-12-29T00:00:00"), DateTime("1983-01-03T00:00:00"));
+profile = RotatingTimeVector(index, vals, DateTime("1980-12-29T00:00:00"), DateTime("1983-01-03T00:00:00"));
 param = MWToGWhSeriesParam(level, profile)
 rhsterm = BaseRHSTerm(Id("RHSTerm", "WindGER_test"), param, true)
 
