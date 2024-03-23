@@ -65,7 +65,7 @@ function test_includeVectorTimeIndex!()
     @test deps isa Vector{Id}
     @test length(deps) == 0
     # same id already stored in lowlevel
-    ll[k] = 1
+    ll[Id(k.conceptname, k.instancename)] = 1
     @test_throws ErrorException includeVectorTimeIndex!(tl, ll, k, [DateTime(1985, 7, 1)])
 
     # tests method when value::Dict
