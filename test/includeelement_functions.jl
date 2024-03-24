@@ -34,8 +34,8 @@ a certain way:
 - Call the test function inside the 
   test_all_includeelement_methods function 
 
-We put all functionality for this test into a module so that we do not 
-(inadvertently) overwrite names the global namespace, which could affect other 
+We wrap the tests in a module so that we do not (inadvertently) 
+overwrite names the global namespace, which could affect other 
 tests in when running the runtests.jl script.
 """
 
