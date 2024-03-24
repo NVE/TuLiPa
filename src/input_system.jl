@@ -83,13 +83,14 @@ The INCLUDEELEMENT function interface:
 
     - Should either modify lowlevel, toplevel or both. One example could be 
       to create and object and store it in either lowlevel 
-      (see e.g. includeInfiniteTimeVector!) or toplevel 
-      (see e.g. includeBaseBalance!). Another example could be to create
+      (see e.g. includeInfiniteTimeVector! in timevectors.jl) or toplevel 
+      (see e.g. includeBaseBalance! in obj_balance.jl). Another example could be to create
       an object and store it in an existing toplevel object 
-      (see e.g. includePositiveCapacity!). 
+      (see e.g. includePositiveCapacity! in trait_capacity.jl). 
       A final example could be to create an object
       and both store it into an an existing toplevel object, 
-      and store the object itself in e.g. lowlevel (see e.g. includeBaseRHSTerm!).
+      and store the object itself in e.g. lowlevel 
+      (see e.g. includeBaseRHSTerm! in trait_rhsterm.jl).
 
     Registration: 
     To register a function (f) in the INCLUDEELEMENT registry, add this line to 
