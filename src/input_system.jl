@@ -337,15 +337,11 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
         end
     end
 
-    # TODO: check for error messages in non-failing elements?
-
     messages = String[]
 
-    for k in failed
-        if haskey(errors, k)
-            for s in errors[k]
-                push!(messages, s)
-            end
+    for k in keys(errors)
+        for s in errors[k]
+            push!(messages, s)
         end
     end
 
