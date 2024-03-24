@@ -1,17 +1,17 @@
 """
 In this file we define a system for testing all methods in the
-INCLUDEELEMENT function registry, and to catch missing tests for 
-new methods added in the future.
+INCLUDEELEMENT function registry, and a way to catch missing tests 
+for new methods added in the future.
 
 The system has two parts: 
 - The function test_all_includeelement_methods, which should
-  contain tests for each method for each INCLUDEELEMENT function
+  test all known methods of each INCLUDEELEMENT function 
   that is defined in TuLiPa.
 
 - The test_is_all_includeelement_methods_covered function, which
   tests that all methods registered as tested in this file
-  (using TESTED_INCLUDE_METHODS), actually cover all methods
-  stored in the INCLUDEELEMENT registry.
+  (using the registration scheme described below), actually cover 
+  all methods stored in the INCLUDEELEMENT registry.
 
 For the system to work well, each INCLUDEELEMENT test function should behave 
 a certain way:
@@ -200,6 +200,7 @@ function test_includeRangeTimeIndex!()
 
     register_tested_methods(includeRangeTimeIndex!, 2)
 end
+
 
 run_tests()
 
