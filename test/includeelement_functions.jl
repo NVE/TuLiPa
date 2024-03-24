@@ -1,51 +1,88 @@
 """
-Add test function with name test_[INCLUDEELEMENT function name]
-(e.g. test_includeVectorTimeIndex!) for each function in the
-INCLUDEELEMENT function registry.
+In this file we define a system for testing all methods in the
+INCLUDEELEMENT function registry, and to catch missing tests for 
+new methods added in the future.
 
-A test function should test both expected error and success,
-and should cover all known methods of the function.
+The system has two parts: 
+- The function test_all_includeelement_methods, which should
+  contain tests for each method for each INCLUDEELEMENT function
+  that is defined in TuLiPa.
 
-Right below the definition of a test function, push a 
-tuple of the INCLUDEELEMENT function name and the number
-of methods tested into TESTED_INCLUDE_METHODS. This is 
-neccesary for the final test_all_INCLUDEELEMENT_tested
-test function to work.
+- The test_is_all_includeelement_methods_covered function, which
+  tests that all methods registered as tested in this file
+  (using TESTED_INCLUDE_METHODS), actually cover all methods
+  stored in the INCLUDEELEMENT registry.
+
+For the system to work well, each INCLUDEELEMENT test function should behave 
+a certain way:
+- Define one test function for each generic function in INCLUDEELEMENT.
+
+- The test function should test all methods of the function 
+  (i.e. different implementations for different types for the 
+   "values" argument. E.g. see test_includeVectorTimeIndex! 
+   which tests both value::AbstractVector{DateTime} and value::Dict)
+
+- As a convention, name the test function 
+  test_[INCLUDEELEMENT function name]
+  (e.g. test_includeVectorTimeIndex!)
+
+- The final line of a test function should call the 
+  register_tested_methods function to register how many 
+  methods the test function tested.
+  (e.g. register_tested_methods(includeVectorTimeIndex!, 2))
+
+- Call the test function inside the 
+  test_all_includeelement_methods function 
+
+We put all functionality for this test into a module so that we do not 
+(inadvertently) overwrite names the global namespace, which could affect other 
+tests in when running the runtests.jl script.
 """
 
-# To catch new functions and methods without tests
-# Tuple of include func and num methods tested
+module Test_INCLUDEELEMENT_Methods
+
+using TuLiPa, Test
+
 const TESTED_INCLUDE_METHODS = Tuple{Function, Int}[]
 
-# For comparison with TESTED_INCLUDE_METHODS
-const ACTUAL_INCLUDE_METHODS = Tuple{Function, Int}[]
-
-for f in values(INCLUDEELEMENT)
-    f === includeVectorTimeIndex! || continue    # TODO: Remove later
-    push!(ACTUAL_INCLUDE_METHODS, (f, length(methods(f))))
+function register_tested_methods(include_func::Function, num_methods::Int)
+    if !haskey(INCLUDEELEMENT, include_func)
+        error("Unknown INCLUDEELEMENT function $include_func")
+    end
+    push!(TESTED_INCLUDE_METHODS, (include_func, num_methods))
+    return nothing
 end
 
-function test_all_INCLUDEELEMENT_tested()
+function mainfunc_test_includeelement_functions()
+    test_all_includeelement_methods()
+    test_is_all_includeelement_methods_covered()
+end
+
+function test_is_all_includeelement_methods_covered()
+    ACTUAL_INCLUDE_METHODS = Tuple{Function, Int}[]
+    for f in values(INCLUDEELEMENT)
+        f === includeVectorTimeIndex! || continue    # TODO: Remove later
+        push!(ACTUAL_INCLUDE_METHODS, (f, length(methods(f))))
+    end
+    
     tested = Set(TESTED_INCLUDE_METHODS)
     actual = Set(ACTUAL_INCLUDE_METHODS)
+
     untested = setdiff(actual, tested)
+
+    success = true
     if length(untested) > 0
+        success = false
         ns = Dict(f => n for (f, n) in tested)
         for (f, n) in untested
             diff = n - get(ns, f, 0)
             s = diff > 1 ? "s" : ""
             println("Missing test$s for $diff method$s for $f")
         end
-        return false
     end
-    return true
-end
 
-function test_includeelement_functions()
-    @test test_includeVectorTimeIndex!()
-    @test test_all_INCLUDEELEMENT_tested()
+    @test success
 end
-
 
 function test_includeVectorTimeIndex!()
     # tests method when value::AbstractVector{DateTime}
@@ -77,8 +114,10 @@ function test_includeVectorTimeIndex!()
     @test ok
     @test deps isa Vector{Id}
     @test length(deps) == 0
-    return true
-end
-push!(TESTED_INCLUDE_METHODS, (includeVectorTimeIndex!, 2))
 
-test_includeelement_functions()
+    register_tested_methods(includeVectorTimeIndex!, 2)
+end
+
+end # end module
+
+Test_INCLUDEELEMENT_Methods.mainfunc_test_includeelement_functions()
