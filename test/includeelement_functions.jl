@@ -189,8 +189,6 @@ function test_includeRangeTimeIndex!()
     register_tested_methods(includeRangeTimeIndex!, 2)
 end
 
+run_tests()
+
 end # end module
-
-import .Test_INCLUDEELEMENT_Methods
-
-Test_INCLUDEELEMENT_Methods.run_tests()
