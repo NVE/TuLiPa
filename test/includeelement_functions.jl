@@ -128,7 +128,7 @@ function test_includeVectorTimeIndex!()
 end
 
 function test_includeRangeTimeIndex!()
-    # tests method when value::Dict
+    # tests when value::Dict
     (TL, LL) = (Dict(), Dict())
     k = ElementKey("doesnotmatter", "doesnotmatter", "doesnotmatter")
     # empty dict error
@@ -176,7 +176,7 @@ function test_includeRangeTimeIndex!()
              "Delta" => Dates.Hour(-1)) 
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
 
-    # tests whem value::StepRange{DateTime, Millisecond}
+    # tests when value::StepRange{DateTime, Millisecond}
     (TL, LL) = (Dict(), Dict())
     # same id already stored in lowlevel
     LL[Id(k.conceptname, k.instancename)] = 1
