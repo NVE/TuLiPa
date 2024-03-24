@@ -109,10 +109,6 @@ Other notes that may be useful:
   (e.g. OneYearTimeVector in timevectors.jl)
 """
 
-# TODO: Add tests for all kwargs of getmodelobjects
-# TODO: Add tests for all methods and functions in INCLUDEELEMENT
-# TODO: Add tests for all error situations in getmodelobjects
-
 # ---- The DataElement type, related key types and functions on these ----
 
 struct DataElement
