@@ -53,7 +53,7 @@ function register_tested_methods(include_func::Function, num_methods::Int)
     return nothing
 end
 
-function mainfunc_test_includeelement_functions()
+function run_tests()
     test_all_includeelement_methods()
     test_is_all_includeelement_methods_covered()
 end
@@ -193,4 +193,4 @@ end # end module
 
 import .Test_INCLUDEELEMENT_Methods
 
-Test_INCLUDEELEMENT_Methods.mainfunc_test_includeelement_functions()
+Test_INCLUDEELEMENT_Methods.run_tests()
