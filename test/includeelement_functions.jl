@@ -188,7 +188,7 @@ function test_includeRangeTimeIndex!()
     d = Millisecond(Hour(1))
     r = StepRange(t, d, t + Day(1))
     ret = includeRangeTimeIndex!(TL, LL, k, r)
-    _test_ret(ret)
+    _test_ret(ret; n=1)
 
     register_tested_methods(includeRangeTimeIndex!, 2)
 end
