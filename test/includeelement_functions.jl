@@ -61,7 +61,7 @@ end
 function test_is_all_includeelement_methods_covered()
     ACTUAL_INCLUDE_METHODS = Tuple{Function, Int}[]
     for f in values(INCLUDEELEMENT)
-        f === includeVectorTimeIndex! || continue    # TODO: Remove later
+        f === includeVectorTimeIndex! || f === includeRangeTimeIndex! || continue    # TODO: Remove later
         push!(ACTUAL_INCLUDE_METHODS, (f, length(methods(f))))
     end
     
@@ -92,26 +92,31 @@ function _test_ret_deps_0(ret)
     @test length(deps) == 0
 end
 
+function test_all_includeelement_methods()
+    test_includeVectorTimeIndex!()
+    test_includeRangeTimeIndex!()
+end
+
 function test_includeVectorTimeIndex!()
     # tests method when value::AbstractVector{DateTime}
     (TL, LL) = (Dict(), Dict())
     k = ElementKey("doesnotmatter", "doesnotmatter", "doesnotmatter")
-    # empty vector
+    # empty vector error
     @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, DateTime[])
-    # not sorted
+    # not sorted error
     v = [DateTime(2024, 3, 23), DateTime(1985, 7, 1)]
     @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, v)
     # should be ok
     v = [DateTime(1985, 7, 1)]
     ret = includeVectorTimeIndex!(TL, LL, k, [DateTime(1985, 7, 1)])
     _test_ret_deps_0(ret)
-    # same id already stored in lowlevel
+    # same id already stored in lowlevel error
     LL[Id(k.conceptname, k.instancename)] = 1
     @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, [DateTime(1985, 7, 1)])
 
     # tests method when value::Dict
     (TL, LL) = (Dict(), Dict())
-    # missing vector in dict
+    # missing vector in dict error
     @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, Dict())
     # should be ok
     d = Dict()
@@ -122,59 +127,23 @@ function test_includeVectorTimeIndex!()
     register_tested_methods(includeVectorTimeIndex!, 2)
 end
 
-
-
-function includeRangeTimeIndex!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
-    checkkey(lowlevel, elkey)
-
-    deps = Id[]
-    
-    start  = getdictvalue(value, "Start", DateTime, elkey)
-    steps  = getdictvalue(value, "Steps", Int,      elkey) 
-    delta  = getdictvalue(value, "Delta", Union{Period, String},   elkey)
-
-    if delta isa String 
-        deltakey = Id(TIMEDELTA_CONCEPT, delta)
-        push!(deps, deltakey)
-        haskey(lowlevel, deltakey) || return (false, deps)
-        delta = getduration(lowlevel[deltakey])
-    end
-    
-    delta = Millisecond(delta)
-    
-    steps > 0              || error(             "Steps <= 0 for $elkey")
-    delta > Millisecond(0) || error("Delta <= Millisecond(0) for $elkey")
-    
-    lowlevel[getobjkey(elkey)] = StepRange(start, delta, start + delta * (steps-1))
-
-    return (true, deps)
-end
-
-function includeRangeTimeIndex!(::Dict, lowlevel::Dict, elkey::ElementKey, value::StepRange{DateTime, Millisecond})
-    checkkey(lowlevel, elkey)
-    deps = Id[]
-    value.step > Millisecond(0) || error("Delta <= Millisecond(0) for $elkey")
-    lowlevel[getobjkey(elkey)] = value
-    return (true, deps)
-end
-
 function test_includeRangeTimeIndex!()
     # tests method when value::Dict
     (TL, LL) = (Dict(), Dict())
     k = ElementKey("doesnotmatter", "doesnotmatter", "doesnotmatter")
-    # empty dict
+    # empty dict error
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, Dict())
-    # wrong type Start
+    # wrong type Start error
     d = Dict("Start" => "DateTime(1985, 7, 1)", 
              "Steps" => 10,
              "Delta" => Dates.Hour(1)) 
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
-    # wrong type Steps
+    # wrong type Steps error
     d = Dict("Start" => DateTime(1985, 7, 1), 
              "Steps" => "10",
              "Delta" => Dates.Hour(1)) 
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
-    # wrong type Delta
+    # wrong type Delta error
     d = Dict("Start" => DateTime(1985, 7, 1), 
              "Steps" => 10,
              "Delta" => 10) 
@@ -184,6 +153,49 @@ function test_includeRangeTimeIndex!()
              "Steps" => 10,
              "Delta" => Dates.Hour(1)) 
     ret = includeRangeTimeIndex!(TL, LL, k, d)
+    _test_ret_deps_0(ret)
+    # should also be ok
+    (TL, LL) = (Dict(), Dict())
+    LL[Id(TIMEDELTA_CONCEPT, "MyTimeDelta")] = MsTimeDelta(Hour(1))
+    d = Dict("Start" => DateTime(1985, 7, 1), 
+             "Steps" => 10,
+             "Delta" => "MyTimeDelta") 
+    ret = includeRangeTimeIndex!(TL, LL, k, d)
+    _test_ret_deps_0(ret)
+    # same id already stored in lowlevel error
+    LL[Id(k.conceptname, k.instancename)] = 1
+    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
+    # negative step error 
+    d = Dict("Start" => DateTime(1985, 7, 1), 
+             "Steps" => -1,
+             "Delta" => Dates.Hour(1)) 
+    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
+    # negative Delta error 
+    d = Dict("Start" => DateTime(1985, 7, 1), 
+             "Steps" => 10,
+             "Delta" => Dates.Hour(-1)) 
+    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
+
+    # tests whem value::StepRange{DateTime, Millisecond}
+    (TL, LL) = (Dict(), Dict())
+    # same id already stored in lowlevel
+    LL[Id(k.conceptname, k.instancename)] = 1
+    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
+    # negative Millisecond error
+    (TL, LL) = (Dict(), Dict())
+    t = DateTime(1985, 7, 1)
+    d = Millisecond(Hour(-1))
+    r = StepRange(t, d, t + Day(1))
+    # (just to show that StepRange does not throw, 
+    #  but instead evaluates to an empty iterator)
+    @test r == StepRange(t, d, t) 
+    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, r)
+    # should be ok
+    (TL, LL) = (Dict(), Dict())
+    t = DateTime(1985, 7, 1)
+    d = Millisecond(Hour(1))
+    r = StepRange(t, d, t + Day(1))
+    ret = includeRangeTimeIndex!(TL, LL, k, r)
     _test_ret_deps_0(ret)
 
     register_tested_methods(includeRangeTimeIndex!, 2)
