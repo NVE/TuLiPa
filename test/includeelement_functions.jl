@@ -84,14 +84,6 @@ function test_is_all_includeelement_methods_covered()
     @test success
 end
 
-function _test_ret_deps_vec_id_0(ret)
-    @test ret isa Tuple{Bool, Any}
-    (ok, deps) = ret
-    @test ok
-    @test deps isa Vector{Id}
-    @test length(deps) == 0
-end
-
 function test_all_includeelement_methods()
     test_includeVectorTimeIndex!()
     test_includeRangeTimeIndex!()
@@ -109,7 +101,7 @@ function test_includeVectorTimeIndex!()
     # should be ok
     v = [DateTime(1985, 7, 1)]
     ret = includeVectorTimeIndex!(TL, LL, k, [DateTime(1985, 7, 1)])
-    _test_ret_deps_vec_id_0(ret)
+    _test_ret(ret)
     # same id already stored in lowlevel error
     LL[Id(k.conceptname, k.instancename)] = 1
     @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, [DateTime(1985, 7, 1)])
@@ -122,7 +114,7 @@ function test_includeVectorTimeIndex!()
     d = Dict()
     d["Vector"] = v
     ret = includeVectorTimeIndex!(TL, LL, k, d)
-    _test_ret_deps_vec_id_0(ret)
+    _test_ret(ret)
 
     register_tested_methods(includeVectorTimeIndex!, 2)
 end
@@ -153,7 +145,7 @@ function test_includeRangeTimeIndex!()
              "Steps" => 10,
              "Delta" => Dates.Hour(1)) 
     ret = includeRangeTimeIndex!(TL, LL, k, d)
-    _test_ret_deps_vec_id_0(ret)
+    _test_ret(ret)
     # should also be ok
     (TL, LL) = (Dict(), Dict())
     LL[Id(TIMEDELTA_CONCEPT, "MyTimeDelta")] = MsTimeDelta(Hour(1))
@@ -161,7 +153,7 @@ function test_includeRangeTimeIndex!()
              "Steps" => 10,
              "Delta" => "MyTimeDelta") 
     ret = includeRangeTimeIndex!(TL, LL, k, d)
-    _test_ret_deps_vec_id_0(ret)
+    _test_ret(ret)
     # same id already stored in lowlevel error
     LL[Id(k.conceptname, k.instancename)] = 1
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
@@ -196,11 +188,18 @@ function test_includeRangeTimeIndex!()
     d = Millisecond(Hour(1))
     r = StepRange(t, d, t + Day(1))
     ret = includeRangeTimeIndex!(TL, LL, k, r)
-    _test_ret_deps_vec_id_0(ret)
+    _test_ret(ret)
 
     register_tested_methods(includeRangeTimeIndex!, 2)
 end
 
+function _test_ret(ret; n=0, okvalue=true, depstype=Vector{Id})
+    @test ret isa Tuple{Bool, Any}
+    (ok, deps) = ret
+    @test ok == okvalue
+    @test deps isa depstype
+    @test length(deps) == n
+end
 
 run_tests()
 
