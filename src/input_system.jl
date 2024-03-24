@@ -350,13 +350,13 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
     end
 
     for (d, n) in missing_report
-        if n == 1
-            maybe_plural = "element"
+        s = (n > 1) ? "s" : ""
+        if d isa Id
+            m = "Missing dependency $d referred to by $n failing element$s"
         else
-            maybe_plural = "elements"
+            m = "Failing element $d referred to by $n failing element$s"
         end
-        s = "Missing dependency $d referred to by $n failing $maybe_plural"
-        push!(messages, s)
+        push!(messages, m)
     end
 
     for k in failed
