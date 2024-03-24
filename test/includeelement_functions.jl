@@ -178,7 +178,7 @@ function test_includeRangeTimeIndex!()
 
     # tests when value::StepRange{DateTime, Millisecond}
     (TL, LL) = (Dict(), Dict())
-    # same id already stored in lowlevel
+    # same id already stored in lowlevel error
     LL[Id(k.conceptname, k.instancename)] = 1
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
     # negative Millisecond error
@@ -186,8 +186,8 @@ function test_includeRangeTimeIndex!()
     t = DateTime(1985, 7, 1)
     d = Millisecond(Hour(-1))
     r = StepRange(t, d, t + Day(1))
-    # (just to show that StepRange does not throw, 
-    #  but instead evaluates to an empty iterator)
+    # (just to show that StepRange does not throw, but instead 
+    #  evaluates to an empty iterator when given bad input)
     @test r == StepRange(t, d, t) 
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, r)
     # should be ok
