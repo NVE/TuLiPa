@@ -46,7 +46,7 @@ using TuLiPa, Test, Dates
 const TESTED_INCLUDE_METHODS = Tuple{Function, Int}[]
 
 function register_tested_methods(include_func::Function, num_methods::Int)
-    if !haskey(INCLUDEELEMENT, include_func)
+    if !(include_func in values(INCLUDEELEMENT))
         error("Unknown INCLUDEELEMENT function $include_func")
     end
     push!(TESTED_INCLUDE_METHODS, (include_func, num_methods))
