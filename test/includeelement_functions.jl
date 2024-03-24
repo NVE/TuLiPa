@@ -153,7 +153,7 @@ function test_includeRangeTimeIndex!()
              "Steps" => 10,
              "Delta" => "MyTimeDelta") 
     ret = includeRangeTimeIndex!(TL, LL, k, d)
-    _test_ret(ret)
+    _test_ret(ret; n=1)
     # same id already stored in lowlevel error
     LL[Id(k.conceptname, k.instancename)] = 1
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
@@ -188,7 +188,7 @@ function test_includeRangeTimeIndex!()
     d = Millisecond(Hour(1))
     r = StepRange(t, d, t + Day(1))
     ret = includeRangeTimeIndex!(TL, LL, k, r)
-    _test_ret(ret; n=1)
+    _test_ret(ret)
 
     register_tested_methods(includeRangeTimeIndex!, 2)
 end
