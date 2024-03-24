@@ -352,9 +352,9 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
     for (d, n) in missing_report
         s = (n > 1) ? "s" : ""
         if d isa Id
-            m = "Missing dependency $d referred to by $n failing element$s"
+            m = "Missing dependency $d directly referred to by $n failing element$s"
         else
-            m = "Failing element $d referred to by $n failing element$s"
+            m = "Failing element $d directly referred to by $n failing element$s"
         end
         push!(messages, m)
     end
@@ -363,7 +363,7 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
         if !(k in explained_by_missing)
             if !haskey(errors, k)
                 if (k in root_causes)
-                    s = "Element $k failed due to unknown reason"
+                    s = "Element $k failed due to unknown reason (not missing dependency)"
                     push!(messages, s)
                 end
             end
@@ -374,12 +374,12 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
 
     msg = join(messages, "\n")
     n = length(messages)
-    if n == 1
-        maybe_plural = "error"
-    else
-        maybe_plural = "errors"
-    end
-    msg = "include_all_elements found $n $maybe_plural:\n$msg\n"
+    f = length(failed)
+    e = length(elements)
+    ns = (n > 1) ? "s" : ""
+    fs = (f > 1) ? "s" : ""
+    es = (e > 1) ? "s" : ""
+    msg = "Failed to compile $f element$fs (of $e element$es in total). Found $n root error$ns:\n$msg\n"
 
     error(msg)
 end
