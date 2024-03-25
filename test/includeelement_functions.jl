@@ -226,7 +226,8 @@ function test_includeRangeTimeIndex!()
     # non-positive Millisecond error
     (TL, LL) = (Dict(), Dict())
     t = DateTime(1985, 7, 1)
-    d = Millisecond(Hour(0))
+    @test_throws ArgumentError StepRange(t, Millisecond(Hour(0)), t)
+    d = Millisecond(Hour(-1))
     r = StepRange(t, d, t)
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, r)
     # should be ok
