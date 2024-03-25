@@ -244,7 +244,24 @@ function test_includeRangeTimeIndex!()
 end
 
 function test_includeVectorTimeValues!()
-  # TODO: test for value::Dict
+  # tests for value::Dict
+  (TL, LL) = (Dict(), Dict())
+  k = ElementKey("doesnotmatter", "doesnotmatter", "doesnotmatter")
+  # missing vector error
+  @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, Dict())
+  # should be ok
+  d = Dict("Vector" => Float64[1, 2, 3])
+  ret = includeRangeTimeIndex!(TL, LL, k, d)
+  _test_ret(ret)
+  # same id already stored in lowlevel error
+  (TL, LL) = (Dict(), Dict())
+  LL[Id(k.conceptname, k.instancename)] = 1
+  @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
+  # wrong vector eltype error
+  (TL, LL) = (Dict(), Dict())
+  d = Dict("Vector" => Int[1, 2, 3])
+  @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
+
   register_tested_methods(includeVectorTimeValues!, 1)
 end
 
