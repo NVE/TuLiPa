@@ -268,6 +268,7 @@ function include_some_elements!(completed::Set{ElementKey}, dependencies::Dict{E
 
         (ok, needed_objkeys) = ret
 
+        # important to store this at every iteration
         dependencies[elkey] = needed_objkeys
 
         ok && push!(completed, elkey)
@@ -326,6 +327,8 @@ end
 function error_include_all_elements(completed::Set{ElementKey}, dependencies::Dict{ElementKey, Any}, elements::Vector{DataElement})
     (errors, dependencies, missings) = split_dependencies(dependencies, elements)
 
+    assert_all_elkeys_in_dependencies(dependencies, elements)
+
     failed = Set{ElementKey}(k for k in keys(dependencies) if !(k in completed))
 
     root_causes = Set{ElementKey}(k for k in failed if does_not_depend_on_failed(k, dependencies, failed))
@@ -382,6 +385,20 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
     msg = "Failed to compile $f element$fs (of $e element$es in total). Found $n root error$ns:\n$msg\n"
 
     error(msg)
+end
+
+"""
+Added because the dependency system relies on this assumption
+being true, and we want to get failing tests if we in the
+future make changes that violate this assumption.
+"""
+function assert_all_elkeys_in_dependencies(dependencies, elements)
+    E = Set{ElementKey}()
+    for e in elements
+        push!(E, getelkey(e))
+    end
+    D = Set(keys(dependencies))
+    @assert E == D
 end
 
 """
