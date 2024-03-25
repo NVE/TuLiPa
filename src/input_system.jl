@@ -366,6 +366,8 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
         push!(messages, m)
     end
 
+    messages = [string(" -> ", m) for m in messages]
+
     msg = join(messages, "\n")
     n = length(messages)
     f = length(failed)
