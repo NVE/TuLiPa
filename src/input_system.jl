@@ -268,7 +268,8 @@ function include_some_elements!(completed::Set{ElementKey}, dependencies::Dict{E
 
         (ok, needed_objkeys) = ret
 
-        # important to store this at every iteration
+        # important to store this every iteration because
+        # needed_objkeys can change between iterations
         dependencies[elkey] = needed_objkeys
 
         ok && push!(completed, elkey)
