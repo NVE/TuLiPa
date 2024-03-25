@@ -297,8 +297,10 @@ function error_assemble(modelobjects::Dict{Id, Any}, completed::Set{Id})
         s = "Could not assemble $id"
         push!(messages, s)
     end
+    n = length(messages)
+    s = n > 1 ? "s" : ""
     msg = join(messages, "\n")
-    msg = "Found $(length(messages)) errors:\n$msg"
+    msg = "Found $n error$s:\n$msg"
     error(msg)
 end
 
@@ -328,41 +330,24 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
 
     root_causes = Set{ElementKey}(k for k in failed if does_not_depend_on_failed(k, dependencies, failed))
 
-    explained_by_missing = Set{ElementKey}()
-    missing_report = Dict{Union{ElementKey,Id}, Int}()
-    for k in root_causes
-        for d in get_missing_dependencies(k, dependencies, missings, completed)
-            missing_report[d] = 1 + get(missing_report, d, 0)
-            push!(explained_by_missing, k)
-        end
-    end
+    dependency_counts = get_dependency_counts(dependencies)
+
+    report_elements = union(root_causes, keys(errors))
 
     messages = String[]
-
-    for k in keys(errors)
-        for s in errors[k]
-            push!(messages, s)
-        end
-    end
-
-    for (d, n) in missing_report
-        s = (n > 1) ? "s" : ""
-        if d isa Id
-            m = "Missing dependency $d directly referred to by $n failing element$s"
-        else
-            m = "Failing element $d directly referred to by $n failing element$s"
-        end
+    for k in report_elements
+        issues = get_include_element_issues(k, errors, missings)
+        i = length(issues)
+        n = dependency_counts[k]
+        is = i > 1 ? "s" : ""
+        ns = n > 1 ? "s" : ""
+        m = " -> $k (refrenced by $n element$ns) had $i issue$is:"
         push!(messages, m)
+        for issue in issues
+            m = "      $issue"
+            push!(messages, m)
+        end
     end
-
-    for k in root_causes
-        (k in explained_by_missing) && continue
-        haskey(errors, k) && continue
-        s = "Element $k failed due to unknown reason (not missing dependency)"
-        push!(messages, s)
-    end
-
-    messages = [string(" -> ", s) for s in messages]
 
     msg = join(messages, "\n")
     n = length(messages)
@@ -376,24 +361,41 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
     error(msg)
 end
 
-function get_missing_dependencies(k::ElementKey, dependencies::Dict{ElementKey, Vector{ElementKey}}, missings::Dict{ElementKey, Vector{Id}}, completed::Set{ElementKey})
-    out = Union{ElementKey, Id}[]
-
-    if haskey(dependencies, k)
-        for elkey in dependencies[k]
-            if !(elkey in completed)
-                push!(out, elkey)
-            end
+function get_dependency_counts(dependencies::Dict{ElementKey, Vector{ElementKey}})
+    function recursive_count(k, dependencies, counts)
+        elkeys = dependencies[k]
+        length(elkeys) > 0 || return
+        for j in elkeys
+            counts[j] = 1 + get(counts, j, 0)
+            recursive_count(j, dependencies, counts)
         end
     end
+    counts = Dict{ElementKey, Int}()
+    for k in keys(dependencies)
+        counts[k] = 0
+        recursive_count(k, dependencies, counts)
+    end
+    return out
+end
 
+function get_include_element_issues(k, errors, missings)
+    issues = String[]
+    if haskey(errors, k)
+        for m in errors[k]
+            push!(issues, m)
+        end
+    end
     if haskey(missings, k)
         for id in missings[k]
-            push!(out, id)
+            m = "Refers to missing $id"
+            push!(issues, m)
         end
     end
-
-    return out
+    if !(haskey(errors, k) || haskey(missings, k))
+        m = "Failed due to unknown reason (not missing dependency)"
+        push!(issues, m)
+    end
+    return issues
 end
 
 function split_dependencies(dependencies::Dict{ElementKey, Any}, elements::Vector{DataElement})
