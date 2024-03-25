@@ -341,7 +341,8 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
         n = dependency_counts[k]
         is = i > 1 ? "s" : ""
         ns = n > 1 ? "s" : ""
-        m = " -> $k (refrenced by $n element$ns) had $i issue$is:"
+        nx = n > 1 ?  "" : "s"
+        m = " -> Element $k ($n element$ns depend$nx on it) had $i issue$is:"
         push!(messages, m)
         for issue in issues
             m = "      $issue"
@@ -361,21 +362,27 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
     error(msg)
 end
 
+"""
+Returns Dict{ElementKey, Vector{ElementKey}} 
+with total number of data elements that directly 
+or indirectly depend on a data element.
+"""
 function get_dependency_counts(dependencies::Dict{ElementKey, Vector{ElementKey}})
-    function recursive_count(k, dependencies, counts)
-        elkeys = dependencies[k]
-        length(elkeys) > 0 || return
-        for j in elkeys
-            counts[j] = 1 + get(counts, j, 0)
-            recursive_count(j, dependencies, counts)
-        end
-    end
     counts = Dict{ElementKey, Int}()
     for k in keys(dependencies)
         counts[k] = 0
         recursive_count(k, dependencies, counts)
     end
-    return out
+    return counts
+end
+
+function recursive_count(k, dependencies, counts)
+    elkeys = dependencies[k]
+    length(elkeys) > 0 || return
+    for j in elkeys
+        counts[j] = 1 + get(counts, j, 0)
+        recursive_count(j, dependencies, counts)
+    end
 end
 
 function get_include_element_issues(k, errors, missings)
