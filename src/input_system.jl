@@ -358,8 +358,8 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
     end
     for id in reportable_missings
         n = missings_counts[id]
-        s = n > 1 ? "s" : ""
-        x = n < 2 ? "s" : ""
+        s = n == 1 ? "" : "s"
+        x = n == 1 ? "s" : ""
         m = "Missing element $id ($n element$s depend$x on it)"
         push!(messages, m)
     end
