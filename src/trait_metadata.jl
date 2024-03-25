@@ -34,10 +34,13 @@ TODO: Add metadata for all objects?
 """
 
 # ------ Include dataelements -------
-function includeStoragehint!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeStoragehint!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
+    deps = Id[]
+
     storagename = getdictvalue(value, STORAGE_CONCEPT, String, elkey)
     storagekey = Id(STORAGE_CONCEPT, storagename)
-    haskey(toplevel, storagekey) || return false
+    push!(deps, storagekey)
+    haskey(toplevel, storagekey) || return (false, deps)
 
     storage = toplevel[storagekey]
 
@@ -49,13 +52,16 @@ function includeStoragehint!(toplevel::Dict, ::Dict, elkey::ElementKey, value::D
 
     setmetadata!(storage, STORAGEHINTKEY, period)
     
-    return true    
+    return (true, deps)    
 end
 
-function includeResidualhint!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool    
+function includeResidualhint!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
+    deps = Id[]
+
     rhsname = getdictvalue(value, RHSTERM_CONCEPT, String, elkey)
     rhskey = Id(RHSTERM_CONCEPT, rhsname)
-    haskey(lowlevel, rhskey) || return false
+    push!(deps, rhskey)
+    haskey(lowlevel, rhskey) || return (false, deps)
 
     rhsterm = lowlevel[rhskey]
 
@@ -63,13 +69,16 @@ function includeResidualhint!(::Dict, lowlevel::Dict, elkey::ElementKey, value::
 
     setmetadata!(rhsterm, RESIDUALHINTKEY, residual)
     
-    return true    
+    return (true, deps)    
 end
 
-function includeReservoirCurve!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeReservoirCurve!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
+    deps = Id[]
+
     storagename = getdictvalue(value, STORAGE_CONCEPT, String, elkey)
     storagekey = Id(STORAGE_CONCEPT, storagename)
-    haskey(toplevel, storagekey) || return false
+    push!(deps, storagekey)
+    haskey(toplevel, storagekey) || return (false, deps)
 
     storage = toplevel[storagekey]
     
@@ -79,13 +88,16 @@ function includeReservoirCurve!(toplevel::Dict, ::Dict, elkey::ElementKey, value
     rescurve = XYCurve(res,head)
     setmetadata!(storage, RESERVOIRCURVEKEY, rescurve)
 
-    return true
+    return (true, deps)
 end
 
-function includeProductionInfo!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeProductionInfo!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
+    deps = Id[]
+
     flowname = getdictvalue(value, FLOW_CONCEPT, String, elkey)
     flowkey = Id(FLOW_CONCEPT, flowname)
-    haskey(toplevel, flowkey) || return false
+    push!(deps, flowkey)
+    haskey(toplevel, flowkey) || return (false, deps)
 
     flow = toplevel[flowkey]
     
@@ -95,13 +107,16 @@ function includeProductionInfo!(toplevel::Dict, ::Dict, elkey::ElementKey, value
     setmetadata!(flow, OUTLETLEVELKEY, outlet)
     setmetadata!(flow, NOMINALHEADKEY, head)
 
-    return true
+    return (true, deps)
 end
 
-function includeHydraulichint!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeHydraulichint!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
+    deps = Id[]
+
     balancename = getdictvalue(value, BALANCE_CONCEPT, String, elkey)
     balancekey = Id(BALANCE_CONCEPT, balancename)
-    haskey(toplevel, balancekey) || return false
+    push!(deps, balancekey)
+    haskey(toplevel, balancekey) || return (false, deps)
 
     balance = toplevel[balancekey]
     
@@ -109,13 +124,16 @@ function includeHydraulichint!(toplevel::Dict, ::Dict, elkey::ElementKey, value:
 
     setmetadata!(balance, HYDRAULICHINTKEY, code)
 
-    return true
+    return (true, deps)
 end
 
-function includeGlobalEneq!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeGlobalEneq!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
+    deps = Id[]
+
     balancename = getdictvalue(value, BALANCE_CONCEPT, String, elkey)
     balancekey = Id(BALANCE_CONCEPT, balancename)
-    haskey(toplevel, balancekey) || return false
+    push!(deps, balancekey)
+    haskey(toplevel, balancekey) || return (false, deps)
 
     balance = toplevel[balancekey]
     
@@ -123,7 +141,7 @@ function includeGlobalEneq!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Di
 
     setmetadata!(balance, GLOBALENEQKEY, globaleneq)
 
-    return true
+    return (true, deps)
 end
 
 INCLUDEELEMENT[TypeKey(METADATA_CONCEPT, RESIDUALHINTKEY)] = includeResidualhint!

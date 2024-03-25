@@ -570,7 +570,8 @@ function getparamvalue(param::MWToGWhParam, start::ProbTime, d::TimeDelta)
 end
 
 # ------ Include dataelements -------
-function includeFossilMCParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+
+function includeFossilMCParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
 
     fuellevel   = getdictvalue(value, "FuelLevel",   TIMEVECTORPARSETYPES, elkey)
@@ -581,150 +582,267 @@ function includeFossilMCParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value:
     efficiency  = getdictvalue(value, "Efficiency",  TIMEVECTORPARSETYPES, elkey)
     voc         = getdictvalue(value, "VOC",         TIMEVECTORPARSETYPES, elkey)
     
-    (fuellevel,   ok) = getdicttimevectorvalue(lowlevel, fuellevel)   ;  ok || return false
-    (fuelprofile, ok) = getdicttimevectorvalue(lowlevel, fuelprofile) ;  ok || return false
-    (co2factor,   ok) = getdicttimevectorvalue(lowlevel, co2factor)   ;  ok || return false
-    (co2level,    ok) = getdicttimevectorvalue(lowlevel, co2level)    ;  ok || return false
-    (co2profile,  ok) = getdicttimevectorvalue(lowlevel, co2profile)  ;  ok || return false
-    (efficiency,  ok) = getdicttimevectorvalue(lowlevel, efficiency)  ;  ok || return false
-    (voc,         ok) = getdicttimevectorvalue(lowlevel, voc)         ;  ok || return false
+    deps = Id[]
+    all_ok = true
+
+    (id, fuellevel, ok) = getdicttimevectorvalue(lowlevel, fuellevel)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    (id, fuelprofile, ok) = getdicttimevectorvalue(lowlevel, fuelprofile) 
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+    
+    (id, co2factor, ok) = getdicttimevectorvalue(lowlevel, co2factor)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    (id, co2level, ok) = getdicttimevectorvalue(lowlevel, co2level)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    (id, co2profile, ok) = getdicttimevectorvalue(lowlevel, co2profile)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+    
+    (id, efficiency, ok) = getdicttimevectorvalue(lowlevel, efficiency)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    (id, voc, ok) = getdicttimevectorvalue(lowlevel, voc)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    if all_ok == false
+        return (false, deps)
+    end
     
     obj = FossilMCParam(fuellevel, fuelprofile, co2factor, co2level, co2profile, efficiency, voc)
     
     lowlevel[getobjkey(elkey)] = obj
-    return true
+    return (true, deps)
 end
 
-function includeM3SToMM3Param!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeM3SToMM3Param!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
 
-    (param, ok) = getdictparamvalue(lowlevel, elkey, value)   ;  ok || return false
+    (id, param, ok) = getdictparamvalue(lowlevel, elkey, value)
+
+    deps = Id[]
+    _update_deps(deps, id, ok)
+    
+    ok || return (false, deps)
+    
     lowlevel[getobjkey(elkey)] = M3SToMM3Param(param)
 
-    return true
+    return (true, deps)
 end
 
-function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
     
     level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
     profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
-    
-    (level,   ok) = getdicttimevectorvalue(lowlevel, level)   ;  ok || return false
-    (profile, ok) = getdicttimevectorvalue(lowlevel, profile) ;  ok || return false
+
+    deps = Id[]
+    all_ok = true
+
+    (id, level, ok) = getdicttimevectorvalue(lowlevel, level)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    (id, profile, ok) = getdicttimevectorvalue(lowlevel, profile)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    if all_ok == false
+        return (false, deps)
+    end
     
     lowlevel[getobjkey(elkey)] = M3SToMM3SeriesParam(level, profile)
-    return true
+
+    return (true, deps)
 end
 
-function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::M3SToMM3SeriesParam)::Bool
+function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::M3SToMM3SeriesParam)
+    deps = Id[]
     lowlevel[getobjkey(elkey)] = value
-    return true
+    return (true, deps)
 end
 
-function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)::Bool
+function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)
+    deps = Id[]
     level = ConstantTimeVector(value)
     profile = ConstantTimeVector(one(typeof(value)))
     lowlevel[getobjkey(elkey)] = M3SToMM3SeriesParam(level, profile)
-    return true
+    return (true, deps)
 end
 
-function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
     
     level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
     profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
+
+    deps = Id[]
+    all_ok = true
+
+    (id, level, ok) = getdicttimevectorvalue(lowlevel, level)    
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
     
-    (level,   ok) = getdicttimevectorvalue(lowlevel, level)    ;  ok || return false
-    (profile, ok) = getdicttimevectorvalue(lowlevel, profile)  ;  ok || return false
+    (id, profile, ok) = getdicttimevectorvalue(lowlevel, profile)  
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    if all_ok == false
+        return (false, deps)
+    end
     
     lowlevel[getobjkey(elkey)] = MWToGWhSeriesParam(level, profile)
-    return true
+    return (true, deps)
 end
 
-function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MWToGWhSeriesParam)::Bool
+function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MWToGWhSeriesParam)
+    deps = Id[]
     lowlevel[getobjkey(elkey)] = value
-    return true
+    return (true, deps)
 end
 
-function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)::Bool
+function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)
+    deps = Id[]
     level = ConstantTimeVector(value)
     profile = ConstantTimeVector(one(typeof(value)))
     lowlevel[getobjkey(elkey)] = MWToGWhSeriesParam(level, profile)
-    return true
+    return (true, deps)
 end
 
-function includeMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
-    (param, ok) = getdictparamvalue(lowlevel, elkey, value)
-    ok || return false
+function includeMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
+    (id, param, ok) = getdictparamvalue(lowlevel, elkey, value)
+
+    deps = Id[]
+    _update_deps(deps, id, ok)
+
+    ok || return (false, deps)
 
     lowlevel[getobjkey(elkey)] = MWToGWhParam(param)
-    return true
+    return (true, deps)
 end
 
-function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
 
+    deps = Id[]
+
     if haskey(value, STARTCOSTKEY)
-        (startcost, ok) = getdictparamvalue(lowlevel, elkey, value, STARTCOSTKEY)   ;  ok || return false
+        (id, startcost, ok) = getdictparamvalue(lowlevel, elkey, value, STARTCOSTKEY)
+        _update_deps(deps, id, ok)
+
+        ok || return (false, deps)
+
         lowlevel[getobjkey(elkey)] = CostPerMWToGWhParam(startcost)
+        return (true, deps)
+
     elseif haskey(value, "Level") && haskey(value, "Profile")
         level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
         profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
-        
-        (level,   ok) = getdicttimevectorvalue(lowlevel, level)    ;  ok || return false
-        (profile, ok) = getdicttimevectorvalue(lowlevel, profile)  ;  ok || return false
-        
+
+        all_ok = true
+
+        (id, level, ok) = getdicttimevectorvalue(lowlevel, level)   
+        all_ok = all_ok && ok
+        _update_deps(deps, id, ok)
+
+        (id, profile, ok) = getdicttimevectorvalue(lowlevel, profile)
+        all_ok = all_ok && ok
+        _update_deps(deps, id, ok)
+
+        if all_ok == false
+            return (false, deps)
+        end
+
         lowlevel[getobjkey(elkey)] = CostPerMWToGWhParam(MeanSeriesParam(level, profile))
-    else
-        return false
+        return (true, deps)
     end
 
-    return true
+    return (false, deps)
 end
 
-function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::CostPerMWToGWhParam)::Bool
+function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::CostPerMWToGWhParam)
+    deps = Id[]
     lowlevel[getobjkey(elkey)] = value
-    return true
+    return (true, deps)
 end
 
-function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)::Bool
+function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)
+    deps = Id[]
     lowlevel[getobjkey(elkey)] = CostPerMWToGWhParam(ConstantParam(value))
-    return true
+    return (true, deps)
 end
 
-function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
     
     level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
     profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
     
-    (level,   ok) = getdicttimevectorvalue(lowlevel, level)   ;  ok || return false
-    (profile, ok) = getdicttimevectorvalue(lowlevel, profile) ;  ok || return false
-    
+    deps = Id[]
+    all_ok = true
+
+    (id, level, ok) = getdicttimevectorvalue(lowlevel, level)   
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    (id, profile, ok) = getdicttimevectorvalue(lowlevel, profile)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    if all_ok == false
+        return (false, deps)
+    end
+
     lowlevel[getobjkey(elkey)] = MeanSeriesParam(level, profile)
-    return true
+    return (true, deps)
 end
 
-function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MeanSeriesParam)::Bool
+function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MeanSeriesParam)
+    deps = Id[]
     lowlevel[getobjkey(elkey)] = value
-    return true
+    return (true, deps)
 end
 
-function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
     
     level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
     profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
+
+    deps = Id[]
+    all_ok = true
     
-    (level,   ok) = getdicttimevectorvalue(lowlevel, level)   ;  ok || return false
-    (profile, ok) = getdicttimevectorvalue(lowlevel, profile) ;  ok || return false
+    (id, level, ok) = getdicttimevectorvalue(lowlevel, level)   
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    (id, profile, ok) = getdicttimevectorvalue(lowlevel, profile) 
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    if all_ok == false
+        return (false, deps)
+    end
     
     lowlevel[getobjkey(elkey)] = MeanSeriesIgnorePhaseinParam(level, profile)
-    return true
+    return (true, deps)
 end
 
-function includePrognosisSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MeanSeriesIgnorePhaseinParam)
+    deps = Id[]
+    lowlevel[getobjkey(elkey)] = value
+    return (true, deps)
+end
+
+function includePrognosisSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
     
     level   = getdictvalue(value, "Level",   TIMEVECTORPARSETYPES, elkey)
@@ -732,43 +850,71 @@ function includePrognosisSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey,
     prognosis = getdictvalue(value, "Prognosis", TIMEVECTORPARSETYPES, elkey)
     steps = getdictvalue(value, "Steps", Int, elkey) 
     steps > 0 || error("Steps <= 0 for $elkey")
+
+    deps = Id[]
+    all_ok = true
     
-    (level,   ok) = getdicttimevectorvalue(lowlevel, level)   ;  ok || return false
-    (profile, ok) = getdicttimevectorvalue(lowlevel, profile) ;  ok || return false
-    (prognosis, ok) = getdicttimevectorvalue(lowlevel, prognosis) ;  ok || return false
+    (id, level, ok) = getdicttimevectorvalue(lowlevel, level)   
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    (id, profile, ok) = getdicttimevectorvalue(lowlevel, profile) 
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    (id, prognosis, ok) = getdicttimevectorvalue(lowlevel, prognosis) 
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    if all_ok == false
+        return (false, deps)
+    end
     
     lowlevel[getobjkey(elkey)] = PrognosisSeriesParam(level, profile, prognosis, steps)
-    return true
+    return (true, deps)
 end
 
-function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MeanSeriesIgnorePhaseinParam)::Bool
-    lowlevel[getobjkey(elkey)] = value
-    return true
-end
-
-function includeUMMSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeUMMSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     level = getdictvalue(value, "Level", TIMEVECTORPARSETYPES, elkey)
     ummprofile = getdictvalue(value, "Ummprofile", TIMEVECTORPARSETYPES, elkey)
     profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
 
-    (level, ok) = getdicttimevectorvalue(lowlevel, level)
-    ok || return false
-    (ummprofile, ok) = getdicttimevectorvalue(lowlevel, ummprofile)
-    ok || return false
-    (profile, ok) = getdicttimevectorvalue(lowlevel, profile)
-    ok || return false
+    deps = Id[]
+    all_ok = true
+
+    (id, level, ok) = getdicttimevectorvalue(lowlevel, level)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    (id, ummprofile, ok) = getdicttimevectorvalue(lowlevel, ummprofile)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    (id, profile, ok) = getdicttimevectorvalue(lowlevel, profile)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    if all_ok == false
+        return (false, deps)
+    end
 
     lowlevel[getobjkey(elkey)] = UMMSeriesParam(level, ummprofile, profile)
-    return true
+    return (true, deps)
 end
 
-function includeStatefulParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeStatefulParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
 
-    (param, ok) = getdictparamvalue(lowlevel, elkey, value)   ;  ok || return false
+    deps = Id[]
+
+    (id, param, ok) = getdictparamvalue(lowlevel, elkey, value)
+    _update_deps(deps, id, ok)
+
+    ok || return (false, deps)
+
     lowlevel[getobjkey(elkey)] = StatefulParam(param)
 
-    return true
+    return (true, deps)
 end
 
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "FossilMCParam")] = includeFossilMCParam!

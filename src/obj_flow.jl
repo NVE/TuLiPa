@@ -143,14 +143,16 @@ function assemble!(var::BaseFlow)::Bool
 end
 
 # ------ Include dataelements -------
-function includeBaseFlow!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeBaseFlow!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
     checkkey(toplevel, elkey)
+
+    deps = Id[]
     
     objkey = getobjkey(elkey)
     
     toplevel[objkey] = BaseFlow(objkey)
     
-    return true    
+    return (true, deps)    
 end
 
 INCLUDEELEMENT[TypeKey(FLOW_CONCEPT, "BaseFlow")] = includeBaseFlow!

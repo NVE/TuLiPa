@@ -129,22 +129,12 @@ mutable struct HiGHS_Prob <: Prob
 
         setsilent!(p)
 
-        horizons = Set(gethorizon(x) for x in getobjects(p) if x isa Balance)
-        for horizon in horizons
-            build!(horizon, p)
-        end
-        horizons = Horizon[i for i in horizons]
-        p.horizons = horizons
-
-        for obj in getobjects(p)
-            build!(p, obj)
-        end
+        buildhorizons!(p)
+        build!(p)
 
         _init_arrays!(p)
 
-        for obj in getobjects(p)
-            setconstants!(p, obj)
-        end
+        setconstants!(p)
 
         if _is_mask_updated(p.row_bounds_mask)
             _update_row_bounds(p)

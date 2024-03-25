@@ -1,6 +1,5 @@
-using DataFrames, Statistics, JSON, Dates, CSV
+using DataFrames, Statistics, Dates, CSV
 using TuLiPa
-
 
 # DataElements for a Thermal power plant
 function addrhsthermal!(elements, name, balance; 
@@ -200,11 +199,6 @@ function addpowertrans!(elements, frombalance, tobalance;
     end
 end
 
-printdicts(elements) = JSON.print(elements, 2)
-function printdicts(elements, num)
-    JSON.print(elements[1:num], 2)
-end
-
 # Combine the different parts of the dataset into one list of DataElements
 function gettestdataset()
     elements = DataElement[]
@@ -336,7 +330,6 @@ end
 
 # We define TimeVectors that represent the profile of different parameters
 function gettestprofiles()
-    
     # Profiles from https://www.nve.no/energi/analyser-og-statistikk/vaerdatasett-for-kraftsystemmodellene/
     path = joinpath(dirname(pathof(TuLiPa)), "..", "data/testprofiles_1981_2010.csv")
     dfmt = dateformat"yyyy-mm-dd HH:MM:SS"
@@ -396,212 +389,4 @@ function set_horizon!(elements, commodity, horizon)
     # Else, add commodity to element list
     push!(elements, getelement(COMMODITY_CONCEPT, "BaseCommodity", commodity, 
         (HORIZON_CONCEPT, horizon)))
-end
-
-# Make list of scenarios
-function getscenarios(dt; years)
-    [TwoTime(getisoyearstart(dt), getisoyearstart(yr)) for yr in years]
-end
-
-# Run scenarios and plot results from the whole problem
-function runscenarios(scenarios, modelobjects)
-    runscenarios(scenarios, modelobjects, values(modelobjects))
-end
-
-# Run scenarios and plot results from chosen model objects (e.g. only one price area)
-function runscenarios(scenarios, modelobjects, resultobjects)
-    numperiods_powerhorizon = getnumperiods(power_horizon)
-    numperiods_hydrohorizon = getnumperiods(hydro_horizon)
-    
-    # We use the datatime for plotting results
-    dt = getdatatime(scenarios[1])
-
-    # Time vector for power_horizon
-    x1 = [dt + getstartduration(power_horizon, t) for t in 1:numperiods_powerhorizon]
-
-    # Time vector for hydro_horizon
-    x2 = [dt + getstartduration(hydro_horizon, t) for t in 1:numperiods_hydrohorizon]
-    
-    # Problem can be a HiGHS_Prob or a JuMP_Prob
-#     prob = HiGHS_Prob(collect(values(modelobjects)))
-    model = Model(HiGHS.Optimizer)
-    
-    set_silent(model)
-    prob = JuMP_Prob(collect(values(modelobjects)), model)
-
-    # Order result objects into lists
-    powerbalances = []
-    rhsterms = []
-    plants = []
-    plantbalances = []
-    plantarrows = Dict()
-    demands= []
-    demandbalances = []
-    demandarrows = Dict()
-    hydrostorages = []
-    
-    for obj in resultobjects
-        
-        # Powerbalances
-        if obj isa BaseBalance
-            if getinstancename(getid(getcommodity(obj))) == "Power"
-                push!(powerbalances, getid(obj))
-                for rhsterm in getrhsterms(obj)
-                    push!(rhsterms,getid(rhsterm))
-                end
-            end
-        end
-        
-        # Hydrostorages
-        if obj isa BaseStorage
-            if getinstancename(getid(getcommodity(getbalance(obj)))) == "Hydro"
-                push!(hydrostorages,getid(obj))
-            end
-        end
-        
-        # Supply and demands
-        if obj isa BaseFlow
-            # The type of supply or demand can be found based on the arrows
-            arrows = getarrows(obj)
-            
-            # Simple supplies and demands
-            powerarrowbool = [getid(getcommodity(getbalance(arrow))) == Id("Commodity", "Power") for arrow in arrows]
-            powerarrows = arrows[powerarrowbool]
-            if sum(powerarrowbool) == 1
-                if isingoing(powerarrows[1])
-                    push!(plants,getid(obj))
-                    push!(plantbalances,getid(getbalance(powerarrows[1])))
-                elseif !isingoing(powerarrows[1])
-                    push!(demands,getid(obj))
-                    push!(demandbalances,getid(getbalance(powerarrows[1])))
-                end
-            end
-            
-            # Transmissions
-            if sum(powerarrowbool) == 2
-                for arrow in arrows
-                    balance = getbalance(arrow)
-                    if getid(getcommodity(balance)) == Id("Commodity", "Power")
-                        if isingoing(arrow) && (balance in resultobjects)
-                            push!(plants,getid(obj))
-                            push!(plantbalances,getid(balance))
-                        elseif !isingoing(arrow) && (balance in resultobjects)
-                            push!(demands,getid(obj))
-                            push!(demandbalances,getid(balance))
-                        end
-                    end
-                end
-            end
-        end
-    end
-    
-    # Matrices to store results per time period, scenario and object
-    prices = zeros(numperiods_powerhorizon, length(scenarios), length(powerbalances))
-    rhstermvalues = zeros(numperiods_powerhorizon, length(scenarios), length(rhsterms))
-    production = zeros(numperiods_powerhorizon, length(scenarios), length(plants))
-    consumption = zeros(numperiods_powerhorizon, length(scenarios), length(demands))
-    hydrolevels = zeros(numperiods_hydrohorizon, length(scenarios), length(hydrostorages))
-    
-    # Update and solve scenarios, and collect results
-    for (s, t) in enumerate(scenarios)
-        update!(prob, t)
-        
-        solve!(prob)
-        
-        println("Objective value in scenario $(s): ", getobjectivevalue(prob))
-
-        # Collect results for power production/demand/transmission in GW
-        for j in 1:numperiods_powerhorizon
-
-            # Timefactor transform results from GWh to GW/h regardless of horizon period durations
-            timefactor = getduration(gettimedelta(power_horizon, j))/Millisecond(3600000)
-
-            # For powerbalances collect prices and rhsterms (like inelastic demand, wind, solar and RoR)
-            for i in 1:length(powerbalances)
-                prices[j, s, i] = -getcondual(prob, powerbalances[i], j)/1000 # from €/GWh to €/MWh
-                for k in 1:length(rhsterms)
-                    if hasrhsterm(prob, powerbalances[i], rhsterms[k], j)
-                        rhstermvalues[j, s, k] = getrhsterm(prob, powerbalances[i], rhsterms[k], j)/timefactor
-                    end
-                end
-            end
-
-            # Collect production of all plants
-            for i in 1:length(plants) # TODO: Balance and variable can have different horizons
-                production[j, s, i] = getvarvalue(prob, plants[i], j)*abs(getconcoeff(prob, plantbalances[i], plants[i], j, j))/timefactor
-            end
-
-            # Collect demand of all demands
-            for i in 1:length(demands) # TODO: Balance and variable can have different horizons
-                consumption[j, s, i] = getvarvalue(prob, demands[i], j)*abs(getconcoeff(prob, demandbalances[i], demands[i], j, j))/timefactor
-            end
-        end
-        
-        # Collect hydro storage levels
-        for j in 1:numperiods_hydrohorizon
-            for i in 1:length(hydrostorages)
-                hydrolevels[j, s, i] = getvarvalue(prob, hydrostorages[i], j)/1000 # Gm3 TODO: convert to TWh with global energy equivalents of each storage
-            end
-        end
-    end
-
-    # Only keep rhsterms that have at least one value (TODO: Do the same for sypply and demands)
-    rhstermtotals = dropdims(sum(rhstermvalues,dims=(1,2)),dims=(1,2))
-    rhstermsupplyidx = []
-    rhstermdemandidx = []
-    
-    for k in 1:length(rhsterms)
-        if rhstermtotals[k] > 0
-            push!(rhstermsupplyidx, k)
-        elseif rhstermtotals[k] < 0
-            push!(rhstermdemandidx, k)
-        end
-    end
-    
-    # Put rhsterms together with supplies and demands
-    rhstermsupplyvalues = rhstermvalues[:,:,rhstermsupplyidx]
-    rhstermdemandvalues = rhstermvalues[:,:,rhstermdemandidx]*-1
-    
-    rhstermsupplynames = [getinstancename(rhsterm) for rhsterm in rhsterms[rhstermsupplyidx]]
-    rhstermdemandnames = [getinstancename(rhsterm) for rhsterm in rhsterms[rhstermdemandidx]]
-    
-    supplynames = [[getinstancename(plant) for plant in plants];rhstermsupplynames]
-    supplyvalues = reshape([vcat(production...);vcat(rhstermsupplyvalues...)],(numperiods_powerhorizon,length(scenarios),length(supplynames)))
-
-    demandnames = [[getinstancename(demand) for demand in demands];rhstermdemandnames]
-    demandvalues = reshape([vcat(consumption...);vcat(rhstermdemandvalues...)],(numperiods_powerhorizon,length(scenarios),length(demandnames)))
-
-    # Prepare for plotting results
-    hydronames = [getinstancename(hydro) for hydro in hydrostorages]
-    powerbalancenames = [split(getinstancename(powerbalance), "PowerBalance_")[2] for powerbalance in powerbalances]
-
-    # Plot results for each scenario
-    for (s, t) in enumerate(scenarios)
-        scenyear = string(getisoyear(getscenariotime(t)))
-        datayear = string(getisoyear(getdatatime(t)))
-        
-        # Plot prices
-        display(plot(x1, sum(prices[:,s,:],dims=3), labels=reshape(powerbalancenames,1,length(powerbalancenames)), size=(800,500), title="Prices for scenario that starts in " * datayear * " and weather scenario " * scenyear, ylabel="€/MWh"))
-        
-        # Plot supplies and demands
-        supplychart = areaplot(x1, sum(supplyvalues[:,s,:],dims=3),labels=reshape(supplynames,1,length(supplynames)),title="Supply", ylabel = "GWh/h")
-        demandchart = areaplot(x1, sum(demandvalues[:,s,:],dims=3),labels=reshape(demandnames,1,length(demandnames)),title="Demand", ylabel = "GWh/h")
-        display(plot([supplychart,demandchart]...,layout=(2,1),size=(800,1000)))
-        
-        # Plot storages (only TWh because of our input data)
-        display(areaplot(x2, sum(hydrolevels[:,s,:],dims=3),labels=reshape(hydronames,1,length(hydronames)),size=(800,500),title="Reservoir levels", ylabel = "Gm3")) # 
-        
-        # Plot list of yearly mean production and demand for each supply/demand
-        meandemand = dropdims(mean(demandvalues[:,s,:],dims=1),dims=1)
-        meanproduction = dropdims(mean(supplyvalues[:,s,:],dims=1),dims=1)
-        supplydf = sort(DataFrame(Supplyname = supplynames, Yearly_supply_TWh = meanproduction*8.76),[:Yearly_supply_TWh], rev = true)
-        demanddf = sort(DataFrame(Demandname = demandnames, Yearly_demand_TWh = meandemand*8.76),[:Yearly_demand_TWh], rev = true)
-        supplydf[!,:ID] = collect(1:length(supplynames))
-        demanddf[!,:ID] = collect(1:length(demandnames))
-        joineddf = select!(outerjoin(supplydf,demanddf;on=:ID),Not(:ID))
-        show(joineddf,allcols=true, allrows=true)
-        
-        # Check that total supply equals total demand
-        show(combine(joineddf, [:Yearly_supply_TWh, :Yearly_demand_TWh] .=> sum∘skipmissing))
-    end
 end

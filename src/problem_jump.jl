@@ -44,29 +44,9 @@ mutable struct JuMP_Prob <: Prob
 
         @objective(p.model, Min, 0)
 
-        # Initialize/build all horizons and model objects
-        # (mostly creating variables, constraints and objective function)
-        # The generic function build! has different methods depending on the inputed object
-        # Some objects will again call build! on its internal traits
-        horizons = Set(gethorizon(x) for x in getobjects(p) if x isa Balance)
-        for horizon in horizons
-            build!(horizon, p)
-        end
-        horizons = Horizon[i for i in horizons]
-        p.horizons = horizons
-
-        for obj in getobjects(p)
-            build!(p, obj)
-        end
-
-        # Set all parameters and coefficients that will be the same 
-        # regardless of the problem time and period in the horizon. 
-        # These only need to be updated once
-        # The generic function setconstants! has different methods depending on the inputed object
-        # Some objects will again call setconstants! on its internal traits
-        for obj in getobjects(p)
-            setconstants!(p, obj)
-        end
+        buildhorizons!(p)
+        build!(p)
+        setconstants!(p)
 
         return p
     end

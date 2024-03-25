@@ -371,19 +371,25 @@ function update!(p::Prob, var::Any, arrow::SegmentedArrow, start::ProbTime)
 end
 
 # ------ Include dataelements -------
-function includeBaseArrow!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeBaseArrow!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
+
+    deps = Id[]
 
     varname = getdictvalue(value, FLOW_CONCEPT, String, elkey) 
     varkey = Id(FLOW_CONCEPT, varname)
-    haskey(toplevel, varkey) || return false
+    push!(deps, varkey)
     
     balancename = getdictvalue(value, BALANCE_CONCEPT, String, elkey)
     balancekey = Id(BALANCE_CONCEPT, balancename)
-    haskey(toplevel, balancekey) || return false
+    push!(deps, balancekey)
 
-    (conversion, ok) = getdictconversionvalue(lowlevel, elkey, value)
-    ok || return false
+    (id, conversion, ok) = getdictconversionvalue(lowlevel, elkey, value)
+    _update_deps(deps, id, ok)
+
+    ok || return (false, deps)
+    haskey(toplevel, varkey) || return (false, deps)
+    haskey(toplevel, balancekey) || return (false, deps)
     
     isingoing = getdictisingoing(value, elkey)
     balance   = toplevel[balancekey]
@@ -396,33 +402,43 @@ function includeBaseArrow!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, va
     addarrow!(var, arrow)
     lowlevel[objkey] = arrow
      
-    return true    
+    return (true, deps)    
 end
 
-function includeSegmentedArrow!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
-    (conversionparams, ok) = getdictparamlist(lowlevel, elkey, value, CONVERSION_CONCEPT)
-    ok || return false
-    conversions = [BaseConversion(cp) for cp in conversionparams]
+function includeSegmentedArrow!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
+    deps = Id[]
+    all_ok = true
+
+    (id, conversionparams, ok) = getdictparamlist(lowlevel, elkey, value, CONVERSION_CONCEPT)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
     
-    (capacities, ok) = getdictparamlist(lowlevel, elkey, value, CAPACITY_CONCEPT)
-    ok || return false
+    (id, capacities, ok) = getdictparamlist(lowlevel, elkey, value, CAPACITY_CONCEPT)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
 
     balancename = getdictvalue(value, BALANCE_CONCEPT, String, elkey)
     balancekey = Id(BALANCE_CONCEPT, balancename)
-    haskey(toplevel, balancekey) || return false
+    push!(deps, balancekey)
     
     varname = getdictvalue(value, FLOW_CONCEPT, String, elkey)
     varkey = Id(FLOW_CONCEPT, varname)
-    haskey(toplevel, varkey) || return false
+    push!(deps, varkey)
+
+    all_ok || return (false, deps)
+    haskey(toplevel, balancekey) || return (false, deps)
+    haskey(toplevel, varkey) || return (false, deps)
+
+    conversions = [BaseConversion(cp) for cp in conversionparams]
     
     isingoing = getdictisingoing(value, elkey)
     balance   = toplevel[balancekey]
-    var      = toplevel[varkey]
+    var       = toplevel[varkey]
 
     arrow = SegmentedArrow(getobjkey(elkey), balance, conversions, capacities, isingoing)
     addarrow!(var, arrow)
      
-    return true    
+    return (true, deps)    
 end
 
 INCLUDEELEMENT[TypeKey(ARROW_CONCEPT, "BaseArrow")] = includeBaseArrow!

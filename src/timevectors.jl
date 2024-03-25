@@ -396,23 +396,26 @@ Here we register functions to include data elements relating to TimeVector
 
 # --- VectorTimeIndex ---
 # TimeIndex described by a Vector
-function includeVectorTimeIndex!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractVector{DateTime})::Bool
+function includeVectorTimeIndex!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractVector{DateTime})
     checkkey(lowlevel, elkey)
+    deps = Id[]
     length(value) > 0  || error("Vector has no elements for $elkey")
     issorted(value)    || error(     "Vector not sorted for $elkey")
     lowlevel[getobjkey(elkey)] = value
-    return true
+    return (true, deps)
 end
 
-function includeVectorTimeIndex!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeVectorTimeIndex!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     vector = getdictvalue(value, "Vector", AbstractVector{DateTime}, elkey)
     includeVectorTimeIndex!(toplevel, lowlevel, elkey, vector)
 end
 
 # --- RangeTimeIndex ---
 # TimeIndex described by a StepRange.
-function includeRangeTimeIndex!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeRangeTimeIndex!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
+
+    deps = Id[]
     
     start  = getdictvalue(value, "Start", DateTime, elkey)
     steps  = getdictvalue(value, "Steps", Int,      elkey) 
@@ -420,7 +423,8 @@ function includeRangeTimeIndex!(::Dict, lowlevel::Dict, elkey::ElementKey, value
 
     if delta isa String 
         deltakey = Id(TIMEDELTA_CONCEPT, delta)
-        haskey(lowlevel, deltakey) || return false
+        push!(deps, deltakey)
+        haskey(lowlevel, deltakey) || return (false, deps)
         delta = getduration(lowlevel[deltakey])
     end
     
@@ -430,27 +434,31 @@ function includeRangeTimeIndex!(::Dict, lowlevel::Dict, elkey::ElementKey, value
     delta > Millisecond(0) || error("Delta <= Millisecond(0) for $elkey")
     
     lowlevel[getobjkey(elkey)] = StepRange(start, delta, start + delta * (steps-1))
-    return true
+
+    return (true, deps)
 end
 
-function includeRangeTimeIndex!(::Dict, lowlevel::Dict, elkey::ElementKey, value::StepRange{DateTime, Millisecond})::Bool
+function includeRangeTimeIndex!(::Dict, lowlevel::Dict, elkey::ElementKey, value::StepRange{DateTime, Millisecond})
     checkkey(lowlevel, elkey)
+    deps = Id[]
     value.step > Millisecond(0) || error("Delta <= Millisecond(0) for $elkey")
     lowlevel[getobjkey(elkey)] = value
-    return true
+    return (true, deps)
 end
 
 # --- VectorTimeValues ---
 # TimeValues described by a Vector
-function includeVectorTimeValues!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeVectorTimeValues!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
+
+    deps = Id[]
     
     vector = getdictvalue(value, "Vector", AbstractVector{<:AbstractFloat}, elkey)
     
     length(vector) > 0  || error("Vector has no elements for $elkey")
     
     lowlevel[getobjkey(elkey)] = vector
-    return true
+    return (true, deps)
 end
 
 # ----- BaseTable -----
@@ -458,8 +466,10 @@ end
 # Dictionary with a matrix and a list of column names
 # Rows in the matrix represents a TimeIndex and the columns are connected 
 # to the name list (each representing a VectorTimeValues)
-function includeBaseTable!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeBaseTable!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
+
+    deps = Id[]
     
     matrix = getdictvalue(value, "Matrix", AbstractMatrix{<:AbstractFloat}, elkey)
     names  = getdictvalue(value, "Names",  Vector{String},                  elkey)
@@ -470,19 +480,22 @@ function includeBaseTable!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dic
     length(names) > length(Set(names)) && error(                  "Duplicate names for $elkey")
     
     lowlevel[getobjkey(elkey)] = value
-    return true
+    return (true, deps)
 end
 
 # --- ColumnTimeValues ---
 # VectorTimeValues that gets its data from a BaseTable
-function includeColumnTimeValues!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeColumnTimeValues!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
+
+    deps = Id[]
     
     columnname = getdictvalue(value, "Name",        String, elkey)
     tablename  = getdictvalue(value, TABLE_CONCEPT, String, elkey)
     
     tablekey = Id(TABLE_CONCEPT, tablename)
-    haskey(lowlevel, tablekey) || return false
+    push!(deps, tablekey)
+    haskey(lowlevel, tablekey) || return (false, deps)
     
     table = lowlevel[tablekey]
     
@@ -495,13 +508,15 @@ function includeColumnTimeValues!(::Dict, lowlevel::Dict, elkey::ElementKey, val
     
     lowlevel[getobjkey(elkey)] = view(matrix, :, columnindex)
 
-    return true
+    return (true, deps)
 end
 
 
 # --- RotatingTimeVector ---
-function includeRotatingTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeRotatingTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
+
+    deps = Id[]
     
     indexname  = getdictvalue(value, TIMEINDEX_CONCEPT,  String, elkey)
     valuesname = getdictvalue(value, TIMEVALUES_CONCEPT, String, elkey)
@@ -511,10 +526,14 @@ function includeRotatingTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, v
 
     # Assumes typename == instancename
     periodkey = Id(TIMEPERIOD_CONCEPT, "ScenarioTimePeriod")
+
+    push!(deps, indexkey)
+    push!(deps, valueskey)
+    push!(deps, periodkey)
     
-    haskey(lowlevel, indexkey)   || return false
-    haskey(lowlevel, valueskey)  || return false
-    haskey(lowlevel, periodkey)  || return false
+    haskey(lowlevel, indexkey)   || return (false, deps)
+    haskey(lowlevel, valueskey)  || return (false, deps)
+    haskey(lowlevel, periodkey)  || return (false, deps)
     
     index  = lowlevel[indexkey]
     values = lowlevel[valueskey]
@@ -529,13 +548,15 @@ function includeRotatingTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, v
     # TODO: Validate that index cover the period
     
     lowlevel[getobjkey(elkey)] = RotatingTimeVector(index, values, start, stop)
-    return true
+    return (true, deps)
 end
 
 # --- OneYearTimeVector ---
 # A RotatingTimeVector with one year of data
-function includeOneYearTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeOneYearTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
+
+    deps = Id[]
     
     indexname  = getdictvalue(value, TIMEINDEX_CONCEPT,  String, elkey)
     valuesname = getdictvalue(value, TIMEVALUES_CONCEPT, String, elkey)
@@ -543,8 +564,11 @@ function includeOneYearTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, va
     indexkey  = Id(TIMEINDEX_CONCEPT,  indexname)
     valueskey = Id(TIMEVALUES_CONCEPT, valuesname)
 
-    haskey(lowlevel, indexkey)   || return false
-    haskey(lowlevel, valueskey)  || return false
+    push!(deps, indexkey)
+    push!(deps, valueskey)
+
+    haskey(lowlevel, indexkey)   || return (false, deps)
+    haskey(lowlevel, valueskey)  || return (false, deps)
     
     index  = lowlevel[indexkey]
     values = lowlevel[valueskey]
@@ -560,12 +584,14 @@ function includeOneYearTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, va
     stop  = getisoyearstart(isoyear + 1)
     
     lowlevel[getobjkey(elkey)] = RotatingTimeVector(index, values, start, stop)
-    return true
+    return (true, deps)
 end
 
 # --- InfiniteTimeVectors ---
-function includeInfiniteTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeInfiniteTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
+
+    deps = Id[]
     
     indexname  = getdictvalue(value, TIMEINDEX_CONCEPT,  String, elkey)
     valuesname = getdictvalue(value, TIMEVALUES_CONCEPT, String, elkey)
@@ -573,8 +599,11 @@ function includeInfiniteTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, v
     indexkey  = Id(TIMEINDEX_CONCEPT,  indexname)
     valueskey = Id(TIMEVALUES_CONCEPT, valuesname)
     
-    haskey(lowlevel, indexkey)   || return false
-    haskey(lowlevel, valueskey)  || return false
+    push!(deps, indexkey)
+    push!(deps, valueskey)
+
+    haskey(lowlevel, indexkey)   || return (false, deps)
+    haskey(lowlevel, valueskey)  || return (false, deps)
     
     index  = lowlevel[indexkey]
     values = lowlevel[valueskey]
@@ -583,11 +612,13 @@ function includeInfiniteTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, v
     
     lowlevel[getobjkey(elkey)] = InfiniteTimeVector(index, values)
     
-    return true
+    return (true, deps)
 end
 
-function includeMutableInfiniteTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeMutableInfiniteTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
+
+    deps = Id[]
     
     indexname  = getdictvalue(value, TIMEINDEX_CONCEPT,  String, elkey)
     valuesname = getdictvalue(value, TIMEVALUES_CONCEPT, String, elkey)
@@ -595,8 +626,11 @@ function includeMutableInfiniteTimeVector!(::Dict, lowlevel::Dict, elkey::Elemen
     indexkey  = Id(TIMEINDEX_CONCEPT,  indexname)
     valueskey = Id(TIMEVALUES_CONCEPT, valuesname)
     
-    haskey(lowlevel, indexkey)   || return false
-    haskey(lowlevel, valueskey)  || return false
+    push!(deps, indexkey)
+    push!(deps, valueskey)
+
+    haskey(lowlevel, indexkey)   || return (false, deps)
+    haskey(lowlevel, valueskey)  || return (false, deps)
     
     index  = lowlevel[indexkey]
     values = lowlevel[valueskey]
@@ -605,27 +639,30 @@ function includeMutableInfiniteTimeVector!(::Dict, lowlevel::Dict, elkey::Elemen
     
     lowlevel[getobjkey(elkey)] = MutableInfiniteTimeVector(index, values)
     
-    return true
+    return (true, deps)
 end
 
 # --- ConstantTimeVector ---
-function includeConstantTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeConstantTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
+    deps = Id[]
     constant = getdictvalue(value, "Value",  AbstractFloat, elkey)
     lowlevel[getobjkey(elkey)] = ConstantTimeVector(constant)
-    return true
+    return (true, deps)
 end
 
-function includeConstantTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)::Bool
+function includeConstantTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)
     checkkey(lowlevel, elkey)
+    deps = Id[]
     lowlevel[getobjkey(elkey)] = ConstantTimeVector(value)
-    return true
+    return (true, deps)
 end
 
-function includeConstantTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::ConstantTimeVector)::Bool
+function includeConstantTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::ConstantTimeVector)
     checkkey(lowlevel, elkey)
+    deps = Id[]
     lowlevel[getobjkey(elkey)] = value
-    return true
+    return (true, deps)
 end
 
 INCLUDEELEMENT[TypeKey(TIMEINDEX_CONCEPT, "RangeTimeIndex")] = includeRangeTimeIndex!

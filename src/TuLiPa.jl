@@ -1,13 +1,14 @@
 module TuLiPa
 
+# TODO: Can we drop CSV and DataFrames?
+using CSV, Dates, DataFrames
+
 # Abstract types in our modelling framework and general descriptions
 include("abstracttypes.jl")
 
 # Code to add and convert data elements into model objects
-include("data_elements.jl")
-include("data_elements_to_objects.jl")
-include("data_constants.jl")
-include("data_utils.jl")
+include("input_system.jl")
+include("input_utils.jl")
 
 # Problem implementation around JuMP framework and HiGHS package
 include("problem_jump.jl") # with description of general problem framework

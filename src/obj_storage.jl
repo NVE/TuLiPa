@@ -158,18 +158,22 @@ function assemble!(var::BaseStorage)::Bool
 end
 
 # ------ Include dataelements -------
-function includeBaseStorage!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeBaseStorage!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
     checkkey(toplevel, elkey)
-    
+
+    deps = Id[]
+
     balancename = getdictvalue(value, BALANCE_CONCEPT, String, elkey)
     balancekey = Id(BALANCE_CONCEPT, balancename)
-    haskey(toplevel, balancekey) || return false
+
+    push!(deps, balancekey)
+    haskey(toplevel, balancekey) || return (false, deps)
     
     objkey = getobjkey(elkey)
 
     toplevel[objkey] = BaseStorage(objkey, toplevel[balancekey])
     
-    return true    
+    return (true, deps)    
 end
 
 INCLUDEELEMENT[TypeKey(STORAGE_CONCEPT, "BaseStorage")] = includeBaseStorage!

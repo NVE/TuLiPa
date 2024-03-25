@@ -301,16 +301,8 @@ mutable struct CPLEX_Prob <: Prob
 
         # TODO: set objective offset to 0
 
-        horizons = Set(gethorizon(x) for x in getobjects(prob) if x isa Balance)
-        for horizon in horizons
-            build!(horizon, prob)
-        end
-        horizons = Horizon[i for i in horizons]
-        prob.horizons = horizons
-
-        for obj in getobjects(prob)
-            build!(prob, obj)
-        end
+        buildhorizons!(prob)
+        build!(prob)
 
         # Set updaters
 
@@ -339,16 +331,11 @@ mutable struct CPLEX_Prob <: Prob
             _update!(prob.rhs_updater, ix_ge, -CPLEX.CPX_INFBOUND)  
          end
 
-        # add vars and cols in prob
         _cplex_add_vars!(prob)
         _cplex_add_cons!(prob)
 
-        # set constants
-        for obj in getobjects(prob)
-            setconstants!(prob, obj)
-        end
+        setconstants!(prob)
 
-        # put constants in problem 
         _cplex_presolve_update!(prob)
         _cplex_postsolve_reset_updaters!(prob)
         

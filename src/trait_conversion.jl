@@ -44,21 +44,27 @@ setconstants!(::Prob, ::Conversion) = nothing
 update!(::Prob, ::Conversion, ::ProbTime) = nothing
 
 # ------ Include dataelements -------
-function includeBaseConversion!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeBaseConversion!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
+
+    deps = Id[]
     
-    (param, ok) = getdictparamvalue(lowlevel, elkey, value)
-    ok || return false
+    (id, param, ok) = getdictparamvalue(lowlevel, elkey, value)
+    _update_deps(deps, id, ok)
+
+    ok || return (false, deps)
 
     lowlevel[getobjkey(elkey)] = BaseConversion(param)
-    return true
+    return (true, deps)
 end
 
-function includePumpConversion!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includePumpConversion!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
-    
-    (param, ok) = getdictparamvalue(lowlevel, elkey, value)
-    ok || return false
+
+    deps = Id[]
+
+    (id, param, ok) = getdictparamvalue(lowlevel, elkey, value)
+    ok || return (false, deps)
 
     hmin = getdictvalue(value, "hmin", Float64, elkey) 
     hmax = getdictvalue(value, "hmax", Float64, elkey)
@@ -70,7 +76,7 @@ function includePumpConversion!(::Dict, lowlevel::Dict, elkey::ElementKey, value
     pumppower = getdictvalue(value, "PumpPower", Float64, elkey)
 
     lowlevel[getobjkey(elkey)] = PumpConversion(param, releaseheightcurve, hmin, hmax, pumppower, intakelevel)
-    return true
+    return (true, deps)
 end
 
 INCLUDEELEMENT[TypeKey(CONVERSION_CONCEPT, "BaseConversion")] = includeBaseConversion!

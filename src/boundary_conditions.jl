@@ -137,24 +137,6 @@ function assemble!(x::StartEqualStop)::Bool
     return true
 end
 
-# Include dataelement
-function includeStartEqualStop!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)::Bool
-    varname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
-    varconcept = getdictvalue(value, WHICHCONCEPT,  String, elkey)
-    varkey = Id(varconcept, varname)
-    haskey(toplevel, varkey) || return false
-
-    var = toplevel[varkey]
-
-    id = getobjkey(elkey)
-
-    toplevel[id] = StartEqualStop(id, var)
-    
-    return true    
-end
-
-INCLUDEELEMENT[TypeKey(BOUNDARYCONDITION_CONCEPT, "StartEqualStop")] = includeStartEqualStop!
-
 # ---- ConnectTwoObjects <: BoundaryCondition ---
 
 struct ConnectTwoObjects <: BoundaryCondition
@@ -516,6 +498,31 @@ function clearcuts!(p::Prob, x::SimpleSingleCuts)
     return
 end
 
+# register INCLUDEELEMENT functions
+
+function includeStartEqualStop!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
+    checkkey(toplevel, elkey)
+
+    deps = Id[]
+
+    varname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
+    varconcept = getdictvalue(value, WHICHCONCEPT,  String, elkey)
+    varkey = Id(varconcept, varname)
+
+    push!(deps, varkey)
+
+    haskey(toplevel, varkey) || return (false, deps)
+
+    var = toplevel[varkey]
+
+    id = getobjkey(elkey)
+
+    toplevel[id] = StartEqualStop(id, var)
+    
+    return (true, deps)    
+end
+
+INCLUDEELEMENT[TypeKey(BOUNDARYCONDITION_CONCEPT, "StartEqualStop")] = includeStartEqualStop!
 
 
 
