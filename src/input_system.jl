@@ -331,23 +331,39 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
     root_causes = Set{ElementKey}(k for k in failed if does_not_depend_on_failed(k, dependencies, failed))
 
     dependency_counts = get_dependency_counts(dependencies)
+    missings_counts = get_missings_counts(missings, dependency_counts)
 
     report_elements = union(root_causes, keys(errors))
 
     messages = String[]
-    for k in report_elements
-        issues = get_include_element_issues(k, errors, missings)
-        i = length(issues)
-        n = dependency_counts[k]
-        is = i > 1 ? "s" : ""
-        ns = n > 1 ? "s" : ""
-        nx = n > 1 ?  "" : "s"
-        m = " -> Element $k ($n element$ns depend$nx on it) had $i issue$is:"
-        push!(messages, m)
-        for issue in issues
-            m = "      $issue"
+
+    known_cause = Set{ElementKey}()
+
+    for (k, m_vec) in errors
+        length(m_vec) > 0 || continue
+        for m in m_vec
             push!(messages, m)
         end
+        push!(known_cause, k)
+    end
+
+    for (k, id_vec) in missings
+        (k in root_causes) || continue
+        length(id_vec) > 0 || continue
+        for id in id_vec
+            n = missings_counts[id]
+            s = n > 1 ? "s" : ""
+            x = n < 2 ? "s" : ""
+            m = "Missing element $id ($n element$s depend$x on it)"
+            push!(messages, m)
+        end
+        push!(known_cause, k)
+    end
+
+    for k in root_causes
+        (k in known_cause) && continue
+        m = "$k failed due to unknown reason (not missing dependency)"
+        push!(messages, m)
     end
 
     msg = join(messages, "\n")
@@ -383,6 +399,17 @@ function recursive_count(k, dependencies, counts)
         counts[j] = 1 + get(counts, j, 0)
         recursive_count(j, dependencies, counts)
     end
+end
+
+function get_missings_counts(missings, dependency_counts)
+    counts = Dict{Id, Int}()
+    for (elkey, id_vec) in missings
+        length(id_vec) > 0 || continue
+        for id in id_vec
+            counts[id] = get(counts, id, 0) + dependency_counts[elkey]
+        end
+    end
+    return counts
 end
 
 function get_include_element_issues(k, errors, missings)
