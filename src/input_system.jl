@@ -347,17 +347,21 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
         push!(known_cause, k)
     end
 
+    reportable_missings = Set{Id}()
     for (k, id_vec) in missings
         (k in root_causes) || continue
         length(id_vec) > 0 || continue
         for id in id_vec
-            n = missings_counts[id]
-            s = n > 1 ? "s" : ""
-            x = n < 2 ? "s" : ""
-            m = "Missing element $id ($n element$s depend$x on it)"
-            push!(messages, m)
+            push!(reportable_missings)
         end
         push!(known_cause, k)
+    end
+    for id in reportable_missings
+        n = missings_counts[id]
+        s = n > 1 ? "s" : ""
+        x = n < 2 ? "s" : ""
+        m = "Missing element $id ($n element$s depend$x on it)"
+        push!(messages, m)
     end
 
     for k in root_causes
