@@ -5,7 +5,7 @@ TuLiPa is a modular framework for time parameterized linear programming problems
 This is a prototype to test out ideas and inspire the field. Feedback, ideas and contributions are welcome.
 
 ### Motivation:
-With the transition towards a renewable-based power system, we need models that can represent the new technologies, markets and dynamics. One of [NVE](https://www.nve.no/english/)’s initiatives to improve our understanding of power market modelling, is the ongoing research project called “Power market modelling in Julia”. The goal of this project is to make an algorithm for simulating the Northern European power market with high temporal resolution, detailed hydropower (or any other technology), uncertainty in weather, and using only open-source software. We want to find out if decomposing the complex power market problem into many smaller subproblems, solving many of them deterministically and with open-source solvers, can give fast and good results. The simulation concept is inspired by how power dispatch is planned in real life, with longer term price prognosis, calculation of individual storage values (e.g. water, battery or gas storage values) with different models for different technologies, and at the end a market clearing algorithm that takes all the details into account. These ideas are implemented in the energy market simulation model [JulES](https://github.com/NVE/JulES/).
+With the transition towards a renewable-based power system, we need models that can represent the new technologies, markets and dynamics. One of [NVE](https://www.nve.no/english/)’s initiatives to improve our understanding of power market modelling, is the ongoing research project called “Power market modelling in Julia”. The goal of this project is to test a new fundamental energy market model for operational planning. The model should be able to simulate the Northern European power market with high temporal resolution, detailed hydropower (or any other technology), uncertainty in weather, and using only open-source software. We want to find out if decomposing the complex power market problem into many smaller subproblems, solving many of them deterministically and with open-source solvers, can give fast and good results. The simulation concept is inspired by how power dispatch is planned in real life, with longer term price prognosis, calculation of individual storage values (e.g. water, battery or gas storage values) with different models for different technologies, and at the end a market clearing algorithm that takes all the details into account. These ideas are implemented in the fundamental energy market simulation model for operational planning, [JulES](https://github.com/NVE/JulES/).
 
 The above-mentioned algorithm (JulES) will have a lot of similar linear programming problems and model objects that represent the power system. We therefore want a general framework for building, updating and solving the LP-problems. We therefore make TuLiPa.
 
@@ -26,14 +26,17 @@ Real world concepts like transmission lines, power plants, hydropower storages a
 ![image](https://user-images.githubusercontent.com/40186418/213677992-ab96494c-42ae-42b8-bdc8-2b2b94c7673f.png)
 
 #### Time:
-- The problem time can consider multiple dimensions, like for example weather scenarios and model years (e.g. power system in 2030, 2040 or 2050).
-- Optional time resolution gives the possibility to run the model with for example hourly or weekly time resolution, or a time resolution based on the residual load. Different model objects can also have different time resolutions.
-- The framework is built around time-series data. References to the time-series data are stored in the model objects and are used to update the LP-problem together with the chosen horizon and problem time. Time series data gives flexibility to run the model with the desired temporal resolution without having to adapt the dataset each time. 
+- The problem time can consider two dimensions; weather scenarios and model years (e.g. power system in 2030, 2040 or 2050).
+- The framework is built around time-series data. References to the time-series data are stored in the model objects and are used to update the LP-problem together with the chosen horizon and problem time. Time series data gives flexibility to run the model with the desired temporal resolution without having to adapt the dataset each time.
+- There are different types of horizons / time resolutions that can be used in the models. Different model objects can also have different horizons in the same model. We have implemented SequentialHorizon, AdaptiveHorizon and ShrinkableHorizon:
+  - SequentialHorizon represents periods with a list of (N, timedelta) pairs. Can represent for example hourly or weekly time resolution.
+  - AdaptiveHorizon can include more details with less periods, while still keeping a sequential structure. It has an overlying dimension with sequential periods, while in the second dimension hours (or time periods) are grouped into load blocks based on their characteristics (e.g. hours with similar residual load).
+  - In a ShrinkableHorizon the horizon duration shrinks (to a point, and then resets) between simulation steps, while the number of periods stays the same. This improves the update and solve time of the problem since we can reuse values between simulation steps. 
 - We can use one scenario at the start of the problem, and one at the end. Also with a smooth transition, which can be used to phase in uncertainty.
 - It is possible to build in support for time delays in for example waterways.
 
 #### Solvers:
-The general framework supports connecting to the desired optimization framework or solver. We have built one problem structure that connects to the [JuMP](https://github.com/jump-dev/JuMP.jl) framework and one that connects directly to the [HiGHS](https://github.com/jump-dev/HiGHS.jl) package.
+The general framework supports connecting to the desired optimization framework or solver. We have built one problem structure that connects to the [JuMP](https://github.com/jump-dev/JuMP.jl) framework, one that connects directly to the [HiGHS](https://github.com/jump-dev/HiGHS.jl) package, and one that connects directly to the [CPLEX](https://github.com/jump-dev/CPLEX.jl) package.
 
 #### Boundary conditions:
 The framework supports having state variables and setting them with boundary conditions. This is important for storages, certain problem restrictions, and stochastic algorithms where the master- and sub-problems needs to be connected. We have built model objects for start state, end values and Benders cuts.
@@ -43,6 +46,7 @@ The framework supports having state variables and setting them with boundary con
 - src/abstracttypes.jl – the abstract problem types (and their general interfaces) are described here
 - src/problem_jump.jl – description of how the LP-problem is built, updated, solved and results are queried.
 - src/balance.jl - src/flow.jl - src/storage.jl - src/trait_arrow.jl – the main model objects that make up the real-world concepts and how they are connected (like power markets, power plants, demands and hydro storages)
+- src/horizons.jl - src/horizons_shrinkable_shiftable.jl - the horizons that represent the time resolution in the problems
 - src/ - the rest of the source code is also commented
 
 #### See also demos (:heavy_check_mark: = open data so you can run it yourself):
@@ -90,8 +94,6 @@ If jupyter is not installed then it can be installed using IJulia
 Julia> using IJulia
 Julia> Julia.notebook()
 ```
-#### Possible improvements to TuLiPa:
-File "Possible improvements to TuLiPa" is temporarly removed
 
 ### Why Julia:
 Julia is a modern and growing language made for scientific computing. It has a flexible type-hierarchy which is perfect for our modular framework. Together with “multiple dispatch” it is easy to make a general framework that works for different concrete types and methods/functions. It also makes it easy to add new concrete types or methods without having to change much of the existing code. 
