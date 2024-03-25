@@ -110,7 +110,7 @@ function test_all_includeelement_methods()
     test_includeMeanSeriesParam!()
     test_includeMeanSeriesIgnorePhaseinParam!()
     test_includePrognosisSeriesParam!()
-    test_includeMeanSeriesIgnorePhaseinParam!()
+    test_includeUMMSeriesParam!()
     test_includeStatefulParam!()
     test_includeMsTimeDelta!()
     test_includeScenarioTimePeriod!()
@@ -354,7 +354,8 @@ end
 
 function test_includeMeanSeriesIgnorePhaseinParam!()
   # TODO: test for value::Dict
-  register_tested_methods(includeMeanSeriesIgnorePhaseinParam!, 1)
+  # TODO: value::MeanSeriesIgnorePhaseinParam
+  register_tested_methods(includeMeanSeriesIgnorePhaseinParam!, 2)
 end
 
 function test_includePrognosisSeriesParam!()
@@ -362,9 +363,9 @@ function test_includePrognosisSeriesParam!()
   register_tested_methods(includePrognosisSeriesParam!, 1)
 end
 
-function test_includeMeanSeriesIgnorePhaseinParam!()
+function test_includeUMMSeriesParam!()
   # TODO: test for value::Dict
-  register_tested_methods(includeMeanSeriesIgnorePhaseinParam!, 1)
+  register_tested_methods(includeUMMSeriesParam!, 1)
 end
 
 function test_includeStatefulParam!()

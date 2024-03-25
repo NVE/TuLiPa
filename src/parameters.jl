@@ -836,6 +836,12 @@ function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::Ele
     return (true, deps)
 end
 
+function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MeanSeriesIgnorePhaseinParam)
+    deps = Id[]
+    lowlevel[getobjkey(elkey)] = value
+    return (true, deps)
+end
+
 function includePrognosisSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
     
@@ -865,12 +871,6 @@ function includePrognosisSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey,
     end
     
     lowlevel[getobjkey(elkey)] = PrognosisSeriesParam(level, profile, prognosis, steps)
-    return (true, deps)
-end
-
-function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MeanSeriesIgnorePhaseinParam)
-    deps = Id[]
-    lowlevel[getobjkey(elkey)] = value
     return (true, deps)
 end
 
