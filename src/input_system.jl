@@ -334,9 +334,6 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
 
     root_causes = Set{ElementKey}(k for k in failed if does_not_depend_on_failed(k, dependencies, failed))
 
-    dependency_counts = get_dependency_counts(dependencies)
-    missings_counts = get_missings_counts(missings, dependency_counts)
-
     report_elements = union(root_causes, keys(errors))
 
     messages = String[]
@@ -361,10 +358,7 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
         push!(known_cause, k)
     end
     for id in reportable_missings
-        n = missings_counts[id]
-        s = n == 1 ? "" : "s"
-        x = n == 1 ? "s" : ""
-        m = "Missing element $id ($n element$s depend$x on it)"
+        m = "Missing element $id"
         push!(messages, m)
     end
 
@@ -400,60 +394,6 @@ function assert_all_elkeys_in_dependencies(dependencies, elements)
     end
     D = Set(keys(dependencies))
     @assert E == D
-end
-
-"""
-Returns Dict{ElementKey, Vector{ElementKey}} 
-with total number of data elements that directly 
-or indirectly depend on a data element.
-"""
-function get_dependency_counts(dependencies::Dict{ElementKey, Vector{ElementKey}})
-    counts = Dict{ElementKey, Int}()
-    for k in keys(dependencies)
-        counts[k] = 0
-        recursive_count(k, dependencies, counts)
-    end
-    return counts
-end
-
-function recursive_count(k, dependencies, counts)
-    elkeys = dependencies[k]
-    length(elkeys) > 0 || return
-    for j in elkeys
-        counts[j] = 1 + get(counts, j, 0)
-        recursive_count(j, dependencies, counts)
-    end
-end
-
-function get_missings_counts(missings, dependency_counts)
-    counts = Dict{Id, Int}()
-    for (elkey, id_vec) in missings
-        length(id_vec) > 0 || continue
-        for id in id_vec
-            counts[id] = get(counts, id, 0) + dependency_counts[elkey]
-        end
-    end
-    return counts
-end
-
-function get_include_element_issues(k, errors, missings)
-    issues = String[]
-    if haskey(errors, k)
-        for m in errors[k]
-            push!(issues, m)
-        end
-    end
-    if haskey(missings, k)
-        for id in missings[k]
-            m = "Refers to missing $id"
-            push!(issues, m)
-        end
-    end
-    if !(haskey(errors, k) || haskey(missings, k))
-        m = "Failed due to unknown reason (not missing dependency)"
-        push!(issues, m)
-    end
-    return issues
 end
 
 function split_dependencies(dependencies::Dict{ElementKey, Any}, elements::Vector{DataElement})
