@@ -356,7 +356,7 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
         (k in root_causes) || continue
         length(id_vec) > 0 || continue
         for id in id_vec
-            push!(reportable_missings)
+            push!(reportable_missings, id)
         end
         push!(known_cause, k)
     end
