@@ -160,8 +160,8 @@ Inputs:
   elements::Vector{DataElement}
 
 Optional keyword arguments:
-  validate::Bool - true by default. if true (default) we call the 
-                   validate_modelobjects function on modelobjects before returning
+  validate::Bool - true by default. If true we call the validate_modelobjects 
+                   function on modelobjects before returning
 
   deps::Bool - false by default. When true, we return (modelobjects, dependencies)
                where dependencies::Dict{ElementKey, Vector{Int}} containing
