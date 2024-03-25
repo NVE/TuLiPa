@@ -355,15 +355,11 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
         push!(messages, m)
     end
 
-    for k in failed
-        if !(k in explained_by_missing)
-            if !haskey(errors, k)
-                if (k in root_causes)
-                    s = "Element $k failed due to unknown reason (not missing dependency)"
-                    push!(messages, s)
-                end
-            end
-        end
+    for k in root_causes
+        (k in explained_by_missing) && continue
+        haskey(errors, k) && continue
+        s = "Element $k failed due to unknown reason (not missing dependency)"
+        push!(messages, s)
     end
 
     messages = [string(" -> ", s) for s in messages]
