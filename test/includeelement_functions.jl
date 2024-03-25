@@ -177,10 +177,7 @@ function test_includeRangeTimeIndex!()
     (TL, LL) = (Dict(), Dict())
     t = DateTime(1985, 7, 1)
     d = Millisecond(Hour(-1))
-    r = StepRange(t, d, t + Day(1))
-    # (just to show that StepRange does not throw, but instead 
-    #  evaluates to an empty iterator when given bad input)
-    @test r == StepRange(t, d, t) 
+    r = StepRange(t, d, t)
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, r)
     # should be ok
     (TL, LL) = (Dict(), Dict())
