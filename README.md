@@ -25,6 +25,12 @@ Real world concepts like transmission lines, power plants, hydropower storages a
 
 ![image](https://user-images.githubusercontent.com/40186418/213677992-ab96494c-42ae-42b8-bdc8-2b2b94c7673f.png)
 
+### Input system:
+The model objects have a complicated nested structure which works well for LP problems. However, we found it too complicated to be used by end users to create datasets. We wanted an input system that was extensible, composable and modular, and this suggested to use a flat structure instead of a nested one. Inputs are therefore a list of data elements and have these nice properties:
+* Easy to port datasets from other sources. Since data elements are small and use references to other data elements, it is usually a matter of looping over objects in the source, create needed data elements and add them as you go.
+* Easy to store dataset in replaceable parts. E.g. have different hydropower datasets with different aggregation levels. E.g. have exogeneous or endogenous represenation of the continental power system.
+* Easy to add functionality. E.g. give an existing Flow element SoftBound constraint by adding SoftBound data elements referring to the Flow element. E.g. replace BaseArrow with SegmentedArrow to model PQ-curves for an existing Flow element.
+
 #### Time:
 - The problem time can consider two dimensions; weather scenarios and model years (e.g. power system in 2030, 2040 or 2050).
 - The framework is built around time-series data. References to the time-series data are stored in the model objects and are used to update the LP-problem together with the chosen horizon and problem time. Time series data gives flexibility to run the model with the desired temporal resolution without having to adapt the dataset each time.
@@ -47,6 +53,7 @@ The framework supports having state variables and setting them with boundary con
 - src/problem_jump.jl – description of how the LP-problem is built, updated, solved and results are queried.
 - src/balance.jl - src/flow.jl - src/storage.jl - src/trait_arrow.jl – the main model objects that make up the real-world concepts and how they are connected (like power markets, power plants, demands and hydro storages)
 - src/horizons.jl - src/horizons_shrinkable_shiftable.jl - the horizons that represent the time resolution in the problems
+- src/input_system.jl - description of the input system in TuLiPa
 - src/ - the rest of the source code is also commented
 
 #### See also demos (:heavy_check_mark: = open data so you can run it yourself):
