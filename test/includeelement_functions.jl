@@ -304,13 +304,16 @@ function test_includeColumnTimeValues!()
   matrix = zeros(Float64, (2,2))
   table = Dict("Matrix" => matrix, "Names" => ["a", "b"])
   table_id = Id(TuLiPa.TABLE_CONCEPT, "mytable")
-  # missing table error
+  # missing table returns ok=false
   d = Dict(TuLiPa.TABLE_CONCEPT => "mytable", "Name" => "a")
-  @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, d)
+  ret = includeColumnTimeValues!(TL, LL, k, d)
+  _test_ret(ret, n=1, okvalue=false)
+  @test ret[2][1] == table_id
   # should be ok
   LL[table_id] = table
   ret = includeColumnTimeValues!(TL, LL, k, d)
   _test_ret(ret, n=1)
+  @test ret[2][1] == table_id
   # check that stored value is a view into column 1 (name "a") of matrix
   x = LL[Id(k.conceptname, k.instancename)]
   @test view(matrix, :, 1) === x
