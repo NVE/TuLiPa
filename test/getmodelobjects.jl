@@ -3,6 +3,7 @@ module TestGetmodelobjects
 using TuLiPa, Test
 
 include("utils_dummy_data.jl");
+
 elements = gettestdataset();
 scenarioyearstart = 1981
 scenarioyearstop = 1983
@@ -18,7 +19,6 @@ push!(elements, getelement(BOUNDARYCONDITION_CONCEPT, "StartEqualStop", "StartEq
 function test_getmodelobjects_kwarg_validate(elements; validate=true)
     modelobjects = getmodelobjects(elements, validate=validate)
     @test modelobjects isa Dict{Id, Any}
-    return true
 end
 
 function test_getmodelobjects_kwarg_deps_true(elements)
@@ -27,35 +27,31 @@ function test_getmodelobjects_kwarg_deps_true(elements)
     N = length(elements)
     @test modelobjects isa Dict{Id, Any}
     @test all(1 <= i <= N for e in elements for i in deps[getelkey(e)])
-    return true
 end
 
 function test_getmodelobjects_kwarg_deps_false(elements)
     modelobjects = getmodelobjects(elements, deps=false)
     @test modelobjects isa Dict{Id, Any}
-    return true
 end
 
 function test_getmodelobjects_missing_element(elements)
     missing_one = elements[2:end]
     @test_throws ErrorException getmodelobjects(missing_one)
-    return true
 end
 
 function test_getmodelobjects_duplicates(elements)
     has_duplicates = copy(elements)
     push!(has_duplicates, first(elements))
     @test_throws ErrorException getmodelobjects(has_duplicates)
-    return true
 end
 
 @testset "getmodelobjects" begin
-    @test test_getmodelobjects_kwarg_validate(elements; validate=true)
-    @test test_getmodelobjects_kwarg_validate(elements; validate=false)
-    @test test_getmodelobjects_kwarg_deps_true(elements)
-    @test test_getmodelobjects_kwarg_deps_false(elements)
-    @test test_getmodelobjects_missing_element(elements)
-    @test test_getmodelobjects_duplicates(elements)
+    test_getmodelobjects_kwarg_validate(elements; validate=true)
+    test_getmodelobjects_kwarg_validate(elements; validate=false)
+    test_getmodelobjects_kwarg_deps_true(elements)
+    test_getmodelobjects_kwarg_deps_false(elements)
+    test_getmodelobjects_missing_element(elements)
+    test_getmodelobjects_duplicates(elements)
 end
 
 end # module
