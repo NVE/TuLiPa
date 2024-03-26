@@ -319,6 +319,8 @@ function test_includeColumnTimeValues!()
   # check that stored value is a view into column 1 (name "a") of matrix
   x = LL[Id(k.conceptname, k.instancename)]
   @test view(matrix, :, 1) === x
+  # same id already stored in lowlevel error
+  @test_throws ErrorException includeVectorTimeValues!(TL, LL, k, d)
   # wrong name type error
   d = Dict(TuLiPa.TABLE_CONCEPT => "mytable", "Name" => :a)
   @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, d)
@@ -332,6 +334,7 @@ end
 
 function test_includeRotatingTimeVector!()
   # TODO: test for value::Dict
+
   register_tested_methods(includeRotatingTimeVector!, 1)
 end
 
