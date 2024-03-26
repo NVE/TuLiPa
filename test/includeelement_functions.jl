@@ -395,17 +395,30 @@ function test_includeStartEqualStop!()
     # tests for value::Dict
     (k, TL, LL) = _setup_common_variables()
     @test_throws ErrorException includeStartEqualStop!(TL, LL, k, Dict())
-    @test_throws ErrorException includeStartEqualStop!(TL, LL, k, Dict(WHICHINSTANCE => "myvar", WHICHCONCEPT => FLOW_CONCEPT)) # no var in LL
-    LL[Id(FLOW_CONCEPT, "myvar")] = BaseFlow(Id(FLOW_CONCEPT, "myvar"))
+    ret = includeStartEqualStop!(TL, LL, k, Dict(WHICHINSTANCE => "myvar", WHICHCONCEPT => FLOW_CONCEPT))
+    _test_ret(ret, n=1, okvalue=false)  # no var in TL
+    @test ret[2] == [Id(FLOW_CONCEPT, "myvar")]
+    TL[Id(FLOW_CONCEPT, "myvar")] = BaseFlow(Id(FLOW_CONCEPT, "myvar"))
     ret = includeStartEqualStop!(TL, LL, k, Dict(WHICHINSTANCE => "myvar", WHICHCONCEPT => FLOW_CONCEPT))
     _test_ret(ret, n=1)
-    @test length(TL) == 0 && length(LL) == 2
-    @test LL[Id(k.conceptname, k.instancename)] isa StartEqualStop
+    @test length(TL) == 2 && length(LL) == 0
+    @test TL[Id(k.conceptname, k.instancename)] isa StartEqualStop
     register_tested_methods(includeStartEqualStop!, 1)
 end
 
 function test_includeBaseBalance!()
-    # TODO: test for value::Dict
+    # tests for value::Dict
+    (k, TL, LL) = _setup_common_variables()
+    @test_throws ErrorException includeBaseBalance!(TL, LL, k, Dict())
+    ret = includeBaseBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power")) # not in LL
+    _test_ret(ret, n=1, okvalue=false)
+    @test ret[2] == [Id(COMMODITY_CONCEPT, "Power")]
+    LL[Id(COMMODITY_CONCEPT, "Power")] = BaseCommodity(Id(COMMODITY_CONCEPT, "Power"), SequentialHorizon(10, Day(1)))
+    ret = includeBaseBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power")) # not in LL
+    _test_ret(ret, n=1)
+    @test ret[2] == [Id(COMMODITY_CONCEPT, "Power")]
+    @test length(TL) == 1 && length(LL) == 1
+    @test TL[Id(k.conceptname, k.instancename)] isa BaseBalance
     register_tested_methods(includeBaseBalance!, 1)
 end
 
