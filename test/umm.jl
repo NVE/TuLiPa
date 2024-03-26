@@ -215,7 +215,8 @@ function run_tests()
     @test getparamvalue(obj_test.param, querystart, querydelta) == 0.75
 end
 
-@testset "UMMSeriesParam" begin
+testset_name = Main.get_testset_name("UMMSeriesParam")
+@testset "$testset_name" begin
     run_tests()
 end
 

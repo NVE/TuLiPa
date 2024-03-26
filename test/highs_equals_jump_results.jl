@@ -47,7 +47,8 @@ function run_tests()
     @test round(prob2_highs, sigdigits=10) == round(prob2_jump, sigdigits=10)
 end
 
-@testset "highs == jump" begin
+testset_name = Main.get_testset_name("highs == jump")
+@testset "$testset_name" begin
     run_tests()
 end
 

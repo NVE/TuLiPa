@@ -17,7 +17,8 @@ function run_tests()
     @test getparamvalue(obj_test.param, querystart, querydelta) == 100
 end
 
-@testset "PrognosisSeriesParam" begin
+testset_name = Main.get_testset_name("PrognosisSeriesParam")
+@testset "$testset_name" begin
     run_tests()
 end
 

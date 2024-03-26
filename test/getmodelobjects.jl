@@ -45,7 +45,8 @@ function test_getmodelobjects_duplicates(elements)
     @test_throws ErrorException getmodelobjects(has_duplicates)
 end
 
-@testset "getmodelobjects" begin
+testset_name = Main.get_testset_name("getmodelobjects")
+@testset "$testset_name" begin
     test_getmodelobjects_kwarg_validate(elements; validate=true)
     test_getmodelobjects_kwarg_validate(elements; validate=false)
     test_getmodelobjects_kwarg_deps_true(elements)

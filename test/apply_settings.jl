@@ -62,7 +62,8 @@ function run_tests()
 	@test unsafe_string(pointer(buffer)) == "off"
 end
 
-@testset "apply_settings" begin
+testset_name = Main.get_testset_name("apply_settings")
+@testset "$testset_name" begin
 	run_tests()
 end
 

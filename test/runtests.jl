@@ -3,9 +3,9 @@ We pad testset names to get aligned
 summaries when the tests are run.
 Much easier to read this way.
 """
-function get_testset_name(s::String; n::Int=40)
+function get_testset_name(s::String; n::Int=30)
     length(s) < n || return s
-    string(s, repeat("_", n - length(s)))
+    string(s, repeat(" ", n - length(s)))
 end
 
 include("basic_solving.jl")

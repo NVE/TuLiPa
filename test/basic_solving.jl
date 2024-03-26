@@ -43,7 +43,8 @@ function run_tests()
     @test prob2 == ans2
 end
 
-@testset "basic_solving" begin
+testset_name = Main.get_testset_name("basic_solving")
+@testset "$testset_name" begin
     run_tests()
 end
 

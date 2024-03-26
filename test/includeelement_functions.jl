@@ -56,11 +56,8 @@ function register_tested_methods(include_func::Function, num_methods::Int)
 end
 
 function run_tests()
-    testset_name = get_testset_name("includeelement_methods")
-    @testset testset_name begin
-        test_all_includeelement_methods()
-        test_is_all_includeelement_methods_covered()
-    end
+    test_all_includeelement_methods()
+    test_is_all_includeelement_methods_covered()
 end
 
 function test_is_all_includeelement_methods_covered()
@@ -727,6 +724,9 @@ function _test_ret(ret; n=0, okvalue=true, depstype=Vector{Id})
     @test length(deps) == n
 end
 
-run_tests()
+testset_name = Main.get_testset_name("includeelement_methods")
+@testset "$testset_name" begin
+    run_tests()
+end
 
 end # end module

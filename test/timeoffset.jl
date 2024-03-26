@@ -148,7 +148,8 @@ function run_tests()
     @test IsoYearOffset_value_25 == ScenarioOffset_value_25 == TimeDeltaOffset_value_25
 end
 
-@testset "TimeOffset" begin
+testset_name = Main.get_testset_name("TimeOffset")
+@testset "$testset_name" begin
     run_tests()
 end
 
