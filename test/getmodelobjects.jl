@@ -1,3 +1,5 @@
+module TestGetmodelobjects
+
 using TuLiPa, Test
 
 include("utils_dummy_data.jl");
@@ -47,9 +49,13 @@ function test_getmodelobjects_duplicates(elements)
     return true
 end
 
-@test test_getmodelobjects_kwarg_validate(elements; validate=true)
-@test test_getmodelobjects_kwarg_validate(elements; validate=false)
-@test test_getmodelobjects_kwarg_deps_true(elements)
-@test test_getmodelobjects_kwarg_deps_false(elements)
-@test test_getmodelobjects_missing_element(elements)
-@test test_getmodelobjects_duplicates(elements)
+@testset "getmodelobjects" begin
+    @test test_getmodelobjects_kwarg_validate(elements; validate=true)
+    @test test_getmodelobjects_kwarg_validate(elements; validate=false)
+    @test test_getmodelobjects_kwarg_deps_true(elements)
+    @test test_getmodelobjects_kwarg_deps_false(elements)
+    @test test_getmodelobjects_missing_element(elements)
+    @test test_getmodelobjects_duplicates(elements)
+end
+
+end # module
