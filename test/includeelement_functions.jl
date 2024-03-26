@@ -4,35 +4,35 @@ INCLUDEELEMENT function registry, and a way to catch missing tests
 for new methods added in the future.
 
 The system has two parts: 
-- The function test_all_includeelement_methods, which should
-  test all known methods of each INCLUDEELEMENT function 
-  that is defined in TuLiPa.
-
-- The test_is_all_includeelement_methods_covered function, which
-  tests that all methods registered as tested in this file
-  (using the registration scheme described below), actually cover 
-  all methods stored in the INCLUDEELEMENT registry.
+    The function test_all_includeelement_methods, which should
+    test all known methods of each INCLUDEELEMENT function 
+    that is defined in TuLiPa.
+    
+    The test_is_all_includeelement_methods_covered function, which
+    tests that all methods registered as tested in this file
+    (using the registration scheme described below), actually cover 
+    all methods stored in the INCLUDEELEMENT registry.
 
 For the system to work well, each INCLUDEELEMENT test function should behave 
 a certain way:
-- Define one test function for each generic function in INCLUDEELEMENT.
+    Define one test function for each generic function in INCLUDEELEMENT.
+      
+    The test function should test all methods of the function 
+    (i.e. different implementations for different types for the 
+    "values" argument. E.g. see test_includeVectorTimeIndex! 
+    which tests both value::AbstractVector{DateTime} and value::Dict)
 
-- The test function should test all methods of the function 
-  (i.e. different implementations for different types for the 
-   "values" argument. E.g. see test_includeVectorTimeIndex! 
-   which tests both value::AbstractVector{DateTime} and value::Dict)
+    As a convention, name the test function 
+    test_[INCLUDEELEMENT function name]
+    (e.g. test_includeVectorTimeIndex!)
 
-- As a convention, name the test function 
-  test_[INCLUDEELEMENT function name]
-  (e.g. test_includeVectorTimeIndex!)
+    The final line of a test function should call the 
+    register_tested_methods function to register how many 
+    methods the test function tested.
+    (e.g. register_tested_methods(includeVectorTimeIndex!, 2))
 
-- The final line of a test function should call the 
-  register_tested_methods function to register how many 
-  methods the test function tested.
-  (e.g. register_tested_methods(includeVectorTimeIndex!, 2))
-
-- Call the test function inside the 
-  test_all_includeelement_methods function 
+    Call the test function inside the 
+    test_all_includeelement_methods function 
 
 We wrap the tests in a module so that we do not (inadvertently) 
 overwrite names the global namespace, which could affect other 
@@ -150,10 +150,14 @@ function test_includeVectorTimeIndex!()
     @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, v)
     # should be ok
     v = [DateTime(1985, 7, 1)]
-    ret = includeVectorTimeIndex!(TL, LL, k, [DateTime(1985, 7, 1)])
+    ret = includeVectorTimeIndex!(TL, LL, k, v)
     _test_ret(ret)
+    # check that object got stored in LL
+    obj = LL[Id(k.conceptname, k.instancename)]
+    @test obj === v
+    # check that nothing else got stored in TL and LL
+    @test length(TL) == 0 && length(LL) == 1
     # same id already stored in lowlevel error
-    LL[Id(k.conceptname, k.instancename)] = 1
     @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, [DateTime(1985, 7, 1)])
 
     # tests method when value::Dict
@@ -165,6 +169,11 @@ function test_includeVectorTimeIndex!()
     d["Vector"] = v
     ret = includeVectorTimeIndex!(TL, LL, k, d)
     _test_ret(ret)
+    # check that object got stored in LL
+    obj = LL[Id(k.conceptname, k.instancename)]
+    @test obj === v
+    # check that nothing else got stored in TL and LL
+    @test length(TL) == 0 && length(LL) == 1
 
     register_tested_methods(includeVectorTimeIndex!, 2)
 end
@@ -204,8 +213,12 @@ function test_includeRangeTimeIndex!()
              "Delta" => "MyTimeDelta") 
     ret = includeRangeTimeIndex!(TL, LL, k, d)
     _test_ret(ret; n=1)
+    # check that object got stored in LL
+    obj = LL[Id(k.conceptname, k.instancename)]
+    @test obj isa StepRange
+    # check that nothing else got stored in TL and LL
+    @test length(TL) == 0 && length(LL) == 2
     # same id already stored in lowlevel error
-    LL[Id(k.conceptname, k.instancename)] = 1
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
     # negative step error 
     d = Dict("Start" => DateTime(1985, 7, 1), 
@@ -219,9 +232,7 @@ function test_includeRangeTimeIndex!()
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
 
     # tests when value::StepRange{DateTime, Millisecond}
-    (TL, LL) = (Dict(), Dict())
     # same id already stored in lowlevel error
-    LL[Id(k.conceptname, k.instancename)] = 1
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
     # non-positive Millisecond error
     (TL, LL) = (Dict(), Dict())
@@ -237,265 +248,472 @@ function test_includeRangeTimeIndex!()
     r = StepRange(t, d, t + Day(1))
     ret = includeRangeTimeIndex!(TL, LL, k, r)
     _test_ret(ret)
+    # check that object got stored in LL
+    obj = LL[Id(k.conceptname, k.instancename)]
+    @test obj === r
+    # check that nothing else got stored in TL and LL
+    @test length(TL) == 0 && length(LL) == 1
 
-    # TODO: also test that t0 > t1 in tincludeRangeTimeIndex! for value::StepRange?
+    # TODO: add validation t0 > t1 in includeRangeTimeIndex! for value::StepRange and add test for it here
 
     register_tested_methods(includeRangeTimeIndex!, 2)
 end
 
 function test_includeVectorTimeValues!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeVectorTimeValues!, 1)
+    # tests for value::Dict
+    (TL, LL) = (Dict(), Dict())
+    k = ElementKey("doesnotmatter", "doesnotmatter", "doesnotmatter")
+    # missing vector error
+    @test_throws ErrorException includeVectorTimeValues!(TL, LL, k, Dict())
+    # should be ok
+    d = Dict("Vector" => Float64[1, 2, 3])
+    ret = includeVectorTimeValues!(TL, LL, k, d)
+    _test_ret(ret)
+    # check that object got stored in LL
+    obj = LL[Id(k.conceptname, k.instancename)]
+    @test obj === d["Vector"]
+    # check that nothing else got stored in TL and LL
+    @test length(TL) == 0 && length(LL) == 1
+    # same id already stored in lowlevel error
+    @test_throws ErrorException includeVectorTimeValues!(TL, LL, k, d)
+    # wrong vector eltype error
+    (TL, LL) = (Dict(), Dict())
+    d = Dict("Vector" => Int[1, 2, 3])
+    @test_throws ErrorException includeVectorTimeValues!(TL, LL, k, d)
+
+    register_tested_methods(includeVectorTimeValues!, 1)
 end
 
 function test_includeBaseTable!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeBaseTable!, 1)
+    # tests for value::Dict
+    (TL, LL) = (Dict(), Dict())
+    k = ElementKey("doesnotmatter", "doesnotmatter", "doesnotmatter")
+    # missing keys error
+    @test_throws ErrorException includeBaseTable!(TL, LL, k, Dict())
+    # should be ok
+    d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a", "b"])
+    ret = includeBaseTable!(TL, LL, k, d)
+    _test_ret(ret)
+    # check that object got stored in LL
+    obj = LL[Id(k.conceptname, k.instancename)]
+    @test obj === d
+    # check that nothing else got stored in TL and LL
+    @test length(TL) == 0 && length(LL) == 1
+    # same id already stored in lowlevel error
+    @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
+    (TL, LL) = (Dict(), Dict())
+    # missing name error
+    d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a"])
+    @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
+    # extra name error
+    d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a", "b", "c"])
+    @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
+    # wrong matrix eltype error
+    d = Dict("Matrix" => zeros(Int, (2,2)), "Names" => ["a", "b"])
+    @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
+    # wrong names eltype error
+    d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => [:a, :b])
+    @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
+    # empty names error
+    d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => String[])
+    @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
+    # duplicate names error
+    d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a", "a"])
+    @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
+
+    register_tested_methods(includeBaseTable!, 1)
 end
 
 function test_includeColumnTimeValues!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeColumnTimeValues!, 1)
+    # tests for value::Dict
+    (TL, LL) = (Dict(), Dict())
+    k = ElementKey("doesnotmatter", "doesnotmatter", "doesnotmatter")
+    # missing keys error
+    @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, Dict())
+    # setup test data
+    matrix = zeros(Float64, (2,2))
+    table = Dict("Matrix" => matrix, "Names" => ["a", "b"])
+    table_id = Id(TuLiPa.TABLE_CONCEPT, "mytable")
+    # missing table returns ok=false
+    d = Dict(TuLiPa.TABLE_CONCEPT => "mytable", "Name" => "a")
+    ret = includeColumnTimeValues!(TL, LL, k, d)
+    _test_ret(ret, n=1, okvalue=false)
+    @test ret[2][1] == table_id
+    # should be ok
+    LL[table_id] = table
+    ret = includeColumnTimeValues!(TL, LL, k, d)
+    _test_ret(ret, n=1)
+    @test ret[2][1] == table_id
+    # check that nothing else got stored in TL and LL
+    @test length(TL) == 0 && length(LL) == 2
+    # check that stored value is a view into column 1 (name "a") of matrix
+    x = LL[Id(k.conceptname, k.instancename)]
+    @test view(matrix, :, 1) === x
+    # same id already stored in lowlevel error
+    @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, d)
+    # wrong name type error
+    d = Dict(TuLiPa.TABLE_CONCEPT => "mytable", "Name" => :a)
+    @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, d)
+    # unknown name error
+    table = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a", "b"])
+    d = Dict(TuLiPa.TABLE_CONCEPT => table, "Name" => "c")
+    @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, d)
+
+    register_tested_methods(includeColumnTimeValues!, 1)
 end
 
 function test_includeRotatingTimeVector!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeRotatingTimeVector!, 1)
+    # tests for value::Dict
+    (TL, LL) = (Dict(), Dict())
+    k = ElementKey("doesnotmatter", "doesnotmatter", "doesnotmatter")
+    # missing keys error
+    @test_throws ErrorException includeRotatingTimeVector!(TL, LL, k, Dict())
+    # setup test data
+    index = [DateTime(1985, 7, 1)]
+    vals = [10.0]
+    period = Dict("Start" => TuLiPa.getisoyearstart(1985), 
+                  "Stop"  => TuLiPa.getisoyearstart(1986))
+    index_id = Id(TuLiPa.TIMEINDEX_CONCEPT, "myindex")
+    vals_id = Id(TuLiPa.TIMEVALUES_CONCEPT, "myvals")
+    period_id = Id(TuLiPa.TIMEPERIOD_CONCEPT, "ScenarioTimePeriod")
+    LL[index_id] = index
+    LL[vals_id] = vals
+    LL[period_id] = period
+    d = Dict(
+      TuLiPa.TIMEINDEX_CONCEPT => index_id.instancename, 
+      TuLiPa.TIMEVALUES_CONCEPT => vals_id.instancename,
+      TuLiPa.TIMEPERIOD_CONCEPT => period_id.instancename)
+    # should be ok
+    ret = includeRotatingTimeVector!(TL, LL, k, d)
+    _test_ret(ret, n=3)
+    @test Set(ret[2]) == Set([index_id, vals_id, period_id])
+    # check that object got stored in LL
+    obj = LL[Id(k.conceptname, k.instancename)]
+    # check that nothing else got stored in TL and LL
+    @test length(TL) == 0 && length(LL) == 4
+    @test obj isa RotatingTimeVector
+    # same id already stored in lowlevel error
+    @test_throws ErrorException includeRotatingTimeVector!(TL, LL, k, d)
+    # ret with ok=false due to missing index
+    (TL, LL) = (Dict(), Dict())
+    LL[vals_id] = vals
+    LL[period_id] = period
+    ret = includeRotatingTimeVector!(TL, LL, k, d)
+    _test_ret(ret, n=3, okvalue=false)
+    @test Set(ret[2]) == Set([index_id, vals_id, period_id])
+    # ret with ok=false due to missing vals
+    (TL, LL) = (Dict(), Dict())
+    LL[index_id] = index
+    LL[period_id] = period
+    ret = includeRotatingTimeVector!(TL, LL, k, d)
+    _test_ret(ret, n=3, okvalue=false)
+    @test Set(ret[2]) == Set([index_id, vals_id, period_id])
+    # ret with ok=false due to missing period
+    (TL, LL) = (Dict(), Dict())
+    LL[index_id] = index
+    LL[vals_id] = vals
+    ret = includeRotatingTimeVector!(TL, LL, k, d)
+    _test_ret(ret, n=3, okvalue=false)
+    @test Set(ret[2]) == Set([index_id, vals_id, period_id])
+    # restore good state
+    (TL, LL) = (Dict(), Dict())
+    LL[index_id] = index
+    LL[vals_id] = vals
+    LL[period_id] = period
+    # different length index and vals error
+    LL[index_id] = [DateTime(1985, 7, 1), DateTime(1985, 7, 2)]
+    @test_throws ErrorException includeRotatingTimeVector!(TL, LL, k, d)
+    LL[index_id] = index # restore good state
+
+    register_tested_methods(includeRotatingTimeVector!, 1)
 end
 
 function test_includeOneYearTimeVector!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeOneYearTimeVector!, 1)
+    # mostly a copy of test_includeRotatingTimeVector!
+    # only without period input
+
+    # tests for value::Dict
+    (TL, LL) = (Dict(), Dict())
+    k = ElementKey("doesnotmatter", "doesnotmatter", "doesnotmatter")
+    # missing keys error
+    @test_throws ErrorException includeOneYearTimeVector!(TL, LL, k, Dict())
+    # setup test data
+    index = [DateTime(1985, 7, 1)]
+    vals = [10.0]
+    index_id = Id(TuLiPa.TIMEINDEX_CONCEPT, "myindex")
+    vals_id = Id(TuLiPa.TIMEVALUES_CONCEPT, "myvals")
+    LL[index_id] = index
+    LL[vals_id] = vals
+    d = Dict(
+      TuLiPa.TIMEINDEX_CONCEPT => index_id.instancename, 
+      TuLiPa.TIMEVALUES_CONCEPT => vals_id.instancename)
+    # should be ok
+    ret = includeOneYearTimeVector!(TL, LL, k, d)
+    _test_ret(ret, n=2)
+    @test Set(ret[2]) == Set([index_id, vals_id])
+    # check that object got stored in LL
+    obj = LL[Id(k.conceptname, k.instancename)]
+    # check that nothing else got stored in TL and LL
+    @test length(TL) == 0 && length(LL) == 3
+    @test obj isa RotatingTimeVector
+    # same id already stored in lowlevel error
+    @test_throws ErrorException includeOneYearTimeVector!(TL, LL, k, d)
+    # ret with ok=false due to missing index
+    (TL, LL) = (Dict(), Dict())
+    LL[vals_id] = vals
+    ret = includeOneYearTimeVector!(TL, LL, k, d)
+    _test_ret(ret, n=2, okvalue=false)
+    @test Set(ret[2]) == Set([index_id, vals_id])
+    # ret with ok=false due to missing vals
+    (TL, LL) = (Dict(), Dict())
+    LL[index_id] = index
+    ret = includeOneYearTimeVector!(TL, LL, k, d)
+    _test_ret(ret, n=2, okvalue=false)
+    @test Set(ret[2]) == Set([index_id, vals_id])
+    # restore good state
+    (TL, LL) = (Dict(), Dict())
+    LL[index_id] = index
+    LL[vals_id] = vals
+    # different length index and vals error
+    LL[index_id] = [DateTime(1985, 7, 1), DateTime(1985, 7, 2)]
+    @test_throws ErrorException includeOneYearTimeVector!(TL, LL, k, d)
+    LL[index_id] = index # restore good state
+    # not one isoyear
+    LL[index_id] = [DateTime(1985, 7, 1), DateTime(1988, 7, 2)]
+    LL[vals_id] = [10., 11.0]
+    @test_throws ErrorException includeOneYearTimeVector!(TL, LL, k, d)
+    
+    register_tested_methods(includeOneYearTimeVector!, 1)
 end
 
 function test_includeInfiniteTimeVector!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeInfiniteTimeVector!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeInfiniteTimeVector!, 1)
 end
 
 function test_includeMutableInfiniteTimeVector!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeMutableInfiniteTimeVector!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeMutableInfiniteTimeVector!, 1)
 end
 
 function test_includeConstantTimeVector!()
-  # TODO: test for value::Dict
-  # TODO: test for value::AbstractFloat
-  # TODO: test for value::ConstantTimeVector
-  register_tested_methods(includeConstantTimeVector!, 3)
+    # TODO: test for value::Dict
+    # TODO: test for value::AbstractFloat
+    # TODO: test for value::ConstantTimeVector
+    register_tested_methods(includeConstantTimeVector!, 3)
 end
 
 function test_includeStartEqualStop!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeStartEqualStop!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeStartEqualStop!, 1)
 end
 
 function test_includeBaseBalance!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeBaseBalance!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeBaseBalance!, 1)
 end
 
 function test_includeExogenBalance!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeExogenBalance!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeExogenBalance!, 1)
 end
 
 function test_includeBaseFlow!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeBaseFlow!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeBaseFlow!, 1)
 end
 
 function test_includeBaseStorage!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeBaseStorage!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeBaseStorage!, 1)
 end
 
 function test_includeFossilMCParam!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeFossilMCParam!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeFossilMCParam!, 1)
 end
 
 function test_includeM3SToMM3Param!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeM3SToMM3Param!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeM3SToMM3Param!, 1)
 end
 
 function test_includeM3SToMM3SeriesParam!()
-  # TODO: test for value::Dict
-  # TODO: test for value::M3SToMM3SeriesParam
-  # TODO: test for value::AbstractFloat
-  register_tested_methods(includeM3SToMM3SeriesParam!, 3)
+    # TODO: test for value::Dict
+    # TODO: test for value::M3SToMM3SeriesParam
+    # TODO: test for value::AbstractFloat
+    register_tested_methods(includeM3SToMM3SeriesParam!, 3)
 end
 
 function test_includeMWToGWhSeriesParam!()
-  # TODO: test for value::Dict
-  # TODO: test for value::MWToGWhSeriesParam
-  # TODO: test for value::AbstractFloat
-  register_tested_methods(includeMWToGWhSeriesParam!, 3)
+    # TODO: test for value::Dict
+    # TODO: test for value::MWToGWhSeriesParam
+    # TODO: test for value::AbstractFloat
+    register_tested_methods(includeMWToGWhSeriesParam!, 3)
 end
 
 function test_includeMWToGWhParam!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeMWToGWhParam!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeMWToGWhParam!, 1)
 end
 
 function test_includeCostPerMWToGWhParam!()
-  # TODO: test for value::Dict
-  # TODO: test for value::CostPerMWToGWhParam
-  # TODO: test for value::AbstractFloat
-  register_tested_methods(includeCostPerMWToGWhParam!, 3)
+    # TODO: test for value::Dict
+    # TODO: test for value::CostPerMWToGWhParam
+    # TODO: test for value::AbstractFloat
+    register_tested_methods(includeCostPerMWToGWhParam!, 3)
 end
 
 function test_includeMeanSeriesParam!()
-  # TODO: test for value::Dict
-  # TODO: test for value::MeanSeriesParam
-  register_tested_methods(includeMeanSeriesParam!, 2)
+    # TODO: test for value::Dict
+    # TODO: test for value::MeanSeriesParam
+    register_tested_methods(includeMeanSeriesParam!, 2)
 end
 
 function test_includeMeanSeriesIgnorePhaseinParam!()
-  # TODO: test for value::Dict
-  # TODO: value::MeanSeriesIgnorePhaseinParam
-  register_tested_methods(includeMeanSeriesIgnorePhaseinParam!, 2)
+    # TODO: test for value::Dict
+    # TODO: value::MeanSeriesIgnorePhaseinParam
+    register_tested_methods(includeMeanSeriesIgnorePhaseinParam!, 2)
 end
 
 function test_includePrognosisSeriesParam!()
-  # TODO: test for value::Dict
-  register_tested_methods(includePrognosisSeriesParam!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includePrognosisSeriesParam!, 1)
 end
 
 function test_includeUMMSeriesParam!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeUMMSeriesParam!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeUMMSeriesParam!, 1)
 end
 
 function test_includeStatefulParam!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeStatefulParam!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeStatefulParam!, 1)
 end
 
 function test_includeMsTimeDelta!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeMsTimeDelta!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeMsTimeDelta!, 1)
 end
 
 function test_includeScenarioTimePeriod!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeScenarioTimePeriod!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeScenarioTimePeriod!, 1)
 end
 
 function test_includeSimulationTimePeriod!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeSimulationTimePeriod!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeSimulationTimePeriod!, 1)
 end
 
 function test_includeBaseArrow!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeBaseArrow!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeBaseArrow!, 1)
 end
 
 function test_includeSegmentedArrow!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeSegmentedArrow!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeSegmentedArrow!, 1)
 end
 
 function test_includePositiveCapacity!()
-  # TODO: test for value::Dict
-  register_tested_methods(includePositiveCapacity!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includePositiveCapacity!, 1)
 end
 
 function test_includeLowerZeroCapacity!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeLowerZeroCapacity!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeLowerZeroCapacity!, 1)
 end
 
 function test_includeBaseCommodity!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeBaseCommodity!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeBaseCommodity!, 1)
 end
 
 function test_includeBaseConversion!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeBaseConversion!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeBaseConversion!, 1)
 end
 
 function test_includePumpConversion!()
-  # TODO: test for value::Dict
-  register_tested_methods(includePumpConversion!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includePumpConversion!, 1)
 end
 
 function test_includeCostTerm!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeCostTerm!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeCostTerm!, 1)
 end
 
 function test_includeSimpleLoss!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeSimpleLoss!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeSimpleLoss!, 1)
 end
 
 function test_includeStoragehint!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeStoragehint!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeStoragehint!, 1)
 end
 
 function test_includeResidualhint!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeResidualhint!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeResidualhint!, 1)
 end
 
 function test_includeReservoirCurve!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeReservoirCurve!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeReservoirCurve!, 1)
 end
 
 function test_includeProductionInfo!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeProductionInfo!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeProductionInfo!, 1)
 end
 
 function test_includeHydraulichint!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeHydraulichint!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeHydraulichint!, 1)
 end
 
 function test_includeGlobalEneq!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeGlobalEneq!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeGlobalEneq!, 1)
 end
 
 function test_includeBasePrice!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeBasePrice!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeBasePrice!, 1)
 end
 
 function test_includeTransmissionRamping!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeTransmissionRamping!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeTransmissionRamping!, 1)
 end
 
 function test_includeHydroRampingWithout!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeHydroRampingWithout!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeHydroRampingWithout!, 1)
 end
 
 function test_includeHydroRamping!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeHydroRamping!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeHydroRamping!, 1)
 end
 
 function test_includeBaseRHSTerm!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeBaseRHSTerm!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeBaseRHSTerm!, 1)
 end
 
 function test_includeBaseSoftBound!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeBaseSoftBound!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeBaseSoftBound!, 1)
 end
 
 function test_includeSimpleStartUpCost!()
-  # TODO: test for value::Dict
-  register_tested_methods(includeSimpleStartUpCost!, 1)
+    # TODO: test for value::Dict
+    register_tested_methods(includeSimpleStartUpCost!, 1)
 end
 
 function _test_ret(ret; n=0, okvalue=true, depstype=Vector{Id})
@@ -506,6 +724,9 @@ function _test_ret(ret; n=0, okvalue=true, depstype=Vector{Id})
     @test length(deps) == n
 end
 
-run_tests()
+testset_name = Main.get_testset_name("includeelement_methods")
+@testset "$testset_name" begin
+    run_tests()
+end
 
 end # end module

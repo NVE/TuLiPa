@@ -386,9 +386,9 @@ end
 function _passLP_reset!(p::HiGHS_Prob)
     Highs_destroy(p)
     p.inner = Highs_create()
+	setsilent!(p)
     _passLP!(p)
     apply_settings!(p)
-	setsilent!(p)
     return
 end
 
