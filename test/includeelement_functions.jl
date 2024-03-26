@@ -153,7 +153,6 @@ function test_includeVectorTimeIndex!()
     ret = includeVectorTimeIndex!(TL, LL, k, [DateTime(1985, 7, 1)])
     _test_ret(ret)
     # same id already stored in lowlevel error
-    LL[Id(k.conceptname, k.instancename)] = 1
     @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, [DateTime(1985, 7, 1)])
 
     # tests method when value::Dict
@@ -205,7 +204,6 @@ function test_includeRangeTimeIndex!()
     ret = includeRangeTimeIndex!(TL, LL, k, d)
     _test_ret(ret; n=1)
     # same id already stored in lowlevel error
-    LL[Id(k.conceptname, k.instancename)] = 1
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
     # negative step error 
     d = Dict("Start" => DateTime(1985, 7, 1), 
@@ -219,9 +217,7 @@ function test_includeRangeTimeIndex!()
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
 
     # tests when value::StepRange{DateTime, Millisecond}
-    (TL, LL) = (Dict(), Dict())
     # same id already stored in lowlevel error
-    LL[Id(k.conceptname, k.instancename)] = 1
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
     # non-positive Millisecond error
     (TL, LL) = (Dict(), Dict())
@@ -254,8 +250,6 @@ function test_includeVectorTimeValues!()
   ret = includeVectorTimeValues!(TL, LL, k, d)
   _test_ret(ret)
   # same id already stored in lowlevel error
-  (TL, LL) = (Dict(), Dict())
-  LL[Id(k.conceptname, k.instancename)] = 1
   @test_throws ErrorException includeVectorTimeValues!(TL, LL, k, d)
   # wrong vector eltype error
   (TL, LL) = (Dict(), Dict())
@@ -266,7 +260,37 @@ function test_includeVectorTimeValues!()
 end
 
 function test_includeBaseTable!()
-  # TODO: test for value::Dict
+  # tests for value::Dict
+  (TL, LL) = (Dict(), Dict())
+  k = ElementKey("doesnotmatter", "doesnotmatter", "doesnotmatter")
+  # missing keys error
+  @test_throws ErrorException includeBaseTable!(TL, LL, k, Dict())
+  # should be ok
+  d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a", "b"])
+  ret = includeBaseTable!(TL, LL, k, d)
+  _test_ret(ret)
+  # same id already stored in lowlevel error
+  @test_throws ErrorException includeVectorTimeValues!(TL, LL, k, d)
+  (TL, LL) = (Dict(), Dict())
+  # missing name error
+  d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a"])
+  @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
+  # extra name error
+  d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a", "b", "c"])
+  @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
+  # wrong matrix eltype error
+  d = Dict("Matrix" => zeros(Int, (2,2)), "Names" => ["a", "b"])
+  @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
+  # wrong names eltype error
+  d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => [:a, :b])
+  @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
+  # empty names error
+  d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => String[])
+  @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
+  # duplicate names error
+  d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a", "a"])
+  @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
+
   register_tested_methods(includeBaseTable!, 1)
 end
 
