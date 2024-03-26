@@ -152,8 +152,13 @@ function test_includeVectorTimeIndex!()
     @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, v)
     # should be ok
     v = [DateTime(1985, 7, 1)]
-    ret = includeVectorTimeIndex!(TL, LL, k, [DateTime(1985, 7, 1)])
+    ret = includeVectorTimeIndex!(TL, LL, k, v)
     _test_ret(ret)
+    # check that object got stored in LL
+    obj = LL[Id(k.conceptname, k.instancename)]
+    @test obj === v
+    # check that nothing else got stored in TL and LL
+    @test length(TL) == 0 && length(LL) == 1
     # same id already stored in lowlevel error
     @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, [DateTime(1985, 7, 1)])
 
@@ -166,6 +171,11 @@ function test_includeVectorTimeIndex!()
     d["Vector"] = v
     ret = includeVectorTimeIndex!(TL, LL, k, d)
     _test_ret(ret)
+    # check that object got stored in LL
+    obj = LL[Id(k.conceptname, k.instancename)]
+    @test obj === v
+    # check that nothing else got stored in TL and LL
+    @test length(TL) == 0 && length(LL) == 1
 
     register_tested_methods(includeVectorTimeIndex!, 2)
 end
@@ -209,7 +219,7 @@ function test_includeRangeTimeIndex!()
     obj = LL[Id(k.conceptname, k.instancename)]
     @test obj isa StepRange
     # check that nothing else got stored in TL and LL
-    @test length(TL) == 0 && length(LL) == 1
+    @test length(TL) == 0 && length(LL) == 2
     # same id already stored in lowlevel error
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
     # negative step error 
@@ -263,7 +273,7 @@ function test_includeVectorTimeValues!()
     _test_ret(ret)
     # check that object got stored in LL
     obj = LL[Id(k.conceptname, k.instancename)]
-    @test obj === d
+    @test obj === d["Vector"]
     # check that nothing else got stored in TL and LL
     @test length(TL) == 0 && length(LL) == 1
     # same id already stored in lowlevel error
@@ -368,9 +378,9 @@ function test_includeRotatingTimeVector!()
     LL[vals_id] = vals
     LL[period_id] = period
     d = Dict(
-      TuLiPa.TIMEINDEX_CONCEPT => index_id, 
-      TuLiPa.TIMEVALUES_CONCEPT => vals_id,
-      TuLiPa.TIMEPERIOD_CONCEPT => period_id)
+      TuLiPa.TIMEINDEX_CONCEPT => index_id.instancename, 
+      TuLiPa.TIMEVALUES_CONCEPT => vals_id.instancename,
+      TuLiPa.TIMEPERIOD_CONCEPT => period_id.instancename)
     # should be ok
     ret = includeRotatingTimeVector!(TL, LL, k, d)
     _test_ret(ret, n=3)
