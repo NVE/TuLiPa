@@ -56,7 +56,7 @@ The framework supports having state variables and setting them with boundary con
 - src/input_system.jl - description of the input system in TuLiPa
 - src/ - the rest of the source code is also commented
 
-#### See also demos (:heavy_check_mark: = open data so you can run it yourself):
+#### See also demos (&#x2714; = open data so you can run it yourself):
 - demos/Demo 1 - Deterministic power market with dummy data :heavy_check_mark:
 - demos/Demo 2 - Deterministic power market with detailed data
 - demos/Demo 4 - Deterministic hydro :heavy_check_mark:
