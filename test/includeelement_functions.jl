@@ -234,7 +234,7 @@ function test_includeRangeTimeIndex!()
     ret = includeRangeTimeIndex!(TL, LL, k, r)
     _test_ret(ret)
 
-    # TODO: also test that t0 > t1 in tincludeRangeTimeIndex! for value::StepRange?
+    # TODO: add validation t0 > t1 in includeRangeTimeIndex! for value::StepRange and add test for it here
 
     register_tested_methods(includeRangeTimeIndex!, 2)
 end
@@ -295,7 +295,33 @@ function test_includeBaseTable!()
 end
 
 function test_includeColumnTimeValues!()
-  # TODO: test for value::Dict
+  # tests for value::Dict
+  (TL, LL) = (Dict(), Dict())
+  k = ElementKey("doesnotmatter", "doesnotmatter", "doesnotmatter")
+  # missing keys error
+  @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, Dict())
+  # setup test data
+  matrix = zeros(Float64, (2,2))
+  table = Dict("Matrix" => matrix, "Names" => ["a", "b"])
+  table_id = Id(TuLiPa.TABLE_CONCEPT, "mytable")
+  # missing table error
+  d = Dict(TuLiPa.TABLE_CONCEPT => "mytable", "Name" => "a")
+  @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, d)
+  # should be ok
+  LL[table_id] = table
+  ret = includeColumnTimeValues!(TL, LL, k, d)
+  _test_ret(ret, n=1)
+  # check that stored value is a view into column 1 (name "a") of matrix
+  x = LL[Id(k.conceptname, k.instancename)]
+  @test view(matrix, :, 1) === x
+  # wrong name type error
+  d = Dict(TuLiPa.TABLE_CONCEPT => "mytable", "Name" => :a)
+  @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, d)
+  # unknown name error
+  table = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a", "b"])
+  d = Dict(TuLiPa.TABLE_CONCEPT => table, "Name" => "c")
+  @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, d)
+
   register_tested_methods(includeColumnTimeValues!, 1)
 end
 
