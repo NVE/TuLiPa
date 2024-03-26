@@ -19,7 +19,7 @@ a certain way:
       
     The test function should test all methods of the function 
     (i.e. different implementations for different types for the 
-    "values" argument. E.g. see test_includeVectorTimeIndex! 
+    "value" argument. E.g. see test_includeVectorTimeIndex! 
     which tests both value::AbstractVector{DateTime} and value::Dict)
 
     As a convention, name the test function 
@@ -34,9 +34,9 @@ a certain way:
     Call the test function inside the 
     test_all_includeelement_methods function 
 
-We wrap the tests in a module so that we do not (inadvertently) 
+We wrap the tests in a module so that we do not inadvertently 
 overwrite names the global namespace, which could affect other 
-tests in when running the runtests.jl script.
+tests when running runtests.jl
 """
 
 # TODO: Complete empty tests 
@@ -139,372 +139,268 @@ function test_all_includeelement_methods()
     test_includeSimpleStartUpCost!()
 end
 
+function _setup_common_variables() 
+    return (ElementKey("", "", ""), Dict(), Dict())
+end
+
 function test_includeVectorTimeIndex!()
     # tests method when value::AbstractVector{DateTime}
-    (TL, LL) = (Dict(), Dict())
-    k = ElementKey("doesnotmatter", "doesnotmatter", "doesnotmatter")
-    # empty vector error
+    (k, TL, LL) = _setup_common_variables()
     @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, DateTime[])
-    # not sorted error
-    v = [DateTime(2024, 3, 23), DateTime(1985, 7, 1)]
-    @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, v)
-    # should be ok
+    @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, [DateTime(2024, 3, 23), DateTime(1985, 7, 1)]) # not sorted error
     v = [DateTime(1985, 7, 1)]
     ret = includeVectorTimeIndex!(TL, LL, k, v)
     _test_ret(ret)
-    # check that object got stored in LL
-    obj = LL[Id(k.conceptname, k.instancename)]
-    @test obj === v
-    # check that nothing else got stored in TL and LL
+    @test LL[Id(k.conceptname, k.instancename)] === v
     @test length(TL) == 0 && length(LL) == 1
-    # same id already stored in lowlevel error
-    @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, [DateTime(1985, 7, 1)])
-
+    @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, [DateTime(1985, 7, 1)]) # same id already stored in lowlevel error
     # tests method when value::Dict
     (TL, LL) = (Dict(), Dict())
-    # missing vector in dict error
-    @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, Dict())
-    # should be ok
-    d = Dict()
-    d["Vector"] = v
-    ret = includeVectorTimeIndex!(TL, LL, k, d)
+    @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, Dict()) # missing vector in dict error
+    ret = includeVectorTimeIndex!(TL, LL, k, Dict("Vector" => v))
     _test_ret(ret)
-    # check that object got stored in LL
-    obj = LL[Id(k.conceptname, k.instancename)]
-    @test obj === v
-    # check that nothing else got stored in TL and LL
+    @test LL[Id(k.conceptname, k.instancename)] === v
     @test length(TL) == 0 && length(LL) == 1
-
     register_tested_methods(includeVectorTimeIndex!, 2)
 end
 
 function test_includeRangeTimeIndex!()
     # tests when value::Dict
-    (TL, LL) = (Dict(), Dict())
-    k = ElementKey("doesnotmatter", "doesnotmatter", "doesnotmatter")
-    # empty dict error
+    (k, TL, LL) = _setup_common_variables()
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, Dict())
-    # wrong type Start error
-    d = Dict("Start" => "DateTime(1985, 7, 1)", 
-             "Steps" => 10,
-             "Delta" => Dates.Hour(1)) 
-    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
-    # wrong type Steps error
-    d = Dict("Start" => DateTime(1985, 7, 1), 
-             "Steps" => "10",
-             "Delta" => Dates.Hour(1)) 
-    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
-    # wrong type Delta error
-    d = Dict("Start" => DateTime(1985, 7, 1), 
-             "Steps" => 10,
-             "Delta" => 10) 
-    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
-    # should be ok
-    d = Dict("Start" => DateTime(1985, 7, 1), 
-             "Steps" => 10,
-             "Delta" => Dates.Hour(1)) 
+    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, Dict("Start" => "DateTime(1985, 7, 1)", "Steps" => 10,"Delta" => Dates.Hour(1))) # wrong type Start error
+    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, Dict("Start" => DateTime(1985, 7, 1), "Steps" => "10","Delta" => Dates.Hour(1))) # wrong type Steps error
+    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, Dict("Start" => DateTime(1985, 7, 1), "Steps" => 10,"Delta" => 10)) # wrong type Delta error
+    d = Dict("Start" => DateTime(1985, 7, 1), "Steps" => 10, "Delta" => Dates.Hour(1)) 
     ret = includeRangeTimeIndex!(TL, LL, k, d)
     _test_ret(ret)
-    # should also be ok
     (TL, LL) = (Dict(), Dict())
     LL[Id(TIMEDELTA_CONCEPT, "MyTimeDelta")] = MsTimeDelta(Hour(1))
-    d = Dict("Start" => DateTime(1985, 7, 1), 
-             "Steps" => 10,
-             "Delta" => "MyTimeDelta") 
+    d = Dict("Start" => DateTime(1985, 7, 1), "Steps" => 10, "Delta" => "MyTimeDelta") 
     ret = includeRangeTimeIndex!(TL, LL, k, d)
     _test_ret(ret; n=1)
-    # check that object got stored in LL
-    obj = LL[Id(k.conceptname, k.instancename)]
-    @test obj isa StepRange
-    # check that nothing else got stored in TL and LL
-    @test length(TL) == 0 && length(LL) == 2
-    # same id already stored in lowlevel error
-    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
-    # negative step error 
-    d = Dict("Start" => DateTime(1985, 7, 1), 
-             "Steps" => -1,
-             "Delta" => Dates.Hour(1)) 
-    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
-    # negative Delta error 
-    d = Dict("Start" => DateTime(1985, 7, 1), 
-             "Steps" => 10,
-             "Delta" => Dates.Hour(-1)) 
-    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
-
+    @test LL[Id(k.conceptname, k.instancename)] isa StepRange
+    @test length(TL) == 0 && length(LL) == 2    
+    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d) # same id already stored in lowlevel error
+    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, Dict("Start" => DateTime(1985, 7, 1), "Steps" => -1, "Delta" => Dates.Hour(1))) # negative step error
+    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, Dict("Start" => DateTime(1985, 7, 1), "Steps" => 10, "Delta" => Dates.Hour(-1)))  # negative Delta error
     # tests when value::StepRange{DateTime, Millisecond}
-    # same id already stored in lowlevel error
-    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d)
-    # non-positive Millisecond error
     (TL, LL) = (Dict(), Dict())
-    t = DateTime(1985, 7, 1)
-    @test_throws ArgumentError StepRange(t, Millisecond(Hour(0)), t)
-    d = Millisecond(Hour(-1))
-    r = StepRange(t, d, t)
-    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, r)
-    # should be ok
+    @test_throws ArgumentError StepRange(DateTime(1985, 7, 1), Millisecond(Hour(0)), DateTime(1985, 7, 1))
+    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, StepRange(DateTime(1985, 7, 1), Millisecond(Hour(-1)), DateTime(1985, 7, 1))) # negative Millisecond error
     (TL, LL) = (Dict(), Dict())
-    t = DateTime(1985, 7, 1)
-    d = Millisecond(Hour(1))
-    r = StepRange(t, d, t + Day(1))
+    r = StepRange(DateTime(1985, 7, 1), Millisecond(Hour(1)), DateTime(1985, 7, 1) + Day(1))
     ret = includeRangeTimeIndex!(TL, LL, k, r)
     _test_ret(ret)
-    # check that object got stored in LL
-    obj = LL[Id(k.conceptname, k.instancename)]
-    @test obj === r
-    # check that nothing else got stored in TL and LL
+    @test LL[Id(k.conceptname, k.instancename)] === r
     @test length(TL) == 0 && length(LL) == 1
-
+    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, r) # same id already stored in lowlevel error
     # TODO: add validation t0 > t1 in includeRangeTimeIndex! for value::StepRange and add test for it here
-
     register_tested_methods(includeRangeTimeIndex!, 2)
 end
 
 function test_includeVectorTimeValues!()
     # tests for value::Dict
-    (TL, LL) = (Dict(), Dict())
-    k = ElementKey("doesnotmatter", "doesnotmatter", "doesnotmatter")
-    # missing vector error
+    (k, TL, LL) = _setup_common_variables()
     @test_throws ErrorException includeVectorTimeValues!(TL, LL, k, Dict())
-    # should be ok
     d = Dict("Vector" => Float64[1, 2, 3])
     ret = includeVectorTimeValues!(TL, LL, k, d)
     _test_ret(ret)
-    # check that object got stored in LL
-    obj = LL[Id(k.conceptname, k.instancename)]
-    @test obj === d["Vector"]
-    # check that nothing else got stored in TL and LL
+    @test LL[Id(k.conceptname, k.instancename)] === d["Vector"]
     @test length(TL) == 0 && length(LL) == 1
-    # same id already stored in lowlevel error
-    @test_throws ErrorException includeVectorTimeValues!(TL, LL, k, d)
-    # wrong vector eltype error
+    @test_throws ErrorException includeVectorTimeValues!(TL, LL, k, d) # same id already stored in lowlevel error
     (TL, LL) = (Dict(), Dict())
-    d = Dict("Vector" => Int[1, 2, 3])
-    @test_throws ErrorException includeVectorTimeValues!(TL, LL, k, d)
-
+    @test_throws ErrorException includeVectorTimeValues!(TL, LL, k, Dict("Vector" => Int[1, 2, 3])) # wrong vector eltype error
     register_tested_methods(includeVectorTimeValues!, 1)
 end
 
 function test_includeBaseTable!()
     # tests for value::Dict
-    (TL, LL) = (Dict(), Dict())
-    k = ElementKey("doesnotmatter", "doesnotmatter", "doesnotmatter")
-    # missing keys error
+    (k, TL, LL) = _setup_common_variables()
     @test_throws ErrorException includeBaseTable!(TL, LL, k, Dict())
-    # should be ok
     d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a", "b"])
     ret = includeBaseTable!(TL, LL, k, d)
     _test_ret(ret)
-    # check that object got stored in LL
-    obj = LL[Id(k.conceptname, k.instancename)]
-    @test obj === d
-    # check that nothing else got stored in TL and LL
+    @test LL[Id(k.conceptname, k.instancename)] === d
     @test length(TL) == 0 && length(LL) == 1
-    # same id already stored in lowlevel error
-    @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
+    @test_throws ErrorException includeBaseTable!(TL, LL, k, d)  # same id already stored in lowlevel error
     (TL, LL) = (Dict(), Dict())
-    # missing name error
-    d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a"])
-    @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
-    # extra name error
-    d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a", "b", "c"])
-    @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
-    # wrong matrix eltype error
-    d = Dict("Matrix" => zeros(Int, (2,2)), "Names" => ["a", "b"])
-    @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
-    # wrong names eltype error
-    d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => [:a, :b])
-    @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
-    # empty names error
-    d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => String[])
-    @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
-    # duplicate names error
-    d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a", "a"])
-    @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
-
+    @test_throws ErrorException includeBaseTable!(TL, LL, k, Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a"]))  # missing name error
+    @test_throws ErrorException includeBaseTable!(TL, LL, k, Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a", "b", "c"])) # extra name error
+    @test_throws ErrorException includeBaseTable!(TL, LL, k, Dict("Matrix" => zeros(Int, (2,2)), "Names" => ["a", "b"]))  # wrong matrix eltype error
+    @test_throws ErrorException includeBaseTable!(TL, LL, k, Dict("Matrix" => zeros(Float64, (2,2)), "Names" => [:a, :b])) # wrong names eltype error
+    @test_throws ErrorException includeBaseTable!(TL, LL, k, Dict("Matrix" => zeros(Float64, (2,2)), "Names" => String[]))  # empty names error
+    @test_throws ErrorException includeBaseTable!(TL, LL, k, Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a", "a"]))  # duplicate names error
     register_tested_methods(includeBaseTable!, 1)
 end
 
 function test_includeColumnTimeValues!()
     # tests for value::Dict
-    (TL, LL) = (Dict(), Dict())
-    k = ElementKey("doesnotmatter", "doesnotmatter", "doesnotmatter")
-    # missing keys error
+    (k, TL, LL) = _setup_common_variables()
     @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, Dict())
-    # setup test data
     matrix = zeros(Float64, (2,2))
     table = Dict("Matrix" => matrix, "Names" => ["a", "b"])
-    table_id = Id(TuLiPa.TABLE_CONCEPT, "mytable")
-    # missing table returns ok=false
-    d = Dict(TuLiPa.TABLE_CONCEPT => "mytable", "Name" => "a")
+    table_id = Id(TABLE_CONCEPT, "mytable")
+    d = Dict(TABLE_CONCEPT => "mytable", "Name" => "a")
     ret = includeColumnTimeValues!(TL, LL, k, d)
-    _test_ret(ret, n=1, okvalue=false)
+    _test_ret(ret, n=1, okvalue=false)  # missing table returns ok=false
     @test ret[2][1] == table_id
-    # should be ok
     LL[table_id] = table
     ret = includeColumnTimeValues!(TL, LL, k, d)
     _test_ret(ret, n=1)
     @test ret[2][1] == table_id
-    # check that nothing else got stored in TL and LL
     @test length(TL) == 0 && length(LL) == 2
-    # check that stored value is a view into column 1 (name "a") of matrix
-    x = LL[Id(k.conceptname, k.instancename)]
-    @test view(matrix, :, 1) === x
-    # same id already stored in lowlevel error
-    @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, d)
-    # wrong name type error
-    d = Dict(TuLiPa.TABLE_CONCEPT => "mytable", "Name" => :a)
-    @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, d)
-    # unknown name error
+    @test view(matrix, :, 1) === LL[Id(k.conceptname, k.instancename)]
+    @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, d) # same id already stored in lowlevel error
+    d = Dict(TABLE_CONCEPT => "mytable", "Name" => :a) 
+    @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, d) # wrong name type error
     table = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a", "b"])
-    d = Dict(TuLiPa.TABLE_CONCEPT => table, "Name" => "c")
-    @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, d)
-
+    d = Dict(TABLE_CONCEPT => table, "Name" => "c")
+    @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, d) # unknown name error
     register_tested_methods(includeColumnTimeValues!, 1)
 end
 
 function test_includeRotatingTimeVector!()
     # tests for value::Dict
-    (TL, LL) = (Dict(), Dict())
-    k = ElementKey("doesnotmatter", "doesnotmatter", "doesnotmatter")
-    # missing keys error
+    (k, TL, LL) = _setup_common_variables()
     @test_throws ErrorException includeRotatingTimeVector!(TL, LL, k, Dict())
-    # setup test data
     index = [DateTime(1985, 7, 1)]
     vals = [10.0]
-    period = Dict("Start" => TuLiPa.getisoyearstart(1985), 
-                  "Stop"  => TuLiPa.getisoyearstart(1986))
-    index_id = Id(TuLiPa.TIMEINDEX_CONCEPT, "myindex")
-    vals_id = Id(TuLiPa.TIMEVALUES_CONCEPT, "myvals")
-    period_id = Id(TuLiPa.TIMEPERIOD_CONCEPT, "ScenarioTimePeriod")
+    period = Dict("Start" => getisoyearstart(1985), "Stop" => getisoyearstart(1986))
+    index_id = Id(TIMEINDEX_CONCEPT, "myindex")
+    vals_id = Id(TIMEVALUES_CONCEPT, "myvals")
+    period_id = Id(TIMEPERIOD_CONCEPT, "ScenarioTimePeriod")
     LL[index_id] = index
     LL[vals_id] = vals
     LL[period_id] = period
-    d = Dict(
-      TuLiPa.TIMEINDEX_CONCEPT => index_id.instancename, 
-      TuLiPa.TIMEVALUES_CONCEPT => vals_id.instancename,
-      TuLiPa.TIMEPERIOD_CONCEPT => period_id.instancename)
-    # should be ok
+    d = Dict(TIMEINDEX_CONCEPT => index_id.instancename, TIMEVALUES_CONCEPT => vals_id.instancename, TIMEPERIOD_CONCEPT => period_id.instancename)
     ret = includeRotatingTimeVector!(TL, LL, k, d)
     _test_ret(ret, n=3)
     @test Set(ret[2]) == Set([index_id, vals_id, period_id])
-    # check that object got stored in LL
-    obj = LL[Id(k.conceptname, k.instancename)]
-    # check that nothing else got stored in TL and LL
     @test length(TL) == 0 && length(LL) == 4
-    @test obj isa RotatingTimeVector
-    # same id already stored in lowlevel error
-    @test_throws ErrorException includeRotatingTimeVector!(TL, LL, k, d)
-    # ret with ok=false due to missing index
+    @test LL[Id(k.conceptname, k.instancename)] isa RotatingTimeVector
+    @test_throws ErrorException includeRotatingTimeVector!(TL, LL, k, d) # same id already stored in lowlevel error
     (TL, LL) = (Dict(), Dict())
     LL[vals_id] = vals
     LL[period_id] = period
     ret = includeRotatingTimeVector!(TL, LL, k, d)
-    _test_ret(ret, n=3, okvalue=false)
+    _test_ret(ret, n=3, okvalue=false)  # ret with ok=false due to missing index
     @test Set(ret[2]) == Set([index_id, vals_id, period_id])
-    # ret with ok=false due to missing vals
     (TL, LL) = (Dict(), Dict())
     LL[index_id] = index
     LL[period_id] = period
     ret = includeRotatingTimeVector!(TL, LL, k, d)
-    _test_ret(ret, n=3, okvalue=false)
+    _test_ret(ret, n=3, okvalue=false)   # ret with ok=false due to missing vals
     @test Set(ret[2]) == Set([index_id, vals_id, period_id])
-    # ret with ok=false due to missing period
     (TL, LL) = (Dict(), Dict())
     LL[index_id] = index
     LL[vals_id] = vals
     ret = includeRotatingTimeVector!(TL, LL, k, d)
-    _test_ret(ret, n=3, okvalue=false)
+    _test_ret(ret, n=3, okvalue=false)   # ret with ok=false due to missing period
     @test Set(ret[2]) == Set([index_id, vals_id, period_id])
-    # restore good state
     (TL, LL) = (Dict(), Dict())
-    LL[index_id] = index
     LL[vals_id] = vals
     LL[period_id] = period
-    # different length index and vals error
     LL[index_id] = [DateTime(1985, 7, 1), DateTime(1985, 7, 2)]
-    @test_throws ErrorException includeRotatingTimeVector!(TL, LL, k, d)
-    LL[index_id] = index # restore good state
-
+    @test_throws ErrorException includeRotatingTimeVector!(TL, LL, k, d)  # different length index and vals error
     register_tested_methods(includeRotatingTimeVector!, 1)
 end
 
-function test_includeOneYearTimeVector!()
-    # mostly a copy of test_includeRotatingTimeVector!
-    # only without period input
-
-    # tests for value::Dict
-    (TL, LL) = (Dict(), Dict())
-    k = ElementKey("doesnotmatter", "doesnotmatter", "doesnotmatter")
-    # missing keys error
-    @test_throws ErrorException includeOneYearTimeVector!(TL, LL, k, Dict())
-    # setup test data
+function _common_timevector(func::Function, T::Type)
+    (k, TL, LL) = _setup_common_variables()
+    @test_throws ErrorException func(TL, LL, k, Dict())
     index = [DateTime(1985, 7, 1)]
     vals = [10.0]
     index_id = Id(TuLiPa.TIMEINDEX_CONCEPT, "myindex")
     vals_id = Id(TuLiPa.TIMEVALUES_CONCEPT, "myvals")
     LL[index_id] = index
     LL[vals_id] = vals
-    d = Dict(
-      TuLiPa.TIMEINDEX_CONCEPT => index_id.instancename, 
-      TuLiPa.TIMEVALUES_CONCEPT => vals_id.instancename)
-    # should be ok
-    ret = includeOneYearTimeVector!(TL, LL, k, d)
+    d = Dict(TIMEINDEX_CONCEPT => index_id.instancename, TIMEVALUES_CONCEPT => vals_id.instancename)
+    ret = func(TL, LL, k, d)
     _test_ret(ret, n=2)
     @test Set(ret[2]) == Set([index_id, vals_id])
-    # check that object got stored in LL
-    obj = LL[Id(k.conceptname, k.instancename)]
-    # check that nothing else got stored in TL and LL
     @test length(TL) == 0 && length(LL) == 3
-    @test obj isa RotatingTimeVector
-    # same id already stored in lowlevel error
-    @test_throws ErrorException includeOneYearTimeVector!(TL, LL, k, d)
-    # ret with ok=false due to missing index
+    @test LL[Id(k.conceptname, k.instancename)] isa T
+    @test_throws ErrorException func(TL, LL, k, d) # same id already stored in lowlevel error
     (TL, LL) = (Dict(), Dict())
     LL[vals_id] = vals
-    ret = includeOneYearTimeVector!(TL, LL, k, d)
-    _test_ret(ret, n=2, okvalue=false)
+    ret = func(TL, LL, k, d)
+    _test_ret(ret, n=2, okvalue=false)  # ret with ok=false due to missing index
     @test Set(ret[2]) == Set([index_id, vals_id])
-    # ret with ok=false due to missing vals
     (TL, LL) = (Dict(), Dict())
     LL[index_id] = index
-    ret = includeOneYearTimeVector!(TL, LL, k, d)
-    _test_ret(ret, n=2, okvalue=false)
+    ret = func(TL, LL, k, d)
+    _test_ret(ret, n=2, okvalue=false)  # ret with ok=false due to missing vals
     @test Set(ret[2]) == Set([index_id, vals_id])
-    # restore good state
     (TL, LL) = (Dict(), Dict())
-    LL[index_id] = index
-    LL[vals_id] = vals
-    # different length index and vals error
     LL[index_id] = [DateTime(1985, 7, 1), DateTime(1985, 7, 2)]
-    @test_throws ErrorException includeOneYearTimeVector!(TL, LL, k, d)
-    LL[index_id] = index # restore good state
-    # not one isoyear
+    LL[vals_id] = vals
+    @test_throws ErrorException func(TL, LL, k, d) # different length index and vals error
+    return (k, d, index_id, index, vals_id, vals)
+end
+
+function test_includeOneYearTimeVector!()
+    # tests for value::Dict
+    r = _common_timevector(includeOneYearTimeVector!, RotatingTimeVector)
+    (k, d, index_id, index, vals_id, vals) = r
+    (TL, LL) = (Dict(), Dict())
+    LL[index_id] = index
+    LL[vals_id] = vals
+    LL[index_id] = [DateTime(1985, 7, 1), DateTime(1985, 7, 2)]
+    @test_throws ErrorException includeOneYearTimeVector!(TL, LL, k, d) # different length index and vals error
     LL[index_id] = [DateTime(1985, 7, 1), DateTime(1988, 7, 2)]
-    LL[vals_id] = [10., 11.0]
-    @test_throws ErrorException includeOneYearTimeVector!(TL, LL, k, d)
-    
+    LL[vals_id] = [10.0, 11.0]
+    @test_throws ErrorException includeOneYearTimeVector!(TL, LL, k, d) # not one isoyear
     register_tested_methods(includeOneYearTimeVector!, 1)
 end
 
 function test_includeInfiniteTimeVector!()
-    # TODO: test for value::Dict
+    # tests for value::Dict
+    _common_timevector(includeInfiniteTimeVector!, InfiniteTimeVector)
     register_tested_methods(includeInfiniteTimeVector!, 1)
 end
 
 function test_includeMutableInfiniteTimeVector!()
-    # TODO: test for value::Dict
+    # tests for value::Dict
+    _common_timevector(includeMutableInfiniteTimeVector!, MutableInfiniteTimeVector)
     register_tested_methods(includeMutableInfiniteTimeVector!, 1)
 end
 
+function _common_constant_timevector(TL, LL, k, ret)
+    _test_ret(ret)
+    @test length(TL) == 0 && length(LL) == 1
+    @test LL[Id(k.conceptname, k.instancename)] isa ConstantTimeVector
+    @test_throws ErrorException includeConstantTimeVector!(TL, LL, k, Dict("Value" => 1.0))
+end
+
 function test_includeConstantTimeVector!()
-    # TODO: test for value::Dict
-    # TODO: test for value::AbstractFloat
-    # TODO: test for value::ConstantTimeVector
+    # tests for value::Dict
+    (k, TL, LL) = _setup_common_variables()
+    @test_throws ErrorException includeConstantTimeVector!(TL, LL, k, Dict())
+    @test_throws ErrorException includeConstantTimeVector!(TL, LL, k, Dict("Value" => 10))
+    ret = includeConstantTimeVector!(TL, LL, k, Dict("Value" => 10.0))
+    _common_constant_timevector(TL, LL, k, ret)
+    # tests for value::AbstractFloat
+    (k, TL, LL) = _setup_common_variables()
+    ret = includeConstantTimeVector!(TL, LL, k, 10.0)
+    _common_constant_timevector(TL, LL, k, ret)
+    # tests for value::ConstantTimeVector
+    (k, TL, LL) = _setup_common_variables()
+    ret = includeConstantTimeVector!(TL, LL, k, ConstantTimeVector(10.0))
+    _common_constant_timevector(TL, LL, k, ret)
     register_tested_methods(includeConstantTimeVector!, 3)
 end
 
 function test_includeStartEqualStop!()
-    # TODO: test for value::Dict
+    # tests for value::Dict
+    (k, TL, LL) = _setup_common_variables()
+    @test_throws ErrorException includeStartEqualStop!(TL, LL, k, Dict())
+    @test_throws ErrorException includeStartEqualStop!(TL, LL, k, Dict(WHICHINSTANCE => "myvar", WHICHCONCEPT => FLOW_CONCEPT)) # no var in LL
+    LL[Id(FLOW_CONCEPT, "myvar")] = BaseFlow(Id(FLOW_CONCEPT, "myvar"))
+    ret = includeStartEqualStop!(TL, LL, k, Dict(WHICHINSTANCE => "myvar", WHICHCONCEPT => FLOW_CONCEPT))
+    _test_ret(ret, n=1)
+    @test length(TL) == 0 && length(LL) == 2
+    @test LL[Id(k.conceptname, k.instancename)] isa StartEqualStop
     register_tested_methods(includeStartEqualStop!, 1)
 end
 
