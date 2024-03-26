@@ -56,8 +56,10 @@ function register_tested_methods(include_func::Function, num_methods::Int)
 end
 
 function run_tests()
+    @testset "includeelement_methods" begin
     test_all_includeelement_methods()
     test_is_all_includeelement_methods_covered()
+    end
 end
 
 function test_is_all_includeelement_methods_covered()
