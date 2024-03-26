@@ -299,8 +299,10 @@ function test_includeBaseTable!()
     # check that object got stored in LL
     obj = LL[Id(k.conceptname, k.instancename)]
     @test obj === d
+    # check that nothing else got stored in TL and LL
+    @test length(TL) == 0 && length(LL) == 1
     # same id already stored in lowlevel error
-    @test_throws ErrorException includeVectorTimeValues!(TL, LL, k, d)
+    @test_throws ErrorException includeBaseTable!(TL, LL, k, d)
     (TL, LL) = (Dict(), Dict())
     # missing name error
     d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a"])
@@ -344,11 +346,13 @@ function test_includeColumnTimeValues!()
     ret = includeColumnTimeValues!(TL, LL, k, d)
     _test_ret(ret, n=1)
     @test ret[2][1] == table_id
+    # check that nothing else got stored in TL and LL
+    @test length(TL) == 0 && length(LL) == 2
     # check that stored value is a view into column 1 (name "a") of matrix
     x = LL[Id(k.conceptname, k.instancename)]
     @test view(matrix, :, 1) === x
     # same id already stored in lowlevel error
-    @test_throws ErrorException includeVectorTimeValues!(TL, LL, k, d)
+    @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, d)
     # wrong name type error
     d = Dict(TuLiPa.TABLE_CONCEPT => "mytable", "Name" => :a)
     @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, d)
@@ -387,9 +391,11 @@ function test_includeRotatingTimeVector!()
     @test Set(ret[2]) == Set([index_id, vals_id, period_id])
     # check that object got stored in LL
     obj = LL[Id(k.conceptname, k.instancename)]
+    # check that nothing else got stored in TL and LL
+    @test length(TL) == 0 && length(LL) == 4
     @test obj isa RotatingTimeVector
     # same id already stored in lowlevel error
-    @test_throws ErrorException includeVectorTimeValues!(TL, LL, k, d)
+    @test_throws ErrorException includeRotatingTimeVector!(TL, LL, k, d)
     # ret with ok=false due to missing index
     (TL, LL) = (Dict(), Dict())
     LL[vals_id] = vals
@@ -404,7 +410,7 @@ function test_includeRotatingTimeVector!()
     ret = includeRotatingTimeVector!(TL, LL, k, d)
     _test_ret(ret, n=3, okvalue=false)
     @test Set(ret[2]) == Set([index_id, vals_id, period_id])
-    # ret with ok=false due to missing vals
+    # ret with ok=false due to missing period
     (TL, LL) = (Dict(), Dict())
     LL[index_id] = index
     LL[vals_id] = vals
@@ -418,14 +424,67 @@ function test_includeRotatingTimeVector!()
     LL[period_id] = period
     # different length index and vals error
     LL[index_id] = [DateTime(1985, 7, 1), DateTime(1985, 7, 2)]
-    @test_throws ErrorException includeVectorTimeValues!(TL, LL, k, d)
+    @test_throws ErrorException includeRotatingTimeVector!(TL, LL, k, d)
     LL[index_id] = index # restore good state
 
     register_tested_methods(includeRotatingTimeVector!, 1)
 end
 
 function test_includeOneYearTimeVector!()
-    # TODO: test for value::Dict
+    # mostly a copy of test_includeRotatingTimeVector!
+    # only without period input
+
+    # tests for value::Dict
+    (TL, LL) = (Dict(), Dict())
+    k = ElementKey("doesnotmatter", "doesnotmatter", "doesnotmatter")
+    # missing keys error
+    @test_throws ErrorException includeOneYearTimeVector!(TL, LL, k, Dict())
+    # setup test data
+    index = [DateTime(1985, 7, 1)]
+    vals = [10.0]
+    index_id = Id(TuLiPa.TIMEINDEX_CONCEPT, "myindex")
+    vals_id = Id(TuLiPa.TIMEVALUES_CONCEPT, "myvals")
+    LL[index_id] = index
+    LL[vals_id] = vals
+    d = Dict(
+      TuLiPa.TIMEINDEX_CONCEPT => index_id.instancename, 
+      TuLiPa.TIMEVALUES_CONCEPT => vals_id.instancename)
+    # should be ok
+    ret = includeOneYearTimeVector!(TL, LL, k, d)
+    _test_ret(ret, n=2)
+    @test Set(ret[2]) == Set([index_id, vals_id])
+    # check that object got stored in LL
+    obj = LL[Id(k.conceptname, k.instancename)]
+    # check that nothing else got stored in TL and LL
+    @test length(TL) == 0 && length(LL) == 3
+    @test obj isa RotatingTimeVector
+    # same id already stored in lowlevel error
+    @test_throws ErrorException includeOneYearTimeVector!(TL, LL, k, d)
+    # ret with ok=false due to missing index
+    (TL, LL) = (Dict(), Dict())
+    LL[vals_id] = vals
+    ret = includeOneYearTimeVector!(TL, LL, k, d)
+    _test_ret(ret, n=2, okvalue=false)
+    @test Set(ret[2]) == Set([index_id, vals_id])
+    # ret with ok=false due to missing vals
+    (TL, LL) = (Dict(), Dict())
+    LL[index_id] = index
+    ret = includeOneYearTimeVector!(TL, LL, k, d)
+    _test_ret(ret, n=2, okvalue=false)
+    @test Set(ret[2]) == Set([index_id, vals_id])
+    # restore good state
+    (TL, LL) = (Dict(), Dict())
+    LL[index_id] = index
+    LL[vals_id] = vals
+    # different length index and vals error
+    LL[index_id] = [DateTime(1985, 7, 1), DateTime(1985, 7, 2)]
+    @test_throws ErrorException includeOneYearTimeVector!(TL, LL, k, d)
+    LL[index_id] = index # restore good state
+    # not one isoyear
+    LL[index_id] = [DateTime(1985, 7, 1), DateTime(1988, 7, 2)]
+    LL[vals_id] = [10., 11.0]
+    @test_throws ErrorException includeOneYearTimeVector!(TL, LL, k, d)
+    
     register_tested_methods(includeOneYearTimeVector!, 1)
 end
 
