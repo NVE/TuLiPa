@@ -320,8 +320,9 @@ function error_if_duplicates(elements::Vector{DataElement})
     end
 
     if length(dups) > 0
-        display(dups)
-        error("Duplicated elkeys")
+        lines = join(dups, "\n -> ")
+        msg = "Found duplicated elkeys:\n$lines"
+        error(msg)
     end
 end
 
