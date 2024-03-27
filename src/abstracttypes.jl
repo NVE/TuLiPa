@@ -17,9 +17,9 @@ end
 
 In our framework we take advantage of Julia having the possibility to 
 write functions that work for different types. We can make a generic 
-function that work for all or some of the undertypes:
+function that work for all or some of the subtypes:
     function solve!(p::Prob)
-And if some undertypes are more complex and need a different method, 
+And if some subtypes are more complex and need a different method, 
 we can make functions for these concrete type:
     function solve!(p::JuMP_Prob) 
     function solve!(p::HiGHs_Prob)

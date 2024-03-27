@@ -5,18 +5,36 @@ Contains functions that are shared among all the problem types
 
 # -------- Update problem for given problem time --------------
 function update!(p::Prob, start::ProbTime)
-    # Update horizons that need to dynamically update
     for horizon in gethorizons(p)
         update!(horizon, start)
     end
-    
-    # Loop through all model objects. Set parameters and coefficients that
-    # depend on the problem time and period in the horizon.
-    # The generic function update! has different methods depending on the inputed object
-    # Some objects will again call update! on its internal traits
     for obj in getobjects(p)
         update!(p, obj, start)
     end
+    return
+end
+
+function buildhorizons!(p::Prob)
+    horizons = Set(gethorizon(x) for x in getobjects(p) if x isa Balance)
+    for h in horizons
+        build!(h, p)
+    end
+    p.horizons = Horizon[h for h in horizons]
+    return
+end
+
+function build!(p::Prob)
+    for obj in getobjects(p)
+        build!(p, obj)
+    end
+    return
+end
+
+function setconstants!(p::Prob)
+    for obj in getobjects(p)
+        setconstants!(p, obj)
+    end
+    return
 end
 
 # ----- Check if specific problem type ----------

@@ -52,8 +52,11 @@ end
 *(d::MsTimeDelta, i::Int) = MsTimeDelta(getduration(d)*i)
 
 # ------ Include dataelements -------
-function includeMsTimeDelta!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+
+function includeMsTimeDelta!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
+
+    deps = Id[]
     
     period = getdictvalue(value, "Period", Union{Period, Int}, elkey)
     
@@ -64,7 +67,7 @@ function includeMsTimeDelta!(::Dict, lowlevel::Dict, elkey::ElementKey, value::D
     period > Millisecond(0) || error("Period <= Millisecond(0) for $elkey")
     
     lowlevel[getobjkey(elkey)] = MsTimeDelta(period)
-    return true
+    return (true, deps)
 end
 
 INCLUDEELEMENT[TypeKey(TIMEDELTA_CONCEPT, "MsTimeDelta")] = includeMsTimeDelta!

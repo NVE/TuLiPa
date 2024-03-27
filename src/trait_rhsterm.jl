@@ -42,14 +42,20 @@ function getresidualhint(var::BaseRHSTerm)
 end
 
 # ------ Include dataelements -------
-function includeBaseRHSTerm!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
-    (param, ok) = getdictparamvalue(lowlevel, elkey, value)
-    ok || return false
-    @assert isdurational(param)
+function includeBaseRHSTerm!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
+    deps = Id[]
     
     balancename = getdictvalue(value, BALANCE_CONCEPT, String, elkey)
     balancekey = Id(BALANCE_CONCEPT, balancename)
-    haskey(toplevel, balancekey) || return false
+    push!(deps, balancekey)
+
+    (id, param, ok) = getdictparamvalue(lowlevel, elkey, value)
+    _update_deps(deps, id, ok)
+
+    ok || return (false, deps)
+    haskey(toplevel, balancekey) || return (false, deps)
+
+    @assert isdurational(param)
     
     isingoing = getdictisingoing(value, elkey)
 
@@ -62,7 +68,7 @@ function includeBaseRHSTerm!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, 
     lowlevel[id] = rhsterm # add to lowlevel so that other dataelements can find and update it (for example residualhint)
     addrhsterm!(balance, rhsterm)
     
-    return true    
+    return (true, deps)
 end
 
 INCLUDEELEMENT[TypeKey(RHSTERM_CONCEPT, "BaseRHSTerm")] = includeBaseRHSTerm!

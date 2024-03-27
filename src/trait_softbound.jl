@@ -161,35 +161,38 @@ function getbreachvars(trait::BaseSoftBound)
     end
 end 
 
-# BaseSoftBound types are toplevel objects in dataset_compiler, so we must implement assemble!
-function assemble!(trait::BaseSoftBound)
-    # return if var not assembled yet
-    isnothing(gethorizon(trait.var)) && return false
-
-    return true
-end
+assemble!(trait::BaseSoftBound) = !isnothing(gethorizon(trait.var))
 
 # ------ Include dataelements -------
-function includeBaseSoftBound!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
-    (softcap, ok) = getdictparamvalue(lowlevel, elkey, value, SOFTCAPKEY)
-    ok || return false
-    
-    (penalty, ok) = getdictparamvalue(lowlevel, elkey, value, PENALTYKEY)
-    ok || return false
-    
+function includeBaseSoftBound!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
+    deps = Id[]
+
     isupper = getdictisupper(value, elkey)
     
     varname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
     varconcept = getdictvalue(value, WHICHCONCEPT,  String, elkey)
     varkey = Id(varconcept, varname)
-    haskey(toplevel, varkey) || return false
+    push!(deps, varkey)
 
+    all_ok = true
+
+    (id, softcap, ok) = getdictparamvalue(lowlevel, elkey, value, SOFTCAPKEY)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+    
+    (id, penalty, ok) = getdictparamvalue(lowlevel, elkey, value, PENALTYKEY)
+    all_ok = all_ok && ok
+    _update_deps(deps, id, ok)
+
+    all_ok || return (false, deps)
+    haskey(toplevel, varkey) || return (false, deps)
+    
     var = toplevel[varkey]
         
     varkey = getobjkey(elkey)
     toplevel[varkey] = BaseSoftBound(varkey, var, softcap, penalty, isupper, false)
     
-    return true     
+    return (true, deps)     
 end
 
 INCLUDEELEMENT[TypeKey(SOFTBOUND_CONCEPT, "BaseSoftBound")] = includeBaseSoftBound!

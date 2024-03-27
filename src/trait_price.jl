@@ -33,14 +33,18 @@ getparamvalue(price::BasePrice, t::ProbTime, d::TimeDelta; ix=0) = getparamvalue
 getparamvalue(price::VectorPrice, t::ProbTime, d::TimeDelta; ix=0) = price.values[ix]
 
 # ------ Include dataelements -------
-function includeBasePrice!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeBasePrice!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
+
+    deps = Id[]
     
-    (param, ok) = getdictparamvalue(lowlevel, elkey, value)
-    ok || return false
+    (id, param, ok) = getdictparamvalue(lowlevel, elkey, value)
+    _update_deps(deps, id, ok)
+
+    ok || return (false, deps)
 
     lowlevel[getobjkey(elkey)] = BasePrice(param)
-    return true
+    return (true, deps)
 end
 function includeVectorPrice!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
     checkkey(lowlevel, elkey)
