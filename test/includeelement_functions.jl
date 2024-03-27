@@ -414,7 +414,7 @@ function test_includeBaseBalance!()
     _test_ret(ret, n=1, okvalue=false)
     @test ret[2] == [Id(COMMODITY_CONCEPT, "Power")]
     LL[Id(COMMODITY_CONCEPT, "Power")] = BaseCommodity(Id(COMMODITY_CONCEPT, "Power"), SequentialHorizon(10, Day(1)))
-    ret = includeBaseBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power")) # not in LL
+    ret = includeBaseBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power"))
     _test_ret(ret, n=1)
     @test ret[2] == [Id(COMMODITY_CONCEPT, "Power")]
     @test length(TL) == 1 && length(LL) == 1
@@ -423,7 +423,45 @@ function test_includeBaseBalance!()
 end
 
 function test_includeExogenBalance!()
-    # TODO: test for value::Dict
+    # tests for value::Dict
+    (k, TL, LL) = _setup_common_variables()
+    @test_throws ErrorException includeExogenBalance!(TL, LL, k, Dict())
+    ret = includeExogenBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => "Price")) # commodity and price not in LL
+    _test_ret(ret, n=3, okvalue=false)
+    @test Set(ret[2]) == Set([Id(COMMODITY_CONCEPT, "Power"), Id(PRICE_CONCEPT, "Price"), Id(PARAM_CONCEPT, "Price")]) # Price could be either PARAM or PRICE when ok=false
+    LL[Id(COMMODITY_CONCEPT, "Power")] = BaseCommodity(Id(COMMODITY_CONCEPT, "Power"), SequentialHorizon(10, Day(1)))
+    ret = includeExogenBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => "Price")) # price not in LL
+    _test_ret(ret, n=3, okvalue=false)
+    @test Set(ret[2]) == Set([Id(COMMODITY_CONCEPT, "Power"), Id(PRICE_CONCEPT, "Price"), Id(PARAM_CONCEPT, "Price")]) # Price could be either PARAM or PRICE when ok=false
+    LL[Id(PRICE_CONCEPT, "Price")] = BasePrice(ConstantParam(10.0))
+    ret = includeExogenBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => "Price"))
+    _test_ret(ret, n=2)
+    @test Set(ret[2]) == Set([Id(COMMODITY_CONCEPT, "Power"), Id(PRICE_CONCEPT, "Price")])
+    @test length(TL) == 1 && length(LL) == 2
+    @test TL[Id(k.conceptname, k.instancename)] isa ExogenBalance
+    (k, TL, LL) = _setup_common_variables()
+    LL[Id(COMMODITY_CONCEPT, "Power")] = BaseCommodity(Id(COMMODITY_CONCEPT, "Power"), SequentialHorizon(10, Day(1)))
+    ret = includeExogenBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => 10.0))
+    _test_ret(ret, n=1)
+    @test ret[2] == [Id(COMMODITY_CONCEPT, "Power")]
+    @test length(TL) == 1 && length(LL) == 1
+    @test TL[Id(k.conceptname, k.instancename)] isa ExogenBalance
+    ret = includeExogenBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => ConstantParam(10.0)))
+    _test_ret(ret, n=1)
+    @test ret[2] == [Id(COMMODITY_CONCEPT, "Power")]
+    @test length(TL) == 1 && length(LL) == 1
+    @test TL[Id(k.conceptname, k.instancename)] isa ExogenBalance
+    ret = includeExogenBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => BasePrice(ConstantParam(10.0))))
+    _test_ret(ret, n=1)
+    @test ret[2] == [Id(COMMODITY_CONCEPT, "Power")]
+    @test length(TL) == 1 && length(LL) == 1
+    @test TL[Id(k.conceptname, k.instancename)] isa ExogenBalance
+    LL[Id(PRICE_CONCEPT, "Price")] = ConstantParam(10.0)
+    ret = includeExogenBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => "Price"))
+    _test_ret(ret, n=2)
+    @test Set(ret[2]) == Set([Id(COMMODITY_CONCEPT, "Power"), Id(PARAM_CONCEPT, "Price")])
+    @test length(TL) == 1 && length(LL) == 2
+    @test TL[Id(k.conceptname, k.instancename)] isa ExogenBalance
     register_tested_methods(includeExogenBalance!, 1)
 end
 
