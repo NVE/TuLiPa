@@ -446,17 +446,21 @@ function test_includeExogenBalance!()
     @test ret[2] == [Id(COMMODITY_CONCEPT, "Power")]
     @test length(TL) == 1 && length(LL) == 1
     @test TL[Id(k.conceptname, k.instancename)] isa ExogenBalance
+    TL = Dict()
     ret = includeExogenBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => ConstantParam(10.0)))
     _test_ret(ret, n=1)
     @test ret[2] == [Id(COMMODITY_CONCEPT, "Power")]
     @test length(TL) == 1 && length(LL) == 1
     @test TL[Id(k.conceptname, k.instancename)] isa ExogenBalance
+    TL = Dict()
     ret = includeExogenBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => BasePrice(ConstantParam(10.0))))
     _test_ret(ret, n=1)
     @test ret[2] == [Id(COMMODITY_CONCEPT, "Power")]
     @test length(TL) == 1 && length(LL) == 1
     @test TL[Id(k.conceptname, k.instancename)] isa ExogenBalance
-    LL[Id(PRICE_CONCEPT, "Price")] = ConstantParam(10.0)
+    LL[Id(PARAM_CONCEPT, "Price")] = ConstantParam(10.0)
+    @test_throws ErrorException includeExogenBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => "Price")) # id already exists in TL
+    TL = Dict()
     ret = includeExogenBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => "Price"))
     _test_ret(ret, n=2)
     @test Set(ret[2]) == Set([Id(COMMODITY_CONCEPT, "Power"), Id(PARAM_CONCEPT, "Price")])
