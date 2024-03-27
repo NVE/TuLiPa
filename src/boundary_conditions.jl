@@ -307,7 +307,7 @@ end
 
 function getlightweightself(x::SimpleSingleCuts)
     return SimpleSingleCuts(
-        x.id
+        x.id,
         [],
         x.statevars,
         [],

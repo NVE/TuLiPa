@@ -133,6 +133,22 @@ update!(h::_SHorizons, start::ProbTime) = update!(h.subhorizon, h.handler, start
 mayshiftfrom(h::_SHorizons, t::Int) = mayshiftfrom(h.subhorizon, h.handler, t)
 mustupdate(h::_SHorizons, t::Int) = mustupdate(h.subhorizon, h.handler, t)
 
+function getlightweightself(h::_SHorizons)
+    return ShrinkableHorizon(
+        getlightweightself(h.subhorizon),
+        h.handler)
+end
+getchanges(h::_SHorizons) = h.changes
+function setchanges(h::_SHorizons, changes::Dict)
+    setchanges(h.subhorizon, changes["subhorizon"])
+    for (t, v) in changes["updates_shift"]
+        h.handler.updates_shift[t] = v
+    end
+    for (t, v) in changes["updates_must"]
+        h.handler.updates_shift[t] = v
+    end
+end
+
 # Implementation of SequentialPeriodsShrinker and SequentialPeriodsShifter
 # and extention of SequentialPeriods with new functions. These will be used
 # to implement SequentialHorizonShrinker, AdaptiveHorizonShrinker, 
