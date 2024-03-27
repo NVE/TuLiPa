@@ -470,7 +470,13 @@ function test_includeExogenBalance!()
 end
 
 function test_includeBaseFlow!()
-    # TODO: test for value::Dict
+    # tests for value::Dict
+    (k, TL, LL) = _setup_common_variables()
+    ret = includeBaseFlow!(TL, LL, k, Dict())
+    _test_ret(ret)
+    @test length(TL) == 1 && length(LL) == 0
+    @test TL[Id(k.conceptname, k.instancename)] isa BaseFlow
+    @test_throws ErrorException includeBaseFlow!(TL, LL, k, Dict()) # already exists in TL
     register_tested_methods(includeBaseFlow!, 1)
 end
 
