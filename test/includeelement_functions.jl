@@ -481,7 +481,18 @@ function test_includeBaseFlow!()
 end
 
 function test_includeBaseStorage!()
-    # TODO: test for value::Dict
+    # tests for value::Dict
+    (k, TL, LL) = _setup_common_variables()
+    @test_throws ErrorException includeBaseStorage!(TL, LL, k, Dict())
+    ret = includeBaseStorage!(TL, LL, k, Dict(BALANCE_CONCEPT => "HydroBalance"))
+    _test_ret(ret, n=1, okvalue=false)
+    TL[Id(BALANCE_CONCEPT, "HydroBalance")] = BaseBalance(Id(BALANCE_CONCEPT, "HydroBalance"), BaseCommodity(Id(COMMODITY_CONCEPT, "Hydro"), SequentialHorizon(10, Day(1))))
+    ret = includeBaseStorage!(TL, LL, k, Dict(BALANCE_CONCEPT => "HydroBalance"))
+    _test_ret(ret, n=1)
+    @test length(TL) == 2 && length(LL) == 0
+    @test ret[2] == [Id(BALANCE_CONCEPT, "HydroBalance")]
+    @test TL[Id(k.conceptname, k.instancename)] isa BaseStorage
+    @test_throws ErrorException includeBaseStorage!(TL, LL, k, Dict(BALANCE_CONCEPT => "HydroBalance")) # already exists in TL
     register_tested_methods(includeBaseStorage!, 1)
 end
 
