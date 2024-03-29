@@ -373,10 +373,10 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
     n = length(messages)
     f = length(failed)
     e = length(elements)
-    causes = (n == 1) ? "cause" : "causes"
+    ns = (n > 1) ? "s" : ""
     fs = (f > 1) ? "s" : ""
     es = (e > 1) ? "s" : ""
-    msg = "Failed to compile $f element$fs (of $e element$es in total). Found $n root $causes:\n$msg\n"
+    msg = "Failed to compile $f element$fs (of $e element$es in total). Found $n root cause$ns:\n$msg\n"
 
     error(msg)
 end
