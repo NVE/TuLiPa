@@ -335,8 +335,6 @@ function error_include_all_elements(completed::Set{ElementKey}, dependencies::Di
 
     root_causes = Set{ElementKey}(k for k in failed if does_not_depend_on_failed(k, dependencies, failed))
 
-    report_elements = union(root_causes, keys(errors))
-
     messages = String[]
 
     known_cause = Set{ElementKey}()
