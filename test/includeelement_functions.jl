@@ -501,29 +501,25 @@ function test_includeFossilMCParam!()
     (k, TL, LL) = _setup_common_variables()
     @test_throws ErrorException includeFossilMCParam!(TL, LL, k, Dict())
     tvnames = ["FuelLevel", "FuelProfile", "CO2Factor", "CO2Level", "CO2Profile", "Efficiency", "VOC"]
-    d = Dict(s => s for s in tvnames)
-    expected_deps = Set([Id(TIMEVECTOR_CONCEPT, s) for s in tvnames])
-    for s in tvnames
+    for name in tvnames
+        id_list = [s for s in tvnames if s != name]
+        d = Dict(s => s for s in id_list)
+        expected_deps = Set([Id(TIMEVECTOR_CONCEPT, s) for s in id_list])
+        if name == first(tvnames) # we don't need to test all cases here
+            for s in id_list
+                ret = includeFossilMCParam!(TL, LL, k, d)
+                _test_ret(ret, n=6, okvalue=false)
+                LL[Id(TIMEVECTOR_CONCEPT, s)] = ConstantTimeVector(1.0)
+                @test expected_deps == Set(deps[2])
+            end
+        end
         ret = includeFossilMCParam!(TL, LL, k, d)
-        _test_ret(ret, n=7, okvalue=false)
-        LL[Id(TIMEVECTOR_CONCEPT, s)] = ConstantTimeVector(1.0)
+        _test_ret(ret, n=6)
         @test expected_deps == Set(deps[2])
+        @test length(TL) == 0 && length(LL) == 7
+        @test TL[Id(k.conceptname, k.instancename)] isa FossilMCParam
     end
-    ret = includeFossilMCParam!(TL, LL, k, d)
-    _test_ret(ret, n=7)
-    @test expected_deps == Set(deps[2])
-    @test length(TL) == 0 && length(LL) == 8
-    @test TL[Id(k.conceptname, k.instancename)] isa FossilMCParam
-    @test_throws ErrorException includeBaseStorage!(TL, LL, k, d) # already exists in TL
-    (k, TL, LL) = _setup_common_variables()
-    tvnames = ["FuelProfile", "CO2Factor", "CO2Level", "CO2Profile", "Efficiency", "VOC"]
-    d = Dict(s => s for s in tvnames)
-    d["FuelLevel"] = ConstantTimeVector(1.0)
-    expected_deps = Set([Id(TIMEVECTOR_CONCEPT, s) for s in tvnames])
-    ret = includeFossilMCParam!(TL, LL, k, d)
-    _test_ret(ret, n=6)
-    LL[Id(TIMEVECTOR_CONCEPT, s)] = ConstantTimeVector(1.0)
-    @test expected_deps == Set(deps[2])
+    @test_throws ErrorException includeBaseStorage!(TL, LL, k, d) # already exists in LL
     register_tested_methods(includeFossilMCParam!, 1)
 end
 
