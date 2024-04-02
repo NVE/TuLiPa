@@ -504,6 +504,7 @@ function test_includeFossilMCParam!()
     for name in tvnames
         id_list = [s for s in tvnames if s != name]
         d = Dict(s => s for s in id_list)
+        d[name] = ConstantTimeVector(1.0)
         expected_deps = Set([Id(TIMEVECTOR_CONCEPT, s) for s in id_list])
         if name == first(tvnames) # we don't need to test all cases here
             for s in id_list
