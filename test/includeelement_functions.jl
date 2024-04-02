@@ -502,17 +502,16 @@ function test_includeFossilMCParam!()
     @test_throws ErrorException includeFossilMCParam!(TL, LL, k, Dict())
     tvnames = ["FuelLevel", "FuelProfile", "CO2Factor", "CO2Level", "CO2Profile", "Efficiency", "VOC"]
     for name in tvnames
+        (k, TL, LL) = _setup_common_variables()
         id_list = [s for s in tvnames if s != name]
         d = Dict{String, Any}(s => s for s in id_list)
         d[name] = ConstantTimeVector(1.0)
         expected_deps = Set([Id(TIMEVECTOR_CONCEPT, s) for s in id_list])
-        if name == first(tvnames) # we don't need to test all cases here
-            for s in id_list
-                ret = includeFossilMCParam!(TL, LL, k, d)
-                _test_ret(ret, n=6, okvalue=false)
-                LL[Id(TIMEVECTOR_CONCEPT, s)] = ConstantTimeVector(1.0)
-                @test expected_deps == Set(ret[2])
-            end
+        for s in id_list
+            ret = includeFossilMCParam!(TL, LL, k, d)
+            _test_ret(ret, n=6, okvalue=false)
+            LL[Id(TIMEVECTOR_CONCEPT, s)] = ConstantTimeVector(1.0)
+            @test expected_deps == Set(ret[2])
         end
         ret = includeFossilMCParam!(TL, LL, k, d)
         _test_ret(ret, n=6)
