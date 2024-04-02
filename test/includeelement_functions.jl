@@ -511,12 +511,12 @@ function test_includeFossilMCParam!()
                 ret = includeFossilMCParam!(TL, LL, k, d)
                 _test_ret(ret, n=6, okvalue=false)
                 LL[Id(TIMEVECTOR_CONCEPT, s)] = ConstantTimeVector(1.0)
-                @test expected_deps == Set(deps[2])
+                @test expected_deps == Set(ret[2])
             end
         end
         ret = includeFossilMCParam!(TL, LL, k, d)
         _test_ret(ret, n=6)
-        @test expected_deps == Set(deps[2])
+        @test expected_deps == Set(ret[2])
         @test length(TL) == 0 && length(LL) == 7
         @test TL[Id(k.conceptname, k.instancename)] isa FossilMCParam
     end
