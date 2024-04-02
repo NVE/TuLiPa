@@ -517,9 +517,9 @@ function test_includeFossilMCParam!()
         _test_ret(ret, n=6)
         @test expected_deps == Set(ret[2])
         @test length(TL) == 0 && length(LL) == 7
-        @test TL[Id(k.conceptname, k.instancename)] isa FossilMCParam
+        @test LL[Id(k.conceptname, k.instancename)] isa FossilMCParam
+        @test_throws ErrorException includeBaseStorage!(TL, LL, k, d) # already exists in LL
     end
-    @test_throws ErrorException includeBaseStorage!(TL, LL, k, d) # already exists in LL
     register_tested_methods(includeFossilMCParam!, 1)
 end
 
