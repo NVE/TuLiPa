@@ -478,6 +478,7 @@ replacebalance!(x::ExogenBalance, coupling, modelobjects) = nothing
 replacebalance!(x::SimpleStartUpCost, coupling, modelobjects) = nothing
 replacebalance!(x::StartEqualStop, coupling, modelobjects) = nothing
 replacebalance!(x::BaseSoftBound, coupling, modelobjects) = nothing
+replacebalance!(x::HydroRampingWithout, coupling, modelobjects) = nothing
 replacebalance!(x::TransmissionRamping, coupling, modelobjects) = nothing # handled in replacebalance!(x::BaseFlow
 
 function replacebalance!(x::BaseStorage, coupling, modelobjects)
