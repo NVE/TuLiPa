@@ -254,8 +254,8 @@ getparamvalue(param::ConstantParam, ::ProbTime, ::TimeDelta; ix=0) = param.value
 getparamvalue(param::StatefulParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.param, start, d)
 getparamvalue(param::TwoProductParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.param1, start, d)*getparamvalue(param.param2, start, d)
 getparamvalue(param::FlipSignParam, start::ProbTime, d::TimeDelta) = -getparamvalue(param.param, start, d)
-getparamvalue(param::ExogenIncomeParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.price, start, d)*getparamvalue(param.conversion, start, d)*(1-getparamvalue(param.loss, start, d))
-getparamvalue(param::ExogenCostParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.price, start, d)*getparamvalue(param.conversion, start, d)/(1-getparamvalue(param.loss, start, d))
+getparamvalue(param::ExogenIncomeParam, start::ProbTime, d::TimeDelta; ix=0) = getparamvalue(param.price, start, d; ix)*getparamvalue(param.conversion, start, d)*(1-getparamvalue(param.loss, start, d))
+getparamvalue(param::ExogenCostParam, start::ProbTime, d::TimeDelta; ix=0) = getparamvalue(param.price, start, d; ix)*getparamvalue(param.conversion, start, d)/(1-getparamvalue(param.loss, start, d))
 getparamvalue(param::InConversionLossParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.conversion, start, d)*(1-getparamvalue(param.loss, start, d))
 getparamvalue(param::OutConversionLossParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.conversion, start, d)/(1-getparamvalue(param.loss, start, d))
 getparamvalue(param::TransmissionLossRHSParam, t::ProbTime, d::TimeDelta) = getparamvalue(param.capacity, t, d)*param.loss*param.utilisation
