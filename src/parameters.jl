@@ -770,8 +770,7 @@ function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, 
         lowlevel[getobjkey(elkey)] = CostPerMWToGWhParam(MeanSeriesParam(level, profile))
         return (true, deps)
     end
-
-    return (false, deps)
+    error("Missing expected Dict-keys for $elkey")
 end
 
 function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::CostPerMWToGWhParam)
@@ -886,7 +885,7 @@ end
 
 function includeUMMSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
-        
+
     level = getdictvalue(value, "Level", TIMEVECTORPARSETYPES, elkey)
     ummprofile = getdictvalue(value, "Ummprofile", TIMEVECTORPARSETYPES, elkey)
     profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)
