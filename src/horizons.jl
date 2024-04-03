@@ -408,6 +408,12 @@ struct AdaptiveHorizon{D <: AdaptiveHorizonData, M <: AdaptiveHorizonMethod} <: 
         macro_periods = SequentialPeriods(start, stop, macro_duration)
         AdaptiveHorizon(macro_periods, num_block, unit_duration, data, method; offset=offset)
     end
+
+    function AdaptiveHorizon(macro_periods::SequentialPeriods, num_block::Int, unit_duration::Millisecond, 
+                            data, method, periods::Vector{UnitsTimeDelta}, Xs::Dict{Millisecond, Vector{Float64}},
+                            offset::Union{Offset, Nothing} = nothing)
+        new{typeof(data), typeof(method)}(macro_periods, num_block, unit_duration, data, method, periods, Xs, offset)
+    end
 end
 
 isadaptive(::AdaptiveHorizon) = true
@@ -420,24 +426,23 @@ function getlightweightself(h::AdaptiveHorizon)
         h.unit_duration,
         AHDummyData(),
         AHDummyMethod(),
-        Dict{Millisecond, Vector{Float64}}(),
         h.periods,
+        Dict{Millisecond, Vector{Float64}}(),
         h.offset)
 end
-getchanges(h::AdaptiveHorizon) = h.changes
+getchanges(h::AdaptiveHorizon) = Dict()
 function setchanges(h::AdaptiveHorizon, changes::Dict)
     # May have been modified by update!(horizon, t)
-    for (t, v) in changes["periods"]
-        h[t] = v
-    end
+    h.periods .= changes["periods"]
+    # TODO:
+    # for (t, v) in changes["periods"]
+    #     h[t] = v
+    # end
 
     # May have been modified by ShrinkableHorizon
     # Note: We replace all underlying data in h.macro_periods.data
     #       not only changes in this case
-    empty!(h.macro_periods.data)
-    for value in changes["macro_periods"]
-        push!(h.macro_periods.data, value)
-    end
+    h.macro_periods.data .= changes["macro_periods_data"]
 end
 
 build!(horizon::AdaptiveHorizon, prob::Prob) = build!(horizon.data, prob)
