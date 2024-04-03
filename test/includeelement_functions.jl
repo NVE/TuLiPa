@@ -496,19 +496,22 @@ function test_includeBaseStorage!()
     register_tested_methods(includeBaseStorage!, 1)
 end
 
-function _common_tvs_param(tvnames, func, obj)
+function _common_tvs_param(tvnames, func, obj; steps=false)
     (k, TL, LL) = _setup_common_variables()
     @test_throws ErrorException func(TL, LL, k, Dict())
     for name in tvnames
         (k, TL, LL) = _setup_common_variables()
         id_list = [s for s in tvnames if s != name]
         d = Dict{String, Any}(s => s for s in id_list)
-        d[name] = ConstantTimeVector(1.0)
+        d[name] = InfiniteTimeVector([DateTime(1985, 7, 1)], [1.0])
+        if steps
+            d["Steps"] = 1
+        end
         expected_deps = Set([Id(TIMEVECTOR_CONCEPT, s) for s in id_list])
         for s in id_list
             ret = func(TL, LL, k, d)
             _test_ret(ret, n=(length(tvnames) - 1), okvalue=false)
-            LL[Id(TIMEVECTOR_CONCEPT, s)] = ConstantTimeVector(1.0)
+            LL[Id(TIMEVECTOR_CONCEPT, s)] = InfiniteTimeVector([DateTime(1985, 7, 1)], [1.0])
             @test expected_deps == Set(ret[2])
         end
         ret = func(TL, LL, k, d)
@@ -517,6 +520,14 @@ function _common_tvs_param(tvnames, func, obj)
         @test length(TL) == 0 && length(LL) == length(tvnames)
         @test LL[Id(k.conceptname, k.instancename)] isa obj
         @test_throws ErrorException func(TL, LL, k, d) # already exists in LL
+    end
+    if steps
+        (k, TL, LL) = _setup_common_variables()
+        d = Dict{String, Any}(s => InfiniteTimeVector([DateTime(1985, 7, 1)], [1.0]) for s in tvnames)
+        d["Steps"] = -1
+        @test_throws ErrorException func(TL, LL, k, d)
+        d["Steps"] = 0
+        @test_throws ErrorException func(TL, LL, k, d)
     end
 end
 
@@ -620,23 +631,28 @@ function test_includeMeanSeriesParam!()
 end
 
 function test_includeMeanSeriesIgnorePhaseinParam!()
-    # TODO: test for value::Dict
-    # TODO: value::MeanSeriesIgnorePhaseinParam
+    # tests for value::Dict
+    _common_tvs_param(["Level", "Profile"], includeMeanSeriesIgnorePhaseinParam!, MeanSeriesIgnorePhaseinParam)
+    # tests for value::MeanSeriesIgnorePhaseinParam
+    _common_level_profile_param(includeMeanSeriesIgnorePhaseinParam!, MeanSeriesIgnorePhaseinParam)
     register_tested_methods(includeMeanSeriesIgnorePhaseinParam!, 2)
 end
 
 function test_includePrognosisSeriesParam!()
-    # TODO: test for value::Dict
+    # tests for value::Dict
+    _common_tvs_param(["Level", "Profile", "Prognosis"], includePrognosisSeriesParam!, PrognosisSeriesParam; steps=true)
     register_tested_methods(includePrognosisSeriesParam!, 1)
 end
 
 function test_includeUMMSeriesParam!()
-    # TODO: test for value::Dict
+    # tests for value::Dict
+    _common_tvs_param(["Level", "Profile", "Ummprofile"], includeUMMSeriesParam!, UMMSeriesParam)
     register_tested_methods(includeUMMSeriesParam!, 1)
 end
 
 function test_includeStatefulParam!()
-    # TODO: test for value::Dict
+    # tests for value::Dict
+    _common_test_wrapper_param(includeStatefulParam!, StatefulParam)
     register_tested_methods(includeStatefulParam!, 1)
 end
 
