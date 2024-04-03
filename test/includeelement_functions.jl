@@ -657,7 +657,21 @@ function test_includeStatefulParam!()
 end
 
 function test_includeMsTimeDelta!()
-    # TODO: test for value::Dict
+    # tests for value::Dict
+    (k, TL, LL) = _setup_common_variables()
+    @test_throws ErrorException includeMsTimeDelta!(TL, LL, k, Dict())
+    @test_throws ErrorException includeMsTimeDelta!(TL, LL, k, Dict("Period" => Dates.Nanosecond(1)))
+    @test_throws ErrorException includeMsTimeDelta!(TL, LL, k, Dict("Period" => Dates.Millisecond(0)))
+    ret = includeMsTimeDelta!(TL, LL, k, Dict("Period" => Dates.Hour(1)))
+    _test_ret(ret)
+    @test length(TL) == 0 && length(LL) == 1
+    @test LL[Id(k.conceptname, k.instancename)] isa MsTimeDelta
+    @test_throws ErrorException includeMsTimeDelta!(TL, LL, k, Dict("Period" => Dates.Hour(1))) # already in LL
+    (k, TL, LL) = _setup_common_variables()
+    ret = includeMsTimeDelta!(TL, LL, k, Dict("Period" => 1))
+    _test_ret(ret)
+    @test length(TL) == 0 && length(LL) == 1
+    @test LL[Id(k.conceptname, k.instancename)] isa MsTimeDelta
     register_tested_methods(includeMsTimeDelta!, 1)
 end
 
