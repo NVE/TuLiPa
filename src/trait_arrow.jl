@@ -342,7 +342,7 @@ function update!(p::Prob, var::Any, arrow::SegmentedArrow, start::ProbTime)
                 for t in 1:T
                     querystart = getstarttime(varhorizon, t, start)
                     querydelta = gettimedelta(varhorizon, t)
-                    value = getparamvalue(param, querystart, querydelta)
+                    value = getparamvalue(param, querystart, querydelta; ix=t)
                     if arrow.isingoing
                         value = -value
                     end

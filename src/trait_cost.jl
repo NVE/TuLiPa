@@ -74,7 +74,7 @@ function setconstants!(p::Prob, var::Any, sumcost::SumCost)
             dummytime = ConstantTime()
             for t in 1:T
                 querydelta = gettimedelta(var.horizon, t)
-                sumcost.values[t, col] = getparamvalue(term, dummytime, querydelta, ix=t)::Float64
+                sumcost.values[t, col] = getparamvalue(term, dummytime, querydelta, ix=getparentindex(var.horizon, t))::Float64
                 sumcost.isupdated[t] = true
             end
         end
@@ -100,7 +100,7 @@ function update!(p::Prob, var::Any, sumcost::SumCost, start::ProbTime)
                 if mustupdate(var.horizon, t)
                     querystart = getstarttime(var.horizon, t, start)
                     querydelta = gettimedelta(var.horizon, t)
-                    sumcost.values[t, col] = getparamvalue(term, querystart, querydelta, ix=t)::Float64
+                    sumcost.values[t, col] = getparamvalue(term, querystart, querydelta, ix=getparentindex(var.horizon, t))::Float64
                     sumcost.isupdated[t] = true
                 end
             end
