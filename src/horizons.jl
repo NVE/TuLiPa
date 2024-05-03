@@ -217,7 +217,7 @@ function getendperiodfromduration(x::SequentialPeriods, d::Millisecond)
             end
         end
     end
-    error("Duration does not correspond to period")
+    error("Duration $d does not correspond to $(x.data)")
 end
 
 function gettimedelta(x::SequentialPeriods, t::Int)
@@ -331,6 +331,7 @@ getoffset(h::SequentialHorizon) = h.offset
 getchanges(::SequentialHorizon) = Dict()
 setchanges(::SequentialHorizon, changes::Dict) = nothing
 getlightweightself(h::SequentialHorizon) = h
+getparentindex(h::SequentialHorizon, t::Int) = t
 
 function getstarttime(h::SequentialHorizon, t::Int, start::ProbTime)
     if hasoffset(h)
@@ -418,6 +419,7 @@ end
 
 isadaptive(::AdaptiveHorizon) = true
 hasconstantdurations(horizon::AdaptiveHorizon) = hasconstantdurations(horizon.method)
+getparentindex(h::AdaptiveHorizon, t::Int) = t
 
 function getlightweightself(h::AdaptiveHorizon)
     return AdaptiveHorizon(
@@ -504,7 +506,6 @@ function _get_units_per_block(assignments::Vector{T}, num_block::Int) where {T <
 end
 
 getnumperiods(h::AdaptiveHorizon) = length(h.periods)
-
 getduration(h::AdaptiveHorizon) = getduration(h.macro_periods)
 
 hasoffset(h::AdaptiveHorizon) = h.offset !== nothing
@@ -535,8 +536,12 @@ function getstarttime(h::AdaptiveHorizon, t::Int, start::Union{PrognosisTime, Ph
 end
 
 getstartduration(h::AdaptiveHorizon, t::Int) = getstartduration(h.macro_periods, (t-1) ÷ h.num_block + 1)
-
 gettimedelta(h::AdaptiveHorizon, t::Int) = h.periods[t]
+
+function getendperiodfromduration(h::AdaptiveHorizon, d::Millisecond)
+    macro_periods = getendperiodfromduration(h.macro_periods, d)
+    return macro_periods * h.num_block
+end
 
 function getsubperiods(coarse::AdaptiveHorizon, fine::AdaptiveHorizon, coarse_t::Int)
     if fine === coarse
@@ -828,10 +833,10 @@ getsubperiods(coarse::ExternalHorizon, fine::ExternalHorizon, coarse_t::Int) = g
 hasconstantdurations(h::ExternalHorizon) = hasconstantdurations(h.subhorizon)
 mayshiftfrom(h::ExternalHorizon, t::Int) = mayshiftfrom(h.subhorizon, t)
 mustupdate(h::ExternalHorizon, t::Int) = mustupdate(h.subhorizon, t)
-
-build!(h::ExternalHorizon, p::Prob) = build!(h.subhorizon, p)  # TODO: Should do nothing?
+getparentindex(h::ExternalHorizon, t::Int) = getparentindex(h.subhorizon, t)
 
 # Specialized methods
+build!(h::ExternalHorizon, p::Prob) = nothing
 update!(::ExternalHorizon, ::ProbTime) = nothing
 
 # ------------- ShortenedHorizon ---------------- 
@@ -843,40 +848,57 @@ this need, as it wraps another horizon, and only use some of the first periods.
 """
 struct ShortenedHorizon{H <: Horizon} <: Horizon
     subhorizon::H
-    n::Int
-    function ShortenedHorizon(h::Horizon, n::Int)
-        @assert 0 < n <= getnumperiods(h) 
-        new{typeof(h)}(h, n)
+    ix_start::Int
+    ix_stop::Int
+    function ShortenedHorizon(h::Horizon, ix_start::Int, ix_stop::Int)
+        @assert 0 < ix_stop - ix_start + 1 <= getnumperiods(h)
+        new{typeof(h)}(h, ix_start, ix_stop)
     end
 end
 
 # Forwarded methods
 isadaptive(h::ShortenedHorizon) = isadaptive(h.subhorizon)
-getstartduration(h::ShortenedHorizon, t::Int) = getstartduration(h.subhorizon, t)
-getendperiodfromduration(h::ShortenedHorizon, d::Millisecond) = getendperiodfromduration(h.subhorizon, d)
 getduration(h::ShortenedHorizon) = getduration(h.subhorizon)
-gettimedelta(h::ShortenedHorizon, t::Int) = gettimedelta(h.subhorizon, t)
 hasoffset(h::ShortenedHorizon) = hasoffset(h.subhorizon)
 getoffset(h::ShortenedHorizon) = getoffset(h.subhorizon)
-getstarttime(h::ShortenedHorizon, t::Int, start::ProbTime) = getstarttime(h.subhorizon, t, start)
-getsubperiods(coarse::ShortenedHorizon, fine::Horizon, coarse_t::Int) = getsubperiods(coarse.subhorizon, fine, coarse_t)
-getsubperiods(coarse::Horizon, fine::ShortenedHorizon, coarse_t::Int) = getsubperiods(coarse, fine.subhorizon, coarse_t)
-getsubperiods(coarse::ShortenedHorizon, fine::ShortenedHorizon, coarse_t::Int) = getsubperiods(coarse.subhorizon,fine.subhorizon,coarse_t)
 hasconstantdurations(h::ShortenedHorizon) = hasconstantdurations(h.subhorizon)
-mustupdate(h::ShortenedHorizon, t::Int) = mustupdate(h.subhorizon, t)
-build!(h::ShortenedHorizon, p::Prob) = build!(h.subhorizon, p)
 
 # Specialized methods
-getnumperiods(h::ShortenedHorizon) = h.n
+getparentindex(h::ShortenedHorizon, t::Int) = t + h.ix_start - 1
+getstartduration(h::ShortenedHorizon, t::Int) = getstartduration(h.subhorizon, getparentindex(h.subhorizon, t))
+gettimedelta(h::ShortenedHorizon, t::Int) = gettimedelta(h.subhorizon, getparentindex(h.subhorizon, t))
+getstarttime(h::ShortenedHorizon, t::Int, start::ProbTime) = getstarttime(h.subhorizon, getparentindex(h.subhorizon, t), start)
+getnumperiods(h::ShortenedHorizon) = h.ix_stop - h.ix_start + 1
+mustupdate(h::ShortenedHorizon, t::Int) = mustupdate(h.subhorizon, getparentindex(h.subhorizon, t))
+getperiods(h::ShortenedHorizon) = h.ix_start:h.ix_stop
 
-function mayshiftfrom(h::ShortenedHorizon, t::Int)
-    (future_t, ok) = mayshiftfrom(h.subhorizon, t)
-    if ok && future_t > h.n
-        return (future_t, false)
-    end 
-    return (future_t, ok)
+getsubperiods(coarse::ShortenedHorizon, fine::Horizon, coarse_t::Int) = error("getsubperiods() for coarse ShortenedHorizon and fine Horizon not supported")
+getsubperiods(coarse::Horizon, fine::ShortenedHorizon, coarse_t::Int) = error("getsubperiods() for coarse Horizon and fine ShortenedHorizon not supported")
+function getsubperiods(coarse::ShortenedHorizon, fine::ShortenedHorizon, coarse_t::Int)
+    coarse_t_parent = getparentindex(coarse, coarse_t)
+    subperiods_parent = getsubperiods(coarse.subhorizon,fine.subhorizon,coarse_t_parent)
+    return (first(subperiods_parent)-fine.ix_start+1):(last(subperiods_parent)-fine.ix_start+1)
 end
 
+function mayshiftfrom(h::ShortenedHorizon, t::Int)
+    t_parent = getparentindex(h.subhorizon, t)
+    (t_parent_future, ok) = mayshiftfrom(h.subhorizon, t_parent)
+    t_future = t_parent_future - h.ix_start + 1
+    if ok && (t_parent_future > h.ix_stop)
+        return (t_future, false)
+    end 
+    return (t_future, ok)
+end
+
+function getendperiodfromduration(h::ShortenedHorizon, d::Millisecond)
+    for t_front in 1:(h.ix_start-1)
+        d += gettimedelta(h.subhorizon, t_front)
+    end
+    t_parent = getendperiodfromduration(h.subhorizon, d)
+    return t_parent - h.ix_start + 1
+end
+
+build!(h::ShortenedHorizon, p::Prob) = nothing
 update!(::ShortenedHorizon, ::ProbTime) = nothing
 
 # ------ Include dataelements -------
