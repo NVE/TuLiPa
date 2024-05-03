@@ -239,7 +239,7 @@ end
  
 function update_deep_dependencies(d, e, elements, direct_dependencies, seen, refs, concepts)
     deep_dependencies = Set{Int}()
-    for i in direct_dependencies[e]
+    for i in direct_dependencies[getelkey(e)]
         for j in get_candidates(i, elements, refs, concepts)
             if j in seen
                 continue
@@ -248,7 +248,7 @@ function update_deep_dependencies(d, e, elements, direct_dependencies, seen, ref
             end
             dep = elements[j]
             if !haskey(d, dep)
-                update_deep_dependencies(dep, d, elements, direct_dependencies, seen, refs)
+                update_deep_dependencies(d, dep, elements, direct_dependencies, seen, refs, concepts)
             end
             push!(deep_dependencies, j)
             for k in d[dep]
@@ -262,14 +262,14 @@ end
  
 function get_referenced_by(elements, direct_dependencies)
     d = Dict{eltype(elements), Set{Int}}()
-    ei = Dict(e => i for (i, e) in enumerate(elements))
+    ei = Dict(getelkey(e) => i for (i, e) in enumerate(elements))
     for (e, direct_deps) in direct_dependencies
         i = ei[e]
         for j in direct_deps
-            if !haskey(d, j)
-                d[j] = Set{Int}()
+            if !haskey(d, elements[j])
+                d[elements[j]] = Set{Int}()
             end
-            push!(d[j], i)
+            push!(d[elements[j]], i)
         end
     end
     return d
@@ -282,8 +282,8 @@ function get_candidates(i, elements, refs, concepts)
             push!(candidates, j)
         end
     else
-        for j in refs[i]
-            if getconceptname(elements[j]) in concepts
+        for j in refs[elements[i]]
+            if elements[j].conceptname in concepts
                 push!(candidates, j)
             end
         end
