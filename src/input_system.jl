@@ -224,6 +224,42 @@ function compact_dependencies(dependencies::Dict{ElementKey, Any}, elements::Vec
     return out
 end
 
+function get_deep_dependencies(elements, direct_dependencies)
+    d = Dict{eltype(elements), Set{Int}}()
+    for e in elements
+        seen = Set{Int}()        
+        update_deep_dependencies(e, d, elements, direct_dependencies, seen)
+    end
+
+    for (i, e) in enumerate(elements)
+        push!(d[e], i)
+    end
+
+    return Dict(k => sort(collect(v)) for (k, v) in d)
+end
+ 
+function update_deep_dependencies(e, d, elements, direct_dependencies, seen)
+    deep_dependencies = Set{Int}()
+    for i in direct_dependencies[getelkey(e)]
+        if (i in seen) || (i > length(elements))
+            continue
+        else
+            push!(seen, i)
+        end
+        dep = elements[i]
+        if !haskey(d, dep)
+            update_deep_dependencies(dep, d, elements, direct_dependencies, seen)
+        end
+        push!(deep_dependencies, i)
+        for j in d[dep]
+            push!(deep_dependencies, j)
+        end
+    end
+    d[e] = deep_dependencies
+    return
+
+end
+
 function include_all_elements(elements::Vector{DataElement})
     toplevel = Dict{Id, Any}()
     lowlevel = Dict{Id, Any}()

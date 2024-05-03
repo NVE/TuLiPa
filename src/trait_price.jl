@@ -46,13 +46,15 @@ function includeBasePrice!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dic
     lowlevel[getobjkey(elkey)] = BasePrice(param)
     return (true, deps)
 end
-function includeVectorPrice!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)::Bool
+function includeVectorPrice!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
+
+    deps = Id[]
 
     values = getdictvalue(value, "Vector", Vector{Float64}, elkey)
 
     lowlevel[getobjkey(elkey)] = VectorPrice(values)
-    return true
+    return (true, deps)
 end
 
 INCLUDEELEMENT[TypeKey(PRICE_CONCEPT, "BasePrice")] = includeBasePrice!
