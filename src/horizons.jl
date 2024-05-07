@@ -860,7 +860,6 @@ end
 
 # Forwarded methods
 isadaptive(h::ShortenedHorizon) = isadaptive(h.subhorizon)
-getduration(h::ShortenedHorizon) = getduration(h.subhorizon)
 hasoffset(h::ShortenedHorizon) = hasoffset(h.subhorizon)
 getoffset(h::ShortenedHorizon) = getoffset(h.subhorizon)
 hasconstantdurations(h::ShortenedHorizon) = hasconstantdurations(h.subhorizon)
@@ -892,9 +891,25 @@ function mayshiftfrom(h::ShortenedHorizon, t::Int)
     return (t_future, ok)
 end
 
+function getduration(h::ShortenedHorizon)
+    acc = Millisecond(0)
+    for t in h.ix_start:h.ix_stop
+        acc += getduration(gettimedelta(h.subhorizon, t))
+    end
+    return acc
+end
+
+function getdurationtoend(h::ShortenedHorizon)
+    acc = Millisecond(0)
+    for t in 1:h.ix_stop
+        acc += getduration(gettimedelta(h.subhorizon, t))
+    end
+    return acc
+end
+
 function getendperiodfromduration(h::ShortenedHorizon, d::Millisecond)
     for t_front in 1:(h.ix_start-1)
-        d += gettimedelta(h.subhorizon, t_front)
+        d += getduration(gettimedelta(h.subhorizon, t_front))
     end
     t_parent = getendperiodfromduration(h.subhorizon, d)
     return t_parent - h.ix_start + 1
