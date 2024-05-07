@@ -224,12 +224,78 @@ function compact_dependencies(dependencies::Dict{ElementKey, Any}, elements::Vec
     return out
 end
 
-function get_deep_dependencies(elements, direct_dependencies; concepts::Union{Nothing, Vector{String}} = nothing)
-    refs = get_referenced_by(elements, direct_dependencies)
+# function get_deep_dependencies(elements, direct_dependencies; concepts::Union{Nothing, Vector{String}} = nothing)
+#     refs = get_referenced_by(elements, direct_dependencies)
+#     d = Dict{eltype(elements), Set{Int}}()
+#     for e in elements
+#         seen = Set{Int}()
+#         update_deep_dependencies(d, e, elements, direct_dependencies, seen, refs, concepts)
+#     end
+#     for (i, e) in enumerate(elements)
+#         push!(d[e], i)
+#     end
+#     return Dict(k => sort(collect(v)) for (k, v) in d)
+# end
+ 
+# function update_deep_dependencies(d, e, elements, direct_dependencies, seen, refs, concepts)
+#     deep_dependencies = Set{Int}()
+#     for i in direct_dependencies[getelkey(e)]
+#         for j in get_candidates(i, elements, refs, concepts)
+#             if j in seen
+#                 continue
+#             else
+#                 push!(seen, j)
+#             end
+#             dep = elements[j]
+#             if !haskey(d, dep)
+#                 update_deep_dependencies(d, dep, elements, direct_dependencies, seen, refs, concepts)
+#             end
+#             push!(deep_dependencies, j)
+#             for k in d[dep]
+#                 push!(deep_dependencies, k)
+#             end
+#         end
+#     end
+#     d[e] = deep_dependencies
+#     return
+# end
+ 
+# function get_referenced_by(elements, direct_dependencies)
+#     d = Dict{eltype(elements), Set{Int}}()
+#     ei = Dict(getelkey(e) => i for (i, e) in enumerate(elements))
+#     for (e, direct_deps) in direct_dependencies
+#         i = ei[e]
+#         for j in direct_deps
+#             if !haskey(d, elements[j])
+#                 d[elements[j]] = Set{Int}()
+#             end
+#             push!(d[elements[j]], i)
+#         end
+#     end
+#     return d
+# end
+ 
+# function get_candidates(i, elements, refs, concepts)
+#     candidates = Set{Int}([i])
+#     if isnothing(concepts)
+#         for j in refs[i]
+#             push!(candidates, j)
+#         end
+#     else
+#         for j in refs[elements[i]]
+#             if elements[j].conceptname in concepts
+#                 push!(candidates, j)
+#             end
+#         end
+#     end
+#     return candidates
+# end
+
+function get_deep_dependencies(elements, direct_dependencies)
     d = Dict{eltype(elements), Set{Int}}()
     for e in elements
-        seen = Set{Int}()
-        update_deep_dependencies(d, e, elements, direct_dependencies, seen, refs, concepts)
+        seen = Set{Int}()        
+        update_deep_dependencies(e, d, elements, direct_dependencies, seen)
     end
     for (i, e) in enumerate(elements)
         push!(d[e], i)
@@ -237,94 +303,26 @@ function get_deep_dependencies(elements, direct_dependencies; concepts::Union{No
     return Dict(k => sort(collect(v)) for (k, v) in d)
 end
  
-function update_deep_dependencies(d, e, elements, direct_dependencies, seen, refs, concepts)
+function update_deep_dependencies(e, d, elements, direct_dependencies, seen)
     deep_dependencies = Set{Int}()
     for i in direct_dependencies[getelkey(e)]
-        for j in get_candidates(i, elements, refs, concepts)
-            if j in seen
-                continue
-            else
-                push!(seen, j)
-            end
-            dep = elements[j]
-            if !haskey(d, dep)
-                update_deep_dependencies(d, dep, elements, direct_dependencies, seen, refs, concepts)
-            end
+        if (i in seen) || (i > length(elements))
+            continue
+        else
+            push!(seen, i)
+        end
+        dep = elements[i]
+        if !haskey(d, dep)
+            update_deep_dependencies(dep, d, elements, direct_dependencies, seen)
+        end
+        push!(deep_dependencies, i)
+        for j in d[dep]
             push!(deep_dependencies, j)
-            for k in d[dep]
-                push!(deep_dependencies, k)
-            end
         end
     end
     d[e] = deep_dependencies
     return
 end
- 
-function get_referenced_by(elements, direct_dependencies)
-    d = Dict{eltype(elements), Set{Int}}()
-    ei = Dict(getelkey(e) => i for (i, e) in enumerate(elements))
-    for (e, direct_deps) in direct_dependencies
-        i = ei[e]
-        for j in direct_deps
-            if !haskey(d, elements[j])
-                d[elements[j]] = Set{Int}()
-            end
-            push!(d[elements[j]], i)
-        end
-    end
-    return d
-end
- 
-function get_candidates(i, elements, refs, concepts)
-    candidates = Set{Int}([i])
-    if isnothing(concepts)
-        for j in refs[i]
-            push!(candidates, j)
-        end
-    else
-        for j in refs[elements[i]]
-            if elements[j].conceptname in concepts
-                push!(candidates, j)
-            end
-        end
-    end
-    return candidates
-end
-
-# function get_deep_dependencies(elements, direct_dependencies)
-#     d = Dict{eltype(elements), Set{Int}}()
-#     for e in elements
-#         seen = Set{Int}()        
-#         update_deep_dependencies(e, d, elements, direct_dependencies, seen)
-#     end
-
-#     for (i, e) in enumerate(elements)
-#         push!(d[e], i)
-#     end
-
-#     return Dict(k => sort(collect(v)) for (k, v) in d)
-# end
- 
-# function update_deep_dependencies(e, d, elements, direct_dependencies, seen)
-#     deep_dependencies = Set{Int}()
-#     for i in direct_dependencies[getelkey(e)]
-#         if (i in seen) || (i > length(elements))
-#             continue
-#         else
-#             push!(seen, i)
-#         end
-#         dep = elements[i]
-#         if !haskey(d, dep)
-#             update_deep_dependencies(dep, d, elements, direct_dependencies, seen)
-#         end
-#         push!(deep_dependencies, i)
-#         for j in d[dep]
-#             push!(deep_dependencies, j)
-#         end
-#     end
-#     d[e] = deep_dependencies
-#     return
-# end
 
 function include_all_elements(elements::Vector{DataElement})
     toplevel = Dict{Id, Any}()

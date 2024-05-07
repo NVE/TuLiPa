@@ -285,6 +285,9 @@ mutable struct SimpleSingleCuts <: BoundaryCondition
     function SimpleSingleCuts()
         return new(Id("Empty","Empty"), [], [], [], [], [], [], [], 0, 0, 0, 0.0)
     end
+    function SimpleSingleCuts(id, objects, statevars, probabilities, constants, scenconstants, slopes, scenslopes, maxcuts, numcuts, cutix, lower_bound)
+        return new(id, objects, statevars, probabilities, constants, scenconstants, slopes, scenslopes, maxcuts, numcuts, cutix, lower_bound)
+    end
 end
 
 function getlightweightself(x::SimpleSingleCuts)

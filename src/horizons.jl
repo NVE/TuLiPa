@@ -724,6 +724,8 @@ end
 # AHDummyMethod -----------------
 struct AHDummyMethod <: AdaptiveHorizonMethod  end
 
+hasconstantdurations(::AHDummyMethod) = false
+
 # PercentilesAHMethod -----------------
 mutable struct PercentilesAHMethod <: AdaptiveHorizonMethod
     percentiles::Vector{Float64}
