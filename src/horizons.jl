@@ -92,7 +92,7 @@ function _must_dynamic_update(paramlike::Any, horizon::Horizon)
 end
 
 getchanges(::Horizon) = error()
-setchanges(::Horizon, changes::Dict) = error()
+setchanges!(::Horizon, changes::Dict) = error()
 getlightweightself(h::Horizon) = h
 
 # ------ SequentialPeriods -----------
@@ -329,7 +329,7 @@ hasoffset(h::SequentialHorizon) = h.offset !== nothing
 getoffset(h::SequentialHorizon) = h.offset
 
 getchanges(::SequentialHorizon) = Dict()
-setchanges(::SequentialHorizon, changes::Dict) = nothing
+setchanges!(::SequentialHorizon, changes::Dict) = nothing
 getlightweightself(h::SequentialHorizon) = h
 getparentindex(h::SequentialHorizon, t::Int) = t
 
@@ -432,8 +432,8 @@ function getlightweightself(h::AdaptiveHorizon)
         Dict{Millisecond, Vector{Float64}}(),
         h.offset)
 end
-getchanges(h::AdaptiveHorizon) = Dict()
-function setchanges(h::AdaptiveHorizon, changes::Dict)
+getchanges(h::AdaptiveHorizon) = Dict("periods" => h.periods, "macro_periods_data" => h.macro_periods.data)
+function setchanges!(h::AdaptiveHorizon, changes::Dict)
     # May have been modified by update!(horizon, t)
     h.periods .= changes["periods"]
     # TODO:
@@ -836,6 +836,7 @@ hasconstantdurations(h::ExternalHorizon) = hasconstantdurations(h.subhorizon)
 mayshiftfrom(h::ExternalHorizon, t::Int) = mayshiftfrom(h.subhorizon, t)
 mustupdate(h::ExternalHorizon, t::Int) = mustupdate(h.subhorizon, t)
 getparentindex(h::ExternalHorizon, t::Int) = getparentindex(h.subhorizon, t)
+setchanges!(h::ExternalHorizon, changes::Dict) = setchanges!(h.subhorizon, changes)
 
 # Specialized methods
 build!(h::ExternalHorizon, p::Prob) = nothing
@@ -863,6 +864,7 @@ isadaptive(h::ShortenedHorizon) = isadaptive(h.subhorizon)
 hasoffset(h::ShortenedHorizon) = hasoffset(h.subhorizon)
 getoffset(h::ShortenedHorizon) = getoffset(h.subhorizon)
 hasconstantdurations(h::ShortenedHorizon) = hasconstantdurations(h.subhorizon)
+setchanges!(h::ShortenedHorizon, changes::Dict) = setchanges!(h.subhorizon, changes)
 
 # Specialized methods
 getparentindex(h::ShortenedHorizon, t::Int) = t + h.ix_start - 1
