@@ -407,7 +407,7 @@ function getscencutparameters!(p::Prob, x::SimpleSingleCuts, states::Dict{StateV
 end
 
 # Updates cutparameters for new cut
-function updatecutparameters!(p::Prob, x::SimpleSingleCuts)
+function updatecutparameters!(p::Prob, x::SimpleSingleCuts) # TODO: Remove Prob as input
     # get cutix    
     cutix = getcutix(x) + 1
     if cutix > getmaxcuts(x)
