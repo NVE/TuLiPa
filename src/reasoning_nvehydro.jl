@@ -390,8 +390,10 @@ function get_headlosscost_data(method::ReservoirCurveSlopeMethod, master::Prob, 
     ret = []
 
     for obj in getobjects(master)
-        if haskey(obj.metadata, RESERVOIRCURVEKEY) # also implies hydro storage
-            push!(ret, get_headlosscost_data_obj(method, master, t, dummydelta, reffactor, obj))
+        if hasproperty(obj, :metadata)
+            if haskey(obj.metadata, RESERVOIRCURVEKEY) # also implies hydro storage
+                push!(ret, get_headlosscost_data_obj(method, master, t, dummydelta, reffactor, obj))
+            end
         end
     end
 
