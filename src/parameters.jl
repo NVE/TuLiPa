@@ -98,16 +98,19 @@ struct PrognosisSeriesParam{L <: TimeVector, P <: TimeVector, Prog <: TimeVector
     prognosis::Prog
     confidence::C
 
-    function PrognosisSeriesParam(level, profile, prognosis, confidencesteps) # TODO: Add interface for confidencevector
+    function PrognosisSeriesParam(level, profile, prognosis, confidencesteps) 
+        # TODO: Add interface for confidencevector
+        # TODO: Do we ignore last prognosis value now?
+        @assert confidencesteps > 0
         index = Vector{DateTime}(undef, confidencesteps+1)
         values = Vector{Float64}(undef, confidencesteps+1)
         confidencedelta = last(prognosis.index) - first(prognosis.index)
-        for i in 0:confidencesteps
-            index[i+1] = first(prognosis.index) + Millisecond(round(Int, confidencedelta.value*(i-1)/confidencesteps))
-            values[i+1] = round((confidencesteps-i)/confidencesteps,digits=3)
+        for i in 1:confidencesteps+1
+            index[i] = first(prognosis.index) + Millisecond(round(Int, confidencedelta.value*(i-1)/confidencesteps))
+            values[i] = round((confidencesteps+1-i)/confidencesteps,digits=3)
         end
         confidence = InfiniteTimeVector(index, values)
-
+ 
         new{typeof(level),typeof(profile),typeof(prognosis),typeof(confidence)}(level, profile, prognosis, confidence)
     end
 end
@@ -461,7 +464,6 @@ end
 
 
 function getparamvalue(param::PrognosisSeriesParam, start::PhaseinPrognosisTime, d::TimeDelta)
-
     confidence = getweightedaverage(start.phaseinvector, start.prognosisdatatime, d)
     last_prognosis_time = last(param.prognosis.index)
     
