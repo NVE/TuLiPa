@@ -864,7 +864,6 @@ isadaptive(h::ShortenedHorizon) = isadaptive(h.subhorizon)
 hasoffset(h::ShortenedHorizon) = hasoffset(h.subhorizon)
 getoffset(h::ShortenedHorizon) = getoffset(h.subhorizon)
 hasconstantdurations(h::ShortenedHorizon) = hasconstantdurations(h.subhorizon)
-setchanges!(h::ShortenedHorizon, changes::Dict) = setchanges!(h.subhorizon, changes)
 
 # Specialized methods
 getparentindex(h::ShortenedHorizon, t::Int) = t + h.ix_start - 1
