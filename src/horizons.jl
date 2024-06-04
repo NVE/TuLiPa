@@ -919,6 +919,47 @@ end
 build!(h::ShortenedHorizon, p::Prob) = nothing
 update!(::ShortenedHorizon, ::ProbTime) = nothing
 
+# ------------- IgnoreMustupdateMayshiftfromHorizon ---------------- 
+"""
+A horizon that deactivates the mustupdate and mayshiftfrom functionality of 
+ShrinkableHorizon and ShiftableHorizon. Useful in JulES if subsystems models
+use the same horizons as price prognosis models. The subsystems models can not
+use the mustupdate and mayshiftfrom functionality if the scenario generation
+changes the scenarios for each step.
+
+"""
+struct IgnoreMustupdateMayshiftfromHorizon{H <: Horizon} <: Horizon
+    subhorizon::H
+    function IgnoreMustupdateMayshiftfromHorizon(h::Horizon)
+        @assert !(h isa IgnoreMustupdateMayshiftfromHorizon)
+        new{typeof(h)}(h)
+    end
+end
+
+# Forwarded methods
+build!(h::IgnoreMustupdateMayshiftfromHorizon, p::Prob) = build!(h.subhorizon, p)
+update!(h::IgnoreMustupdateMayshiftfromHorizon, t::ProbTime) = update!(h.subhorizon, t)
+isadaptive(h::IgnoreMustupdateMayshiftfromHorizon) = isadaptive(h.subhorizon)
+getnumperiods(h::IgnoreMustupdateMayshiftfromHorizon) = getnumperiods(h.subhorizon)
+getstartduration(h::IgnoreMustupdateMayshiftfromHorizon, t::Int) = getstartduration(h.subhorizon, t)
+getendperiodfromduration(h::IgnoreMustupdateMayshiftfromHorizon, d::Millisecond) = getendperiodfromduration(h.subhorizon, d)
+getduration(h::IgnoreMustupdateMayshiftfromHorizon) = getduration(h.subhorizon)
+getdurationtoend(h::IgnoreMustupdateMayshiftfromHorizon) = getdurationtoend(h.subhorizon)
+gettimedelta(h::IgnoreMustupdateMayshiftfromHorizon, t::Int) = gettimedelta(h.subhorizon, t)
+hasoffset(h::IgnoreMustupdateMayshiftfromHorizon) = hasoffset(h.subhorizon)
+getoffset(h::IgnoreMustupdateMayshiftfromHorizon) = getoffset(h.subhorizon)
+getperiods(h::IgnoreMustupdateMayshiftfromHorizon) = getperiods(h.subhorizon)
+getstarttime(h::IgnoreMustupdateMayshiftfromHorizon, t::Int, start::ProbTime) = getstarttime(h.subhorizon, t, start)
+getsubperiods(coarse::IgnoreMustupdateMayshiftfromHorizon, fine::Horizon, coarse_t::Int) = getsubperiods(coarse.subhorizon, fine, coarse_t)
+getsubperiods(coarse::Horizon, fine::IgnoreMustupdateMayshiftfromHorizon, coarse_t::Int) = getsubperiods(coarse, fine.subhorizon, coarse_t)
+getsubperiods(coarse::IgnoreMustupdateMayshiftfromHorizon, fine::IgnoreMustupdateMayshiftfromHorizon, coarse_t::Int) = getsubperiods(coarse.subhorizon,fine.subhorizon,coarse_t)
+hasconstantdurations(h::IgnoreMustupdateMayshiftfromHorizon) = hasconstantdurations(h.subhorizon)
+getparentindex(h::IgnoreMustupdateMayshiftfromHorizon, t::Int) = getparentindex(h.subhorizon, t)
+
+# Specialized methods are the same as generic
+# mayshiftfrom(::Horizon, ::Int) = (HORIZON_NOSHIFT, false)
+# mustupdate(::Horizon, ::Int) = true
+
 # ------ Include dataelements -------
 # TODO
 
