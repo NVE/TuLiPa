@@ -96,6 +96,9 @@ struct ShrinkableHorizon{H <: Horizon, S} <: Horizon
         makeshrinkable!(subhorizon, handler)
         new{typeof(subhorizon), typeof(handler)}(subhorizon, handler)
     end
+    function ShrinkableHorizon(subhorizon::Horizon, handler)
+        new{typeof(subhorizon), typeof(handler)}(subhorizon, handler)
+    end
 end
 
 struct ShiftableHorizon{H <: Horizon, S} <: Horizon
@@ -124,6 +127,7 @@ getstarttime(h::_SHorizons, t::Int, start::ProbTime) = getstarttime(h.subhorizon
 getsubperiods(coarse::_SHorizons, fine::Horizon, coarse_t::Int) = getsubperiods(coarse.subhorizon, fine, coarse_t)
 getsubperiods(coarse::Horizon, fine::_SHorizons, coarse_t::Int) = getsubperiods(coarse, fine.subhorizon, coarse_t)
 getsubperiods(coarse::_SHorizons, fine::_SHorizons, coarse_t::Int) = getsubperiods(coarse.subhorizon,fine.subhorizon,coarse_t)
+getparentindex(h::_SHorizons, t::Int) = getparentindex(h.subhorizon, t)
 
 hasconstantdurations(::ShrinkableHorizon) = false
 hasconstantdurations(h::ShiftableHorizon) = hasconstantdurations(h.subhorizon)
@@ -138,16 +142,20 @@ function getlightweightself(h::_SHorizons)
         getlightweightself(h.subhorizon),
         h.handler)
 end
-getchanges(h::_SHorizons) = h.changes
-function setchanges(h::_SHorizons, changes::Dict)
-    setchanges(h.subhorizon, changes["subhorizon"])
-    for (t, v) in changes["updates_shift"]
-        h.handler.updates_shift[t] = v
-    end
-    for (t, v) in changes["updates_must"]
-        h.handler.updates_shift[t] = v
-    end
+function getchanges(h::ShrinkableHorizon)
+    changes = getchanges(h.subhorizon)
+
+    changes["updates_shift"] = h.handler.shrinker.updates_shift
+    changes["updates_must"] = h.handler.shrinker.updates_must
+    return changes
 end
+function setchanges!(h::ShrinkableHorizon, changes::Dict)
+    setchanges!(h.subhorizon, changes)
+
+    h.handler.shrinker.updates_shift .= changes["updates_shift"]
+    h.handler.shrinker.updates_must .= changes["updates_must"]
+end
+# TODO: ShiftableHorizon - only difference h.handler.shifter
 
 # Implementation of SequentialPeriodsShrinker and SequentialPeriodsShifter
 # and extention of SequentialPeriods with new functions. These will be used
