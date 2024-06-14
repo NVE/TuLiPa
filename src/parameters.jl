@@ -110,6 +110,11 @@ struct PrognosisSeriesParam{L <: TimeVector, P <: TimeVector, Prog <: TimeVector
 
         new{typeof(level),typeof(profile),typeof(prognosis),typeof(confidence)}(level, profile, prognosis, confidence)
     end
+
+    function PrognosisSeriesParam(level, profile, prognosis) 
+        confidence = ConstantTimeVector(1.0)
+        new{typeof(level),typeof(profile),typeof(prognosis),typeof(confidence)}(level, profile, prognosis, confidence)
+    end
 end
 
 struct UMMSeriesParam{L<:TimeVector,U<:TimeVector,P<:TimeVector} <: Param
