@@ -143,18 +143,21 @@ function getlightweightself(h::_SHorizons)
         h.handler)
 end
 function getchanges(h::ShrinkableHorizon)
-    changes = getchanges(h.subhorizon)
-
+    changes = getchanges(h, h.subhorizon)
     changes["updates_shift"] = h.handler.shrinker.updates_shift
     changes["updates_must"] = h.handler.shrinker.updates_must
     return changes
 end
+getchanges(::ShrinkableHorizon, subhorizon::SequentialHorizon) = Dict{String, Any}("periods" => subhorizon.periods.data)
+getchanges(::ShrinkableHorizon, subhorizon::AdaptiveHorizon) = getchanges(subhorizon)
 function setchanges!(h::ShrinkableHorizon, changes::Dict)
-    setchanges!(h.subhorizon, changes)
-
     h.handler.shrinker.updates_shift .= changes["updates_shift"]
     h.handler.shrinker.updates_must .= changes["updates_must"]
+    setchanges!(h, h.subhorizon, changes)
+    return
 end
+setchanges!(::ShrinkableHorizon, subhorizon::SequentialHorizon, changes::Dict) = subhorizon.periods.data .= changes["periods"]
+setchanges!(::ShrinkableHorizon, subhorizon::AdaptiveHorizon, changes::Dict) = setchanges!(subhorizon, changes)
 # TODO: ShiftableHorizon - only difference h.handler.shifter
 
 # Implementation of SequentialPeriodsShrinker and SequentialPeriodsShifter

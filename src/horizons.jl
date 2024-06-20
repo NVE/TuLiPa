@@ -328,8 +328,8 @@ gettimedelta(h::SequentialHorizon, t::Int) = gettimedelta(h.periods, t)
 hasoffset(h::SequentialHorizon) = h.offset !== nothing
 getoffset(h::SequentialHorizon) = h.offset
 
-getchanges(h::SequentialHorizon) =  Dict{String, Any}("periods" => h.periods.data)
-setchanges!(h::SequentialHorizon, changes::Dict) = h.periods.data .= changes["periods"]
+getchanges(::SequentialHorizon) = Dict()
+setchanges!(::SequentialHorizon, ::Dict) = nothing
 getlightweightself(h::SequentialHorizon) = h
 getparentindex(h::SequentialHorizon, t::Int) = t
 
