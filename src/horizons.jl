@@ -94,6 +94,7 @@ end
 getchanges(::Horizon) = error()
 setchanges!(::Horizon, changes::Dict) = error()
 getlightweightself(h::Horizon) = h
+getlastperiod(h::Horizon) = getnumperiods(h)
 
 # ------ SequentialPeriods -----------
 # Component in SequentialHorizon and AdaptiveHorizon
@@ -871,6 +872,7 @@ getstartduration(h::ShortenedHorizon, t::Int) = getstartduration(h.subhorizon, g
 gettimedelta(h::ShortenedHorizon, t::Int) = gettimedelta(h.subhorizon, getparentindex(h.subhorizon, t))
 getstarttime(h::ShortenedHorizon, t::Int, start::ProbTime) = getstarttime(h.subhorizon, getparentindex(h.subhorizon, t), start)
 getnumperiods(h::ShortenedHorizon) = h.ix_stop - h.ix_start + 1
+getlastperiod(h::ShortenedHorizon) = h.ix_stop
 mustupdate(h::ShortenedHorizon, t::Int) = mustupdate(h.subhorizon, getparentindex(h.subhorizon, t))
 getperiods(h::ShortenedHorizon) = h.ix_start:h.ix_stop
 
@@ -941,6 +943,7 @@ build!(h::IgnoreMustupdateMayshiftfromHorizon, p::Prob) = build!(h.subhorizon, p
 update!(h::IgnoreMustupdateMayshiftfromHorizon, t::ProbTime) = update!(h.subhorizon, t)
 isadaptive(h::IgnoreMustupdateMayshiftfromHorizon) = isadaptive(h.subhorizon)
 getnumperiods(h::IgnoreMustupdateMayshiftfromHorizon) = getnumperiods(h.subhorizon)
+getlastperiod(h::IgnoreMustupdateMayshiftfromHorizon) = getlastperiod(h.subhorizon)
 getstartduration(h::IgnoreMustupdateMayshiftfromHorizon, t::Int) = getstartduration(h.subhorizon, t)
 getendperiodfromduration(h::IgnoreMustupdateMayshiftfromHorizon, d::Millisecond) = getendperiodfromduration(h.subhorizon, d)
 getduration(h::IgnoreMustupdateMayshiftfromHorizon) = getduration(h.subhorizon)
