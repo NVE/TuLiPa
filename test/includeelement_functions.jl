@@ -496,93 +496,182 @@ function test_includeBaseStorage!()
     register_tested_methods(includeBaseStorage!, 1)
 end
 
-function test_includeFossilMCParam!()
-    # tests for value::Dict
+function _common_tvs_param(tvnames, func, obj; steps=false)
     (k, TL, LL) = _setup_common_variables()
-    @test_throws ErrorException includeFossilMCParam!(TL, LL, k, Dict())
-    tvnames = ["FuelLevel", "FuelProfile", "CO2Factor", "CO2Level", "CO2Profile", "Efficiency", "VOC"]
+    @test_throws ErrorException func(TL, LL, k, Dict())
     for name in tvnames
         (k, TL, LL) = _setup_common_variables()
         id_list = [s for s in tvnames if s != name]
         d = Dict{String, Any}(s => s for s in id_list)
-        d[name] = ConstantTimeVector(1.0)
+        d[name] = InfiniteTimeVector([DateTime(1985, 7, 1)], [1.0])
+        if steps
+            d["Steps"] = 1
+        end
         expected_deps = Set([Id(TIMEVECTOR_CONCEPT, s) for s in id_list])
         for s in id_list
-            ret = includeFossilMCParam!(TL, LL, k, d)
-            _test_ret(ret, n=6, okvalue=false)
-            LL[Id(TIMEVECTOR_CONCEPT, s)] = ConstantTimeVector(1.0)
+            ret = func(TL, LL, k, d)
+            _test_ret(ret, n=(length(tvnames) - 1), okvalue=false)
+            LL[Id(TIMEVECTOR_CONCEPT, s)] = InfiniteTimeVector([DateTime(1985, 7, 1)], [1.0])
             @test expected_deps == Set(ret[2])
         end
-        ret = includeFossilMCParam!(TL, LL, k, d)
-        _test_ret(ret, n=6)
+        ret = func(TL, LL, k, d)
+        _test_ret(ret, n=(length(tvnames) - 1))
         @test expected_deps == Set(ret[2])
-        @test length(TL) == 0 && length(LL) == 7
-        @test LL[Id(k.conceptname, k.instancename)] isa FossilMCParam
-        @test_throws ErrorException includeBaseStorage!(TL, LL, k, d) # already exists in LL
+        @test length(TL) == 0 && length(LL) == length(tvnames)
+        @test LL[Id(k.conceptname, k.instancename)] isa obj
+        @test_throws ErrorException func(TL, LL, k, d) # already exists in LL
     end
+    if steps
+        (k, TL, LL) = _setup_common_variables()
+        d = Dict{String, Any}(s => InfiniteTimeVector([DateTime(1985, 7, 1)], [1.0]) for s in tvnames)
+        d["Steps"] = -1
+        @test_throws ErrorException func(TL, LL, k, d)
+        d["Steps"] = 0
+        @test_throws ErrorException func(TL, LL, k, d)
+    end
+end
+
+function _common_level_profile_param(func, obj; meanseries=false)
+    (k, TL, LL) = _setup_common_variables()
+    if meanseries
+        inp = obj(MeanSeriesParam(ConstantTimeVector(1.0), ConstantTimeVector(1.0)))
+    else
+        inp = obj(ConstantTimeVector(1.0), ConstantTimeVector(1.0))
+    end
+    ret = func(TL, LL, k, inp)
+    _test_ret(ret)
+    @test length(TL) == 0 && length(LL) == 1
+    @test LL[Id(k.conceptname, k.instancename)] isa obj
+    @test_throws ErrorException func(TL, LL, k, inp) # already exists in LL
+end
+
+function _common_test_wrapper_param(func, obj)
+    (k, TL, LL) = _setup_common_variables()
+    @test_throws ErrorException func(TL, LL, k, Dict())
+    ret = func(TL, LL, k, Dict(PARAM_CONCEPT => ConstantParam(1.0)))
+    _test_ret(ret)
+    @test length(TL) == 0 && length(LL) == 1
+    @test LL[Id(k.conceptname, k.instancename)] isa obj
+    @test_throws ErrorException func(TL, LL, k, Dict(PARAM_CONCEPT => ConstantParam(1.0))) # already in LL
+    (k, TL, LL) = _setup_common_variables()
+    ret = func(TL, LL, k, Dict(PARAM_CONCEPT => "myparam"))
+    _test_ret(ret, n=1, okvalue=false)
+    @test ret[2] == [Id(PARAM_CONCEPT, "myparam")]
+    LL[Id(PARAM_CONCEPT, "myparam")] = ConstantParam(1.0)
+    ret = func(TL, LL, k, Dict(PARAM_CONCEPT => "myparam"))
+    _test_ret(ret, n=1)
+    @test length(TL) == 0 && length(LL) == 2
+    @test LL[Id(k.conceptname, k.instancename)] isa obj
+end
+
+function _common_float_param(func, obj)
+    (k, TL, LL) = _setup_common_variables()
+    ret = func(TL, LL, k, 1.0)
+    _test_ret(ret)
+    @test length(TL) == 0 && length(LL) == 1
+    @test LL[Id(k.conceptname, k.instancename)] isa obj
+    @test_throws ErrorException func(TL, LL, k, 1.0) # already exists in LL
+end
+
+function test_includeFossilMCParam!()
+    # tests for value::Dict
+    tvnames = ["FuelLevel", "FuelProfile", "CO2Factor", "CO2Level", "CO2Profile", "Efficiency", "VOC"]
+    _common_tvs_param(tvnames, includeFossilMCParam!, FossilMCParam)
     register_tested_methods(includeFossilMCParam!, 1)
 end
 
-function test_includeM3SToMM3Param!()
-    # TODO: test for value::Dict
-    register_tested_methods(includeM3SToMM3Param!, 1)
-end
-
 function test_includeM3SToMM3SeriesParam!()
-    # TODO: test for value::Dict
-    # TODO: test for value::M3SToMM3SeriesParam
-    # TODO: test for value::AbstractFloat
+    # tests for value::Dict
+    _common_tvs_param(["Level", "Profile"], includeM3SToMM3SeriesParam!, M3SToMM3SeriesParam)
+    # tests for value::M3SToMM3SeriesParam
+    _common_level_profile_param(includeM3SToMM3SeriesParam!, M3SToMM3SeriesParam)
+    # tests for value::AbstractFloat
+    _common_float_param(includeM3SToMM3SeriesParam!, M3SToMM3SeriesParam)
     register_tested_methods(includeM3SToMM3SeriesParam!, 3)
 end
 
 function test_includeMWToGWhSeriesParam!()
-    # TODO: test for value::Dict
-    # TODO: test for value::MWToGWhSeriesParam
-    # TODO: test for value::AbstractFloat
+    # tests for value::Dict
+    _common_tvs_param(["Level", "Profile"], includeMWToGWhSeriesParam!, MWToGWhSeriesParam)
+    # tests for value::MWToGWhSeriesParam
+    _common_level_profile_param(includeMWToGWhSeriesParam!, MWToGWhSeriesParam)
+    # tests for value::AbstractFloat
+    _common_float_param(includeMWToGWhSeriesParam!, MWToGWhSeriesParam)
     register_tested_methods(includeMWToGWhSeriesParam!, 3)
 end
 
+function test_includeM3SToMM3Param!()
+    # tests for value::Dict
+    _common_test_wrapper_param(includeM3SToMM3Param!, M3SToMM3Param)
+    register_tested_methods(includeM3SToMM3Param!, 1)
+end
+
 function test_includeMWToGWhParam!()
-    # TODO: test for value::Dict
+    # tests for value::Dict
+    _common_test_wrapper_param(includeMWToGWhParam!, MWToGWhParam)
     register_tested_methods(includeMWToGWhParam!, 1)
 end
 
 function test_includeCostPerMWToGWhParam!()
-    # TODO: test for value::Dict
-    # TODO: test for value::CostPerMWToGWhParam
-    # TODO: test for value::AbstractFloat
+    # tests for value::Dict
+    _common_tvs_param(["Level", "Profile"], includeCostPerMWToGWhParam!, CostPerMWToGWhParam)
+    # tests for value::CostPerMWToGWhParam
+    _common_level_profile_param(includeCostPerMWToGWhParam!, CostPerMWToGWhParam; meanseries=true)
+    # tests for value::AbstractFloat
+    _common_float_param(includeCostPerMWToGWhParam!, CostPerMWToGWhParam)
     register_tested_methods(includeCostPerMWToGWhParam!, 3)
 end
 
 function test_includeMeanSeriesParam!()
-    # TODO: test for value::Dict
-    # TODO: test for value::MeanSeriesParam
+    # tests for value::Dict
+    _common_tvs_param(["Level", "Profile"], includeMeanSeriesParam!, MeanSeriesParam)
+    # tests for value::MeanSeriesParam
+    _common_level_profile_param(includeMeanSeriesParam!, MeanSeriesParam)
     register_tested_methods(includeMeanSeriesParam!, 2)
 end
 
 function test_includeMeanSeriesIgnorePhaseinParam!()
-    # TODO: test for value::Dict
-    # TODO: value::MeanSeriesIgnorePhaseinParam
+    # tests for value::Dict
+    _common_tvs_param(["Level", "Profile"], includeMeanSeriesIgnorePhaseinParam!, MeanSeriesIgnorePhaseinParam)
+    # tests for value::MeanSeriesIgnorePhaseinParam
+    _common_level_profile_param(includeMeanSeriesIgnorePhaseinParam!, MeanSeriesIgnorePhaseinParam)
     register_tested_methods(includeMeanSeriesIgnorePhaseinParam!, 2)
 end
 
 function test_includePrognosisSeriesParam!()
-    # TODO: test for value::Dict
+    # tests for value::Dict
+    _common_tvs_param(["Level", "Profile", "Prognosis"], includePrognosisSeriesParam!, PrognosisSeriesParam; steps=true)
     register_tested_methods(includePrognosisSeriesParam!, 1)
 end
 
 function test_includeUMMSeriesParam!()
-    # TODO: test for value::Dict
+    # tests for value::Dict
+    _common_tvs_param(["Level", "Profile", "Ummprofile"], includeUMMSeriesParam!, UMMSeriesParam)
     register_tested_methods(includeUMMSeriesParam!, 1)
 end
 
 function test_includeStatefulParam!()
-    # TODO: test for value::Dict
+    # tests for value::Dict
+    _common_test_wrapper_param(includeStatefulParam!, StatefulParam)
     register_tested_methods(includeStatefulParam!, 1)
 end
 
 function test_includeMsTimeDelta!()
-    # TODO: test for value::Dict
+    # tests for value::Dict
+    (k, TL, LL) = _setup_common_variables()
+    @test_throws ErrorException includeMsTimeDelta!(TL, LL, k, Dict())
+    @test_throws ErrorException includeMsTimeDelta!(TL, LL, k, Dict("Period" => Dates.Nanosecond(1)))
+    @test_throws ErrorException includeMsTimeDelta!(TL, LL, k, Dict("Period" => Dates.Millisecond(0)))
+    ret = includeMsTimeDelta!(TL, LL, k, Dict("Period" => Dates.Hour(1)))
+    _test_ret(ret)
+    @test length(TL) == 0 && length(LL) == 1
+    @test LL[Id(k.conceptname, k.instancename)] isa MsTimeDelta
+    @test_throws ErrorException includeMsTimeDelta!(TL, LL, k, Dict("Period" => Dates.Hour(1))) # already in LL
+    (k, TL, LL) = _setup_common_variables()
+    ret = includeMsTimeDelta!(TL, LL, k, Dict("Period" => 1))
+    _test_ret(ret)
+    @test length(TL) == 0 && length(LL) == 1
+    @test LL[Id(k.conceptname, k.instancename)] isa MsTimeDelta
     register_tested_methods(includeMsTimeDelta!, 1)
 end
 
