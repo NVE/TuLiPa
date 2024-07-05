@@ -850,13 +850,13 @@ as price prognosis models, but not neccesary the whole horizon. For many systems
 the first 2-3 years would be sufficiently long horizon. ShortenedHorizon meets
 this need, as it wraps another horizon, and only use some of the first periods.
 """
-struct ShortenedHorizon{H <: Horizon} <: Horizon
-    subhorizon::H
+mutable struct ShortenedHorizon <: Horizon
+    subhorizon::Horizon
     ix_start::Int
     ix_stop::Int
     function ShortenedHorizon(h::Horizon, ix_start::Int, ix_stop::Int)
         @assert 0 < ix_stop - ix_start + 1 <= getnumperiods(h)
-        new{typeof(h)}(h, ix_start, ix_stop)
+        new(h, ix_start, ix_stop)
     end
 end
 
