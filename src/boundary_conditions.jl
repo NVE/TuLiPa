@@ -495,6 +495,32 @@ function updatelastcut!(p::Prob, x::SimpleSingleCuts)
     return
 end
 
+function clearcuts!(p::Prob, x::SimpleSingleCuts)
+    # get internal storage for cut parameters
+    avgconstants = getconstants(x)
+    avgslopes = getslopes(x)
+    
+    # inactivate cut parameters in internal storage
+    fill!(avgconstants, x.lower_bound)
+    fill!(x.scenconstants, x.lower_bound)
+    fill!(avgslopes, 0.0)
+    fill!(x.scenslopes, 0.0)
+
+    # set counters to 0
+    setnumcuts!(x, 0)
+    setcutix!(x, 0)
+
+    # inactivate cuts in problem
+    for cutix in eachindex(avgconstants)
+        setrhsterm!(p, getcutconid(x), getcutconstantid(x), cutix, avgconstants[cutix])
+        for (j, statevar) in enumerate(x.statevars)
+            (varid, varix) = getvarout(statevar)
+            setconcoeff!(p, getcutconid(x), varid, cutix, varix, -avgslopes[cutix, j])
+        end
+    end
+    return
+end
+
 function clearcuts!(x::SimpleSingleCuts)
     # get internal storage for cut parameters
     avgconstants = getconstants(x)
