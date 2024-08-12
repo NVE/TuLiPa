@@ -103,8 +103,14 @@ function includeBaseElasticDemand!(toplevel::Dict, lowlevel::Dict, elkey::Elemen
     balancename = getdictvalue(value, BALANCE_CONCEPT, String, elkey)
     balancekey = Id(BALANCE_CONCEPT, balancename)
     push!(deps, balancekey)
-	haskey(toplevel, balancekey) || return (false, deps)
-	objkey = getobjkey(elkey)
+
+    (id, firm_demand_param, ok) = getdictparamvalue(lowlevel, elkey, value)
+    push!(deps, id)
+
+    ok || return (false, deps)
+    haskey(toplevel, balancekey) || return (false, deps)
+
+    objkey = getobjkey(elkey)
     price_elasticity = getdictvalue(value, "price_elasticity", Float64, elkey)
     normal_price = getdictvalue(value, "normal_price", Float64, elkey)
     max_price = getdictvalue(value, "max_price", Float64, elkey)
@@ -112,12 +118,11 @@ function includeBaseElasticDemand!(toplevel::Dict, lowlevel::Dict, elkey::Elemen
 
     @assert min_price <= normal_price <= max_price
 
-    (id, firm_demand_param, ok) = getdictparamvalue(lowlevel, elkey, value)
     toplevel[objkey] = ElasticPowerDemand(objkey, toplevel[balancekey], 
         firm_demand_param, price_elasticity, normal_price, max_price, min_price
     )
     return (true, deps)    
 end
 
-ELASTIC_DEMAND_CONCEPT = "Elastic_demand_concept"
+ELASTIC_DEMAND_CONCEPT = "ElasticDemand"
 INCLUDEELEMENT[TypeKey(ELASTIC_DEMAND_CONCEPT, "ElasticPowerDemand")] = includeBaseElasticDemand!
