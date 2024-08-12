@@ -546,7 +546,17 @@ abstract type TimeVector end
 
 abstract type Offset end
 
+# ---- ElasticDemand -------------------
+# 
+# Is used to create demand that should change with price
+# 
+# Interface:
+#    build!(prob, demand)
+#    setconstants!(prob, demand)
+#    update!(prob, demand, start)
+#    assemble!(demand)
+#    getid(demand)
+#    getbalance(demand)
+#    getdemand(prob, obj, timeix)
 
-
-
-
+abstract type ElasticDemand end

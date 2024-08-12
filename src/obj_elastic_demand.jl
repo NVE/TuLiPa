@@ -1,4 +1,4 @@
-mutable struct ElasticPowerDemand
+mutable struct BaseElasticDemand <: ElasticDemand
     id::Id
     balance::Balance
     firm_demand::Union{Param, Nothing}
@@ -10,7 +10,7 @@ mutable struct ElasticPowerDemand
     segment_capacities::Vector{Float64}
     reserve_prices::Vector{Float64}
     
-    function ElasticPowerDemand(id::Id, balance::Balance, 
+    function BaseElasticDemand(id::Id, balance::Balance, 
         firm_demand_param::Param, price_elasticity::Float64, normal_price::Float64, max_price::Float64, min_price::Float64)  
 
         N = 10 # hardcoded for now, TODO: Find best N (or best segments) to approximate PQ curve.
@@ -34,8 +34,18 @@ mutable struct ElasticPowerDemand
     end
 end
 
-getid(var::ElasticPowerDemand) = var.id
-getbalance(var::ElasticPowerDemand) = var.balance
+getid(var::BaseElasticDemand) = var.id
+getbalance(var::BaseElasticDemand) = var.balance
+
+function getdemand(p::Prob, var::BaseElasticDemand, timeix::Int64)
+    total_demand = 0
+    for seg_no in 1:var.N
+        seg_id = create_segment_id(var, seg_no)
+        ref = p.model[Symbol(getname(seg_id))]
+        total_demand += value(ref[timeix])
+    end
+    return total_demand
+end
 
 # Expects f divided by f_ref
 function relative_demand_to_price(normal_price, price_elasticity, f)
@@ -51,18 +61,18 @@ function price_to_relative_demand(normal_price, price_elasticity, p)
     return (p./p_ref).^e
 end
 
-function create_segment_id(var::ElasticPowerDemand, seg_no::Int)
+function create_segment_id(var::BaseElasticDemand, seg_no::Int)
     return Id(var.id.conceptname, string(var.id.instancename, seg_no))
 end
 
-function build!(p::Prob, var::ElasticPowerDemand)
+function build!(p::Prob, var::BaseElasticDemand)
     T = getnumperiods(gethorizon(var.balance))
     for i in 1:var.N
         addvar!(p, create_segment_id(var, i), T)
-    end    
+    end
 end
 
-function setconstants!(p::Prob, var::ElasticPowerDemand)
+function setconstants!(p::Prob, var::BaseElasticDemand)
     balanceid = getid(getbalance(var))
     T = getnumperiods(gethorizon(var.balance))
     for i in 1:var.N
@@ -79,7 +89,7 @@ function setconstants!(p::Prob, var::ElasticPowerDemand)
     end
 end
 
-function update!(p::Prob, var::ElasticPowerDemand, start::ProbTime)
+function update!(p::Prob, var::BaseElasticDemand, start::ProbTime)
     T = getnumperiods(gethorizon(var.balance))
     for i in 1:var.N
         varid = create_segment_id(var, i)
@@ -93,7 +103,7 @@ function update!(p::Prob, var::ElasticPowerDemand, start::ProbTime)
     end
 end
 
-function assemble!(var::ElasticPowerDemand)::Bool   
+function assemble!(var::BaseElasticDemand)::Bool   
     return true
 end
 
@@ -118,11 +128,11 @@ function includeBaseElasticDemand!(toplevel::Dict, lowlevel::Dict, elkey::Elemen
 
     @assert min_price <= normal_price <= max_price
 
-    toplevel[objkey] = ElasticPowerDemand(objkey, toplevel[balancekey], 
+    toplevel[objkey] = BaseElasticDemand(objkey, toplevel[balancekey], 
         firm_demand_param, price_elasticity, normal_price, max_price, min_price
     )
     return (true, deps)    
 end
 
 ELASTIC_DEMAND_CONCEPT = "ElasticDemand"
-INCLUDEELEMENT[TypeKey(ELASTIC_DEMAND_CONCEPT, "ElasticPowerDemand")] = includeBaseElasticDemand!
+INCLUDEELEMENT[TypeKey(ELASTIC_DEMAND_CONCEPT, "BaseElasticDemand")] = includeBaseElasticDemand!

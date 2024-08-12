@@ -716,28 +716,28 @@ end
 function test_includeBaseElasticDemand!()
     # tests for value::Dict
     (k, TL, LL) = _setup_common_variables()
-	
-	d = Dict("Balance" => "PowerBalance_NO2", 
-			 "Param" => "FirmDemand",
+    
+    d = Dict("Balance" => "PowerBalance_NO2", 
+             "Param" => "FirmDemand",
              "price_elasticity" => 1.0, 
-			 "normal_price" => 1.0 , 
-			 "max_price" => 2.0, 
-			 "min_price" => 1.0
-			)
-	
-	bal = BaseBalance(
-			Id("a", "a"),
-			BaseCommodity(
-				Id("a", "a"), SequentialHorizon(1, Day(1))
-			)
-		  )
-	par = MeanSeriesParam(ConstantTimeVector(1), ConstantTimeVector(1))
-	TL[Id("Balance", "PowerBalance_NO2")] = bal
-	LL[Id("Param", "FirmDemand")] = par
-	
+             "normal_price" => 1.0 , 
+             "max_price" => 2.0, 
+             "min_price" => 1.0
+            )
+    
+    bal = BaseBalance(
+            Id("a", "a"),
+            BaseCommodity(
+                Id("a", "a"), SequentialHorizon(1, Day(1))
+            )
+          )
+    par = MeanSeriesParam(ConstantTimeVector(1), ConstantTimeVector(1))
+    TL[Id("Balance", "PowerBalance_NO2")] = bal
+    LL[Id("Param", "FirmDemand")] = par
+    
     ret = includeBaseElasticDemand!(TL, LL, k, d)
-	_test_ret(ret, n=2, okvalue=true)
-    @test TL[Id(k.conceptname, k.instancename)] isa ElasticPowerDemand
+    _test_ret(ret, n=2, okvalue=true)
+    @test TL[Id(k.conceptname, k.instancename)] isa ElasticDemand
     register_tested_methods(includeBaseElasticDemand!, 1)
 end
 
