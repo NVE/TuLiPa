@@ -722,7 +722,7 @@ function test_includeBaseElasticDemand!()
              "price_elasticity" => 1.0, 
              "normal_price" => 1.0 , 
              "max_price" => 2.0, 
-             "min_price" => 1.0
+             "min_price" => 1.0,
              "threshold" => 0.15
             )
     
