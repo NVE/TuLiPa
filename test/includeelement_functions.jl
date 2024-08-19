@@ -137,8 +137,8 @@ function test_all_includeelement_methods()
     test_includeBaseRHSTerm!()
     test_includeBaseSoftBound!()
     test_includeSimpleStartUpCost!()
-	test_includeBaseElasticDemand!()
-	test_includeVectorPrice!()
+    test_includeBaseElasticDemand!()
+    test_includeVectorPrice!()
 end
 
 function _setup_common_variables() 
