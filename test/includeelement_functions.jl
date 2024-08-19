@@ -723,7 +723,7 @@ function test_includeBaseElasticDemand!()
              "normal_price" => 1.0 , 
              "max_price" => 2.0, 
              "min_price" => 1.0
-             "threhold" => 0.15
+             "threshold" => 0.15
             )
     
     bal = BaseBalance(
