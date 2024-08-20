@@ -614,6 +614,13 @@ function _get_price_from_prob(prob::Prob, balanceid::Id)
     error("Exogen balance $balanceid not found in modelobjects")
 end
 
+function _get_price_from_prob(prob::Prob)
+    for obj in getobjects(prob)
+        obj isa ExogenBalance && return getprice(obj)
+    end
+    error("Exogen balance not found in modelobjects")
+end
+
 # AHDummyData -------------
 struct AHDummyData <: AdaptiveHorizonData end
 
@@ -694,21 +701,31 @@ function update_X!(X::Vector{Float64}, data::DynamicRHSAHData, start::ProbTime,
     return
 end
 
-# ------- DynamicExogenPriceAHData
+# ------- DynamicExogenPriceAHData and FindFirstDynamicExogenPriceAHData
 mutable struct DynamicExogenPriceAHData <: AdaptiveHorizonData
     balanceid::Id
     price::Union{Price, Nothing}
     DynamicExogenPriceAHData(balanceid) = new(balanceid, nothing)
 end
+mutable struct FindFirstDynamicExogenPriceAHData <: AdaptiveHorizonData
+    price::Union{Price, Nothing}
+    FindFirstDynamicExogenPriceAHData() = new(nothing)
+end
 
-init!(::DynamicExogenPriceAHData, ::SequentialPeriods, ::Int, ::Millisecond) = nothing
+const DynamicExogenPriceAHDatas = Union{DynamicExogenPriceAHData, FindFirstDynamicExogenPriceAHData}
+
+init!(::DynamicExogenPriceAHDatas, ::SequentialPeriods, ::Int, ::Millisecond) = nothing
 
 function build!(data::DynamicExogenPriceAHData, prob::Prob)
     data.price = _get_price_from_prob(prob, data.balanceid)
     return
 end
+function build!(data::FindFirstDynamicExogenPriceAHData, prob::Prob)
+    data.price = _get_price_from_prob(prob)
+    return
+end
 
-function update_X!(X::Vector{Float64}, data::DynamicExogenPriceAHData, start::ProbTime, 
+function update_X!(X::Vector{Float64}, data::DynamicExogenPriceAHDatas, start::ProbTime, 
                    acc::Millisecond, unit_duration::Millisecond)
     fill!(X, 0.0)
     unit_delta = MsTimeDelta(unit_duration)
