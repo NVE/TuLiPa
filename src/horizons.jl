@@ -950,8 +950,8 @@ function getendperiodfromduration(h::ShortenedHorizon, d::Millisecond)
     return t_parent - h.ix_start + 1
 end
 
-build!(h::ShortenedHorizon, p::Prob) = build!(h.subhorizon, p)
-update!(h::ShortenedHorizon, t::ProbTime) = update!(h.subhorizon, t)
+build!(h::ShortenedHorizon, p::Prob) = nothing
+update!(::ShortenedHorizon, ::ProbTime) = nothing
 
 # ------------- IgnoreMustupdateMayshiftfromHorizon ---------------- 
 """
