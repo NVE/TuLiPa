@@ -802,6 +802,20 @@ end
 function assign_blocks!(method::KMeansAHMethod, X::Vector{Float64})
     Random.seed!(1000) # NB!!! for consistent results in testing-------------------------------
     result = kmeans(reshape(X, 1, length(X)), method.num_cluster)
+
+    # If there are less unique values than clusters, kmeans will not assign values to all cluster
+    if length(Set(result.assignments)) < method.num_cluster
+        replacecluster = length(Set(result.assignments)) + 1
+        for i in eachindex(result.assignments)
+            if count(==(result.assignments[i]), result.assignments) > 1
+                result.assignments[i] = replacecluster
+                replacecluster += 1
+                if replacecluster > method.num_cluster
+                    break
+                end
+            end
+        end
+    end
     return result.assignments
 end
 
