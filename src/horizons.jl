@@ -822,12 +822,13 @@ function assign_blocks!(method::KMeansAHMethod, X::Vector{Float64})
 
     # If there are less unique values than clusters, kmeans will not assign values to all cluster
     if length(Set(result.assignments)) < method.num_cluster
-        replacecluster = length(Set(result.assignments)) + 1
+        missing_clusters = setdiff([a for a in 1:method.num_cluster], Set(result.assignments))
+        missing_index = 1
         for i in eachindex(result.assignments)
             if count(==(result.assignments[i]), result.assignments) > 1
-                result.assignments[i] = replacecluster
-                replacecluster += 1
-                if replacecluster > method.num_cluster
+                result.assignments[i] = missing_clusters[missing_index]
+                missing_index += 1
+                if missing_index > length(missing_clusters)
                     break
                 end
             end
@@ -949,8 +950,8 @@ function getendperiodfromduration(h::ShortenedHorizon, d::Millisecond)
     return t_parent - h.ix_start + 1
 end
 
-build!(h::ShortenedHorizon, p::Prob) = nothing
-update!(::ShortenedHorizon, ::ProbTime) = nothing
+build!(h::ShortenedHorizon, p::Prob) = build!(h.subhorizon, p)
+update!(h::ShortenedHorizon, t::ProbTime) = update!(h.subhorizon, t)
 
 # ------------- IgnoreMustupdateMayshiftfromHorizon ---------------- 
 """
