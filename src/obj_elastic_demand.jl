@@ -22,8 +22,8 @@ mutable struct BaseElasticDemand{B, P} <: ElasticDemand
             threshold::Float64
         ) where {B <: Balance, P <: Param} 
 
-        min_relative_demand = price_to_relative_demand(normal_price, price_elasticity, max_price) # example 0.95
-        max_relative_demand = price_to_relative_demand(normal_price, price_elasticity, min_price) # example 1.05
+        min_relative_demand = price_to_relative_demand(normal_price, price_elasticity, max_price)
+        max_relative_demand = price_to_relative_demand(normal_price, price_elasticity, min_price)
 
         L, reserve_prices, N = optimize_segments(
             normal_price, 
@@ -33,7 +33,16 @@ mutable struct BaseElasticDemand{B, P} <: ElasticDemand
             threshold
         ) 
 
-        segment_capacities = [first(L), diff(L)...] # the sum of this will be the max_relative_demand (example 1.05)
+        reserve_prices = adjust_prices_for_demand_curve_area(
+            normal_price, 
+            price_elasticity, 
+            min_relative_demand, 
+            max_relative_demand,
+            L, 
+            reserve_prices
+        )
+
+        segment_capacities = [first(L), diff(L)...]
 
         new{B, P}(
             id, 
@@ -80,6 +89,34 @@ end
 
 function create_segment_id(var::BaseElasticDemand, seg_no::Int)
     return Id(var.id.conceptname, string(var.id.instancename, seg_no))
+end
+
+function adjust_prices_for_demand_curve_area(
+        normal_price, 
+        price_elasticity, 
+        min_relative_demand, 
+        max_relative_demand,
+        L, 
+        reserve_prices
+    )
+    max_price = reserve_prices[1]
+    demand_integral = (p_normal, e, f) -> (p_normal .* e .* f.^(1 + 1/e))/(1 + e)
+    demand_area = (p_normal, e, f1, f2) -> demand_integral(p_normal, e, f2) - demand_integral(p_normal, e, f1)
+    demand_approx_area = (p, seg) -> sum(p .* seg)
+    factor = (p_normal, e, f1, f2, p, seg) -> demand_area(p_normal, e, f1, f2) / demand_approx_area(p, seg)
+    reserve = reserve_prices[1:end-1]
+    seg = diff(L)
+    p_factor = factor(
+        normal_price, 
+        price_elasticity, 
+        min_relative_demand, 
+        max_relative_demand, 
+        reserve, 
+        seg
+    ) 
+    reserve_prices = reserve * p_factor
+    insert!(reserve_prices, 1, max_price)
+    return reserve_prices
 end
 
 function optimize_segments(normal_price, price_elasticity, min_relative_demand, max_relative_demand, tolerance; max_depth = 6)
