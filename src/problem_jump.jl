@@ -196,6 +196,10 @@ getcondual(p::JuMP_Prob, id::Id, i::Int)  = dual(p.model[Symbol(getname(id))][i]
 
 getfixvardual(p::JuMP_Prob, varid::Id, varix::Int)  = dual(FixRef(p.model[Symbol(getname(varid))][varix]))
 
+# TODO: Implement
+setwarmstart!(::JuMP_Prob, ::Bool) = nothing
+# getwarmstart setwarmstart!(p::JuMP_Prob
+
 # ------- Fix state variables for boundary conditions ------------
 
 function makefixable!(::JuMP_Prob, ::Id, ::Int)

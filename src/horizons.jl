@@ -94,6 +94,7 @@ end
 getchanges(::Horizon) = error()
 setchanges!(::Horizon, changes::Dict) = error()
 getlightweightself(h::Horizon) = h
+getlastperiod(h::Horizon) = getnumperiods(h)
 
 # ------ SequentialPeriods -----------
 # Component in SequentialHorizon and AdaptiveHorizon
@@ -613,6 +614,13 @@ function _get_price_from_prob(prob::Prob, balanceid::Id)
     error("Exogen balance $balanceid not found in modelobjects")
 end
 
+function _get_price_from_prob(prob::Prob)
+    for obj in getobjects(prob)
+        obj isa ExogenBalance && return getprice(obj)
+    end
+    error("Exogen balance not found in modelobjects")
+end
+
 # AHDummyData -------------
 struct AHDummyData <: AdaptiveHorizonData end
 
@@ -693,21 +701,31 @@ function update_X!(X::Vector{Float64}, data::DynamicRHSAHData, start::ProbTime,
     return
 end
 
-# ------- DynamicExogenPriceAHData
+# ------- DynamicExogenPriceAHData and FindFirstDynamicExogenPriceAHData
 mutable struct DynamicExogenPriceAHData <: AdaptiveHorizonData
     balanceid::Id
     price::Union{Price, Nothing}
     DynamicExogenPriceAHData(balanceid) = new(balanceid, nothing)
 end
+mutable struct FindFirstDynamicExogenPriceAHData <: AdaptiveHorizonData
+    price::Union{Price, Nothing}
+    FindFirstDynamicExogenPriceAHData() = new(nothing)
+end
 
-init!(::DynamicExogenPriceAHData, ::SequentialPeriods, ::Int, ::Millisecond) = nothing
+const DynamicExogenPriceAHDatas = Union{DynamicExogenPriceAHData, FindFirstDynamicExogenPriceAHData}
+
+init!(::DynamicExogenPriceAHDatas, ::SequentialPeriods, ::Int, ::Millisecond) = nothing
 
 function build!(data::DynamicExogenPriceAHData, prob::Prob)
     data.price = _get_price_from_prob(prob, data.balanceid)
     return
 end
+function build!(data::FindFirstDynamicExogenPriceAHData, prob::Prob)
+    data.price = _get_price_from_prob(prob)
+    return
+end
 
-function update_X!(X::Vector{Float64}, data::DynamicExogenPriceAHData, start::ProbTime, 
+function update_X!(X::Vector{Float64}, data::DynamicExogenPriceAHDatas, start::ProbTime, 
                    acc::Millisecond, unit_duration::Millisecond)
     fill!(X, 0.0)
     unit_delta = MsTimeDelta(unit_duration)
@@ -801,6 +819,21 @@ end
 function assign_blocks!(method::KMeansAHMethod, X::Vector{Float64})
     Random.seed!(1000) # NB!!! for consistent results in testing-------------------------------
     result = kmeans(reshape(X, 1, length(X)), method.num_cluster)
+
+    # If there are less unique values than clusters, kmeans will not assign values to all cluster
+    if length(Set(result.assignments)) < method.num_cluster
+        missing_clusters = setdiff([a for a in 1:method.num_cluster], Set(result.assignments))
+        missing_index = 1
+        for i in eachindex(result.assignments)
+            if count(==(result.assignments[i]), result.assignments) > 1
+                result.assignments[i] = missing_clusters[missing_index]
+                missing_index += 1
+                if missing_index > length(missing_clusters)
+                    break
+                end
+            end
+        end
+    end
     return result.assignments
 end
 
@@ -849,13 +882,13 @@ as price prognosis models, but not neccesary the whole horizon. For many systems
 the first 2-3 years would be sufficiently long horizon. ShortenedHorizon meets
 this need, as it wraps another horizon, and only use some of the first periods.
 """
-struct ShortenedHorizon{H <: Horizon} <: Horizon
-    subhorizon::H
+mutable struct ShortenedHorizon <: Horizon
+    subhorizon::Horizon
     ix_start::Int
     ix_stop::Int
     function ShortenedHorizon(h::Horizon, ix_start::Int, ix_stop::Int)
         @assert 0 < ix_stop - ix_start + 1 <= getnumperiods(h)
-        new{typeof(h)}(h, ix_start, ix_stop)
+        new(h, ix_start, ix_stop)
     end
 end
 
@@ -871,6 +904,7 @@ getstartduration(h::ShortenedHorizon, t::Int) = getstartduration(h.subhorizon, g
 gettimedelta(h::ShortenedHorizon, t::Int) = gettimedelta(h.subhorizon, getparentindex(h.subhorizon, t))
 getstarttime(h::ShortenedHorizon, t::Int, start::ProbTime) = getstarttime(h.subhorizon, getparentindex(h.subhorizon, t), start)
 getnumperiods(h::ShortenedHorizon) = h.ix_stop - h.ix_start + 1
+getlastperiod(h::ShortenedHorizon) = h.ix_stop
 mustupdate(h::ShortenedHorizon, t::Int) = mustupdate(h.subhorizon, getparentindex(h.subhorizon, t))
 getperiods(h::ShortenedHorizon) = h.ix_start:h.ix_stop
 
@@ -916,8 +950,8 @@ function getendperiodfromduration(h::ShortenedHorizon, d::Millisecond)
     return t_parent - h.ix_start + 1
 end
 
-build!(h::ShortenedHorizon, p::Prob) = nothing
-update!(::ShortenedHorizon, ::ProbTime) = nothing
+build!(h::ShortenedHorizon, p::Prob) = build!(h.subhorizon, p)
+update!(h::ShortenedHorizon, t::ProbTime) = update!(h.subhorizon, t)
 
 # ------------- IgnoreMustupdateMayshiftfromHorizon ---------------- 
 """
@@ -941,6 +975,7 @@ build!(h::IgnoreMustupdateMayshiftfromHorizon, p::Prob) = build!(h.subhorizon, p
 update!(h::IgnoreMustupdateMayshiftfromHorizon, t::ProbTime) = update!(h.subhorizon, t)
 isadaptive(h::IgnoreMustupdateMayshiftfromHorizon) = isadaptive(h.subhorizon)
 getnumperiods(h::IgnoreMustupdateMayshiftfromHorizon) = getnumperiods(h.subhorizon)
+getlastperiod(h::IgnoreMustupdateMayshiftfromHorizon) = getlastperiod(h.subhorizon)
 getstartduration(h::IgnoreMustupdateMayshiftfromHorizon, t::Int) = getstartduration(h.subhorizon, t)
 getendperiodfromduration(h::IgnoreMustupdateMayshiftfromHorizon, d::Millisecond) = getendperiodfromduration(h.subhorizon, d)
 getduration(h::IgnoreMustupdateMayshiftfromHorizon) = getduration(h.subhorizon)

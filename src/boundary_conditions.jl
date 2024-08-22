@@ -521,6 +521,23 @@ function clearcuts!(p::Prob, x::SimpleSingleCuts)
     return
 end
 
+function clearcuts!(x::SimpleSingleCuts)
+    # get internal storage for cut parameters
+    avgconstants = getconstants(x)
+    avgslopes = getslopes(x)
+    
+    # inactivate cut parameters in internal storage
+    fill!(avgconstants, x.lower_bound)
+    fill!(x.scenconstants, x.lower_bound)
+    fill!(avgslopes, 0.0)
+    fill!(x.scenslopes, 0.0)
+
+    # set counters to 0
+    setnumcuts!(x, 0)
+    setcutix!(x, 0)
+    return
+end
+
 # register INCLUDEELEMENT functions
 
 function includeStartEqualStop!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)

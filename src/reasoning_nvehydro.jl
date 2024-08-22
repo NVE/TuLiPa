@@ -375,12 +375,33 @@ function updateheadlosscosts!(method::ReservoirCurveSlopeMethod, clearing::Prob,
     # Assumes all reservoirs in master problems are also in clearing problem
     for master in masters
         for obj in getobjects(master)
-            if haskey(obj.metadata, RESERVOIRCURVEKEY) # also implies hydro storage
-                (resid, headlosscost, T) = get_headlosscost_data_obj(method, master, t, dummydelta, reffactor, obj)
+            if obj isa Storage
+                if haskey(obj.metadata, RESERVOIRCURVEKEY)
+                    (resid, headlosscost, T) = get_headlosscost_data_obj(method, master, t, dummydelta, reffactor, obj)
 
-                setobjcoeff!(clearing, resid, T, headlosscost) # TODO: Condition that T is the same in clearing and master
+                    setobjcoeff!(clearing, resid, T, headlosscost) # TODO: Condition that T is the same in clearing and master
+                end
             end
         end
+    end
+end
+
+function updateheadlosscosts!(method::ReservoirCurveSlopeMethod, master::Prob, t::ProbTime)
+    dummydelta = MsTimeDelta(Millisecond(0))
+    reffactor = 0.67 
+
+    buffer = Tuple{Id, Float64, Int}[]
+    for obj in getobjects(master)
+        if obj isa Storage
+            if haskey(obj.metadata, RESERVOIRCURVEKEY)
+                (resid, headlosscost, T) = get_headlosscost_data_obj(method, master, t, dummydelta, reffactor, obj)
+                push!(buffer, (resid, headlosscost, T))
+            end
+        end
+    end
+
+    for (resid, headlosscost, T) in buffer
+        setobjcoeff!(master, resid, T, headlosscost)
     end
 end
 
