@@ -631,7 +631,7 @@ function getconcoeff(p::HiGHS_Prob, con::Id, var::Id, ci::Int, vi::Int)
     return p.A[col][row]
 end
 
-function getub!(p::HiGHS_Prob, var::Id, i::Int)
+function getub(p::HiGHS_Prob, var::Id, i::Int)
     col = p.vars[var].start + i  # 1-based
     return p.col_upper[col]
 end
