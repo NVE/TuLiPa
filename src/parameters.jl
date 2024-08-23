@@ -372,7 +372,7 @@ function getparamvalue(param::PrognosisSeriesParam, start::PrognosisTime, d::Tim
 end
 
 # Calculate the parameter value if the start value is a PhaseinTwoTime
-function getparamvalue(param::FossilMCParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime}, d::TimeDelta)
+function getparamvalue(param::FossilMCParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime,PhaseinPrognosisTime}, d::TimeDelta)
     fl = getweightedaverage(param.fuellevel,   start.datatime, d)
     cf = getweightedaverage(param.co2factor,   start.datatime, d)
     cl = getweightedaverage(param.co2level,    start.datatime, d)
@@ -402,7 +402,7 @@ function getparamvalue(param::FossilMCParam, start::Union{PhaseinTwoTime,Phasein
     return (fl * fp + cf * cl * cp) / ef + vo
 end
 
-function getparamvalue(param::MeanSeriesParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime}, d::TimeDelta)
+function getparamvalue(param::MeanSeriesParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime,PhaseinPrognosisTime}, d::TimeDelta)
     phasein = getweightedaverage(start.phaseinvector, start.scenariotime1, d)
 
     local profile::Float64
@@ -422,7 +422,7 @@ function getparamvalue(param::MeanSeriesParam, start::Union{PhaseinTwoTime,Phase
     return value
 end
 
-function getparamvalue(param::M3SToMM3SeriesParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime}, d::TimeDelta)
+function getparamvalue(param::M3SToMM3SeriesParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime,PhaseinPrognosisTime}, d::TimeDelta)
     phasein = getweightedaverage(start.phaseinvector, start.scenariotime1, d)
 
     local profile::Float64
@@ -443,7 +443,7 @@ function getparamvalue(param::M3SToMM3SeriesParam, start::Union{PhaseinTwoTime,P
     return m3s * seconds / 1e6
 end
 
-function getparamvalue(param::MWToGWhSeriesParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime}, d::TimeDelta)
+function getparamvalue(param::MWToGWhSeriesParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime,PhaseinPrognosisTime}, d::TimeDelta)
     phasein = getweightedaverage(start.phaseinvector, start.scenariotime1, d)
 
     local profile::Float64
@@ -466,8 +466,7 @@ end
 
 
 function getparamvalue(param::PrognosisSeriesParam, start::PhaseinPrognosisTime, d::TimeDelta)
-
-    confidence = getweightedaverage(start.phaseinvector, start.prognosisdatatime, d)
+    confidence = getweightedaverage(param.confidence, start.prognosisdatatime, d)
     last_prognosis_time = last(param.prognosis.index)
     
     phasein = getweightedaverage(start.phaseinvector, start.scenariotime1, d)
@@ -522,7 +521,7 @@ function _umm_logic(param, start, d, new_profile_start, new_start_delta)
     return ummprofile
 end
 
-function getparamvalue(param::UMMSeriesParam, start::Union{PhaseinTwoTime}, d::TimeDelta)
+function getparamvalue(param::UMMSeriesParam, start::Union{PhaseinTwoTime,PhaseinPrognosisTime}, d::TimeDelta)
     datatime = getdatatime(start)
     scenariotime = getscenariotime(start)
     new_profile_start, new_start_delta = _get_new_profile_start(param, datatime, scenariotime)
