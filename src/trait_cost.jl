@@ -110,7 +110,7 @@ function update!(p::Prob, var::Any, sumcost::SumCost, start::ProbTime)
     for t in 1:T
         (future_t, ok) = mayshiftfrom(var.horizon, t)
         if ok && (sumcost.isupdated[t] == false)
-            value = getobjcoeff!(p, var.id, future_t)
+            value = getobjcoeff(p, var.id, future_t)
             setobjcoeff!(p, var.id, t, value)
         end
     end

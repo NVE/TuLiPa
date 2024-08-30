@@ -524,16 +524,16 @@ function solve!(p::HiGHS_Prob)
     p.iscondualsupdated = false
 
     if p.isoptimal == false
-        modelstatus = Highs_getScaledModelStatus(p)
+        status = Highs_getScaledModelStatus(p)
+        modelid = rand(1:999)
         try
             threadid = myid()
-            Highs_writeModel(p, "failed_model_status_$(status)_thread_$(threadid).mps")
+            Highs_writeModel(p, "failed_model_status_$(status)_thread_$(threadid)_$(modelid).mps")
         catch
-            Highs_writeModel(p, "failed_model_status_$(status).mps")
+            Highs_writeModel(p, "failed_model_status_$(status)_$(modelid).mps")
         end
-        println("Model failed with status $(status)")
+        error("Model $(modelid) failed with status $(status)")
     end
-    @assert p.isoptimal
 
     return
 end
@@ -631,7 +631,7 @@ function getconcoeff(p::HiGHS_Prob, con::Id, var::Id, ci::Int, vi::Int)
     return p.A[col][row]
 end
 
-function getub!(p::HiGHS_Prob, var::Id, i::Int)
+function getub(p::HiGHS_Prob, var::Id, i::Int)
     col = p.vars[var].start + i  # 1-based
     return p.col_upper[col]
 end
