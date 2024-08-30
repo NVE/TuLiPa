@@ -62,6 +62,7 @@ end
 
 getid(var::BaseElasticDemand) = var.id
 getbalance(var::BaseElasticDemand) = var.balance
+getparent(var::BaseElasticDemand) = var.balance
 
 function getdemand(p::Prob, var::BaseElasticDemand, timeix::Int64)
     total_demand = 0
@@ -244,5 +245,4 @@ function includeBaseElasticDemand!(toplevel::Dict, lowlevel::Dict, elkey::Elemen
     return (true, deps)    
 end
 
-ELASTIC_DEMAND_CONCEPT = "ElasticDemand"
 INCLUDEELEMENT[TypeKey(ELASTIC_DEMAND_CONCEPT, "BaseElasticDemand")] = includeBaseElasticDemand!
