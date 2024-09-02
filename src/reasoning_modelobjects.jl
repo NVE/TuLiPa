@@ -480,6 +480,7 @@ replacebalance!(x::StartEqualStop, coupling, modelobjects) = nothing
 replacebalance!(x::BaseSoftBound, coupling, modelobjects) = nothing
 replacebalance!(x::HydroRampingWithout, coupling, modelobjects) = nothing
 replacebalance!(x::TransmissionRamping, coupling, modelobjects) = nothing # handled in replacebalance!(x::BaseFlow
+replacebalance!(x::BaseElasticDemand, coupling, modelobjects) = nothing
 
 function replacebalance!(x::BaseStorage, coupling, modelobjects)
     if haskey(coupling, getbalance(x))

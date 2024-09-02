@@ -133,6 +133,15 @@ function order_result_objects(resultobjects, includeexogenprice=true)
                 push!(plantbalances,getid(balance))
             end
         end
+        if obj isa BaseElasticDemand
+            instance = getinstancename(getid(obj))
+            concept = getconceptname(getid(obj))
+            balance = getbalance(obj)
+            for c in 1:obj.N
+                push!(demands, create_segment_id(obj, c))
+                push!(demandbalances, getid(balance))
+            end
+        end
     end
     return powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages
 end
@@ -219,16 +228,20 @@ function get_results!(problem, prices, rhstermvalues, production, consumption, h
 
         # Collect demand of all demands
         for i in 1:length(demands) # TODO: Balance and variable can have different horizons
-            if isexogen(modelobjects[demandbalances[i]])
-                arrow = demandarrows[demands[i]]
-                horizon = gethorizon(arrow)
-                conversionparam = getcontributionparam(arrow)
-                querytime = getstarttime(horizon, j, t)
-                querydelta = gettimedelta(horizon, j)
-                conversionvalue = getparamvalue(conversionparam, querytime, querydelta)
-                consumption[jj, i] = getvarvalue(problem, demands[i], j)*conversionvalue/timefactor
+            if getconceptname(demands[i]) != ELASTIC_DEMAND_CONCEPT
+                if isexogen(modelobjects[demandbalances[i]])
+                    arrow = demandarrows[demands[i]]
+                    horizon = gethorizon(arrow)
+                    conversionparam = getcontributionparam(arrow)
+                    querytime = getstarttime(horizon, j, t)
+                    querydelta = gettimedelta(horizon, j)
+                    conversionvalue = getparamvalue(conversionparam, querytime, querydelta)
+                    consumption[jj, i] = getvarvalue(problem, demands[i], j)*conversionvalue/timefactor
+                else
+                    consumption[jj, i] = getvarvalue(problem, demands[i], j)*abs(getconcoeff(problem, demandbalances[i], demands[i], j, j))/timefactor
+                end
             else
-                consumption[jj, i] = getvarvalue(problem, demands[i], j)*abs(getconcoeff(problem, demandbalances[i], demands[i], j, j))/timefactor
+                consumption[jj, i] = getvarvalue(problem, demands[i], j)/timefactor
             end
         end
         

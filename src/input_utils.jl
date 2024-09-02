@@ -61,6 +61,7 @@ const CAPACITY_CONCEPT = "Capacity"
 const PRICE_CONCEPT = "Price"
 const CONVERSION_CONCEPT = "Conversion"
 const LOSS_CONCEPT = "Loss"
+const ELASTIC_DEMAND_CONCEPT = "ElasticDemand"
 
 # ---- Functions to parse input files containing data elements ----
 
