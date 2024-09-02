@@ -9,7 +9,6 @@ mutable struct BaseElasticDemand{B, P} <: ElasticDemand
     N::Int64
     segment_capacities::Vector{Float64}
     reserve_prices::Vector{Float64}
-    L::Vector{Float64}
     
     function BaseElasticDemand(
             id::Id, 
@@ -54,8 +53,7 @@ mutable struct BaseElasticDemand{B, P} <: ElasticDemand
             max_price, 
             N,
             segment_capacities, 
-            reserve_prices,
-            L
+            reserve_prices
         )
     end
 end
@@ -68,8 +66,7 @@ function getdemand(p::Prob, var::BaseElasticDemand, timeix::Int64)
     total_demand = 0
     for seg_no in 1:var.N
         seg_id = create_segment_id(var, seg_no)
-        ref = p.model[Symbol(getname(seg_id))]
-        total_demand += value(ref[timeix])
+        total_demand += getvarvalue(prob, seg_id, timeix)
     end
     return total_demand
 end
@@ -165,8 +162,6 @@ function setconstants!(p::Prob, var::BaseElasticDemand)
         for t in 1:T
             setconcoeff!(p, balanceid, varid, t, t, 1.0)
         end
-    end
-    for i in 1:var.N
         varid = create_segment_id(var, i)
         for t in 1:T
             setobjcoeff!(p, varid, t, -var.reserve_prices[i])
@@ -175,16 +170,16 @@ function setconstants!(p::Prob, var::BaseElasticDemand)
     end
 end
 
-function _update_ub(p, horizon, start, var, varid, i, t)
+function _update_ub(p, horizon, start, var, varid, t, i)
     querystart = getstarttime(horizon, t, start)
     querydelta = gettimedelta(horizon, t)
     value = getparamvalue(var.firm_demand, querystart, querydelta)
     setub!(p, varid, t, value * var.segment_capacities[i])
 end
 
-function stateful_update(update_ub_vars, T)
+function stateful_update(p, horizon, start, var, varid, T, i)
     for t in 1:T
-        _update_ub(update_ub_vars..., t)
+        _update_ub(p, horizon, start, var, varid, t, i)
     end
 end
 
@@ -198,7 +193,7 @@ function non_stateful_update(p, horizon, start, var, varid, T, i)
     end
     for t in 1:T
         if mustupdate(horizon, t)
-            _update_ub(p, horizon, start, var, varid, i, t)
+            _update_ub(p, horizon, start, var, varid, t, i)
         end
     end
 end

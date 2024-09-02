@@ -558,5 +558,6 @@ abstract type Offset end
 #    getid(demand)
 #    getbalance(demand)
 #    getdemand(prob, obj, timeix)
+#    getparent(var::BaseElasticDemand)
 
 abstract type ElasticDemand end
