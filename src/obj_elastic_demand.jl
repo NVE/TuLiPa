@@ -1,4 +1,4 @@
-mutable struct BaseElasticDemand{B, P} <: ElasticDemand
+struct BaseElasticDemand{B, P} <: ElasticDemand
     id::Id
     balance::B
     firm_demand::P
@@ -155,20 +155,17 @@ function build!(p::Prob, var::BaseElasticDemand)
 end
 
 function setconstants!(p::Prob, var::BaseElasticDemand)
-    balanceid = getid(getbalance(var))
+    balanceid = getid(var.balance)
     T = getnumperiods(gethorizon(var.balance))
     for i in 1:var.N
         varid = create_segment_id(var, i)
         for t in 1:T
             setconcoeff!(p, balanceid, varid, t, t, 1.0)
-        end
-        varid = create_segment_id(var, i)
-        for t in 1:T
             setobjcoeff!(p, varid, t, -var.reserve_prices[i])
             setlb!(p, varid, t, 0.0)
         end
     end
-end
+ end
 
 function _update_ub(p, horizon, start, var, varid, t, i)
     querystart = getstarttime(horizon, t, start)
