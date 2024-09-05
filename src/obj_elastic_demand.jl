@@ -7,8 +7,8 @@ struct ElasticDemand{B, P, T} <: Demand
     min_price::T 
     max_price::T
     N::Int64
-    segment_capacities::Vector{Float64}
-    reserve_prices::Vector{Float64}
+    segment_capacities::Vector{T}
+    reserve_prices::Vector{T}
     
     function ElasticDemand(
             id::Id, 
