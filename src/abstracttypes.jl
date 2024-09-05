@@ -556,8 +556,9 @@ abstract type Offset end
 #    update!(prob, demand, start)
 #    assemble!(demand)
 #    getid(demand)
+#    getparent(demand)
 #    getbalance(demand)
 #    getdemand(prob, demand, t)
-#    getparent(demand)
+#    getreserveprice(prob, demand, t)
 
 abstract type Demand end

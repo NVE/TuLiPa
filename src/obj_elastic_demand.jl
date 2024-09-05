@@ -62,11 +62,22 @@ getid(var::ElasticDemand) = var.id
 getbalance(var::ElasticDemand) = var.balance
 getparent(var::ElasticDemand) = var.balance
 
-function getdemand(p::Prob, var::ElasticDemand, timeix::Int64)
+function getreserveprice(p::Prob, var::ElasticDemand, t::Int64)
+    price = relative_demand_to_price(
+        var.normal_price, 
+        var.price_elasticity, 
+        getdemand(p, var, t)
+    )
+    price > var.max_price && return var.max_price
+    price < var.min_price && return var.min_price
+    return price
+end
+
+function getdemand(p::Prob, var::ElasticDemand, t::Int64)
     total_demand = 0
     for seg_no in 1:var.N
         seg_id = create_segment_id(var, seg_no)
-        total_demand += getvarvalue(p, seg_id, timeix)
+        total_demand += getvarvalue(p, seg_id, t)
     end
     return total_demand
 end
