@@ -133,7 +133,7 @@ function order_result_objects(resultobjects, includeexogenprice=true)
                 push!(plantbalances,getid(balance))
             end
         end
-        if obj isa BaseElasticDemand
+        if obj isa ElasticDemand
             instance = getinstancename(getid(obj))
             concept = getconceptname(getid(obj))
             balance = getbalance(obj)
@@ -228,7 +228,7 @@ function get_results!(problem, prices, rhstermvalues, production, consumption, h
 
         # Collect demand of all demands
         for i in 1:length(demands) # TODO: Balance and variable can have different horizons
-            if getconceptname(demands[i]) != ELASTIC_DEMAND_CONCEPT
+            if getconceptname(demands[i]) != DEMAND_CONCEPT
                 if isexogen(modelobjects[demandbalances[i]])
                     arrow = demandarrows[demands[i]]
                     horizon = gethorizon(arrow)
