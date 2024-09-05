@@ -1,4 +1,4 @@
-struct ElasticDemand{B, P, T} <: Demand
+struct ElasticDemand{B <: Balance, P <: Param, T <: Real} <: Demand
     id::Id
     balance::B
     firm_demand::P
@@ -19,7 +19,7 @@ struct ElasticDemand{B, P, T} <: Demand
             max_price::T, 
             min_price::T,
             threshold::T
-        ) where {B <: Balance, P <: Param, T <: Real} 
+        ) where {B <: Balance, P <: Param, T <: Real}
 
         min_relative_demand = price_to_relative_demand(normal_price, price_elasticity, max_price)
         max_relative_demand = price_to_relative_demand(normal_price, price_elasticity, min_price)
@@ -43,7 +43,7 @@ struct ElasticDemand{B, P, T} <: Demand
 
         segment_capacities = [first(L), diff(L)...]
 
-        new{B, P, Real}(
+        new{B, P, T}(
             id, 
             balance, 
             firm_demand_param, 
