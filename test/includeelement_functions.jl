@@ -137,7 +137,7 @@ function test_all_includeelement_methods()
     test_includeBaseRHSTerm!()
     test_includeBaseSoftBound!()
     test_includeSimpleStartUpCost!()
-    test_includeBaseElasticDemand!()
+    test_includeElasticDemand!()
     test_includeVectorPrice!()
 end
 
@@ -802,7 +802,7 @@ function test_includeVectorPrice!()
     register_tested_methods(includeVectorPrice!, 1)
 end
 
-function test_includeBaseElasticDemand!()
+function test_includeElasticDemand!()
     # tests for value::Dict
     (k, TL, LL) = _setup_common_variables()
     
@@ -825,10 +825,10 @@ function test_includeBaseElasticDemand!()
     TL[Id("Balance", "PowerBalance_NO2")] = bal
     LL[Id("Param", "FirmDemand")] = par
     
-    ret = includeBaseElasticDemand!(TL, LL, k, d)
+    ret = includeElasticDemand!(TL, LL, k, d)
     _test_ret(ret, n=2, okvalue=true)
     @test TL[Id(k.conceptname, k.instancename)] isa ElasticDemand
-    register_tested_methods(includeBaseElasticDemand!, 1)
+    register_tested_methods(includeElasticDemand!, 1)
 end
 
 function _test_ret(ret; n=0, okvalue=true, depstype=Vector{Id})
