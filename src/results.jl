@@ -332,3 +332,95 @@ function update_results(problem, oldprices, oldrhstermvalues, oldproduction, old
     
     return prices, rhstermvalues, production, consumption, hydrolevels, batterylevels
 end
+
+# Collect other results (variables and rhsterms given commodity and instancenames) ------------------------------------------------------------------
+function order_result_objects_other(resultobjects, resultinfo::Dict)
+    otherobjects = Dict()
+    otherbalances = Dict()
+
+    for key in keys(resultinfo)
+        otherobjects[key] = Dict()
+        otherbalances[key] = Dict()
+
+        for commodity in keys(resultinfo[key])
+            otherobjects[key][commodity] = []
+            otherbalances[key][commodity] = []
+        end
+
+        if key == "RHSTerms"
+            for obj in resultobjects
+                if obj isa Balance
+                    commodity = getinstancename(getid(getcommodity(obj)))
+                    if commodity in keys(resultinfo[key])
+                        for rhsterm in getrhsterms(obj)
+                            rhsterminstancename = getinstancename(getid(rhsterm))
+                            if any(key -> occursin(key, rhsterminstancename) , resultinfo[key][commodity])
+                                push!(otherobjects[key][commodity],getid(rhsterm))
+                                push!(otherbalances[key][commodity],getid(obj))
+                            end
+                        end
+                    end
+                end
+            end
+        elseif key == "Vars"
+            for obj in resultobjects
+                if obj isa BaseFlow
+                    for commodity in keys(resultinfo[key])
+                        varinstancename = getinstancename(getid(obj))
+                        if any(key -> occursin(key, varinstancename) , resultinfo[key][commodity])
+                            push!(otherobjects[key][commodity],getid(obj))
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return otherobjects, otherbalances
+end
+
+function get_horizon_commodity(modelobjects::Dict, commodity)
+    for (id, obj) in modelobjects
+        if obj isa Balance
+            if getinstancename(getid(getcommodity(obj))) == commodity
+                return gethorizon(obj)
+            end
+        end
+    end
+end
+function get_horizon_commodity(modelobjects::Vector, commodity)
+    for obj in modelobjects
+        if obj isa Balance
+            if getinstancename(getid(getcommodity(obj))) == commodity
+                return gethorizon(obj)
+            end
+        end
+    end
+end
+
+function get_results!(stepnr, problem, otherobjects, otherbalances, othervalues, modelobjects, t)
+    for key in keys(otherobjects)
+        for commodity in keys(otherobjects[key])
+            horizon = get_horizon_commodity(modelobjects, commodity)
+            timefactor = getduration(gettimedelta(horizon, 1))/Millisecond(3600000)
+            numperiods = getnumperiods(horizon)
+            periodrange = Int(numperiods*(stepnr-1)+1):Int(numperiods*(stepnr))
+
+            if key == "RHSTerms"
+                rhsterms = otherobjects[key][commodity]
+                balances = otherbalances[key][commodity]
+                for i in eachindex(rhsterms)
+                    for (j,jj) in enumerate(periodrange)
+                        othervalues[key][commodity][jj, i] = getrhsterm(problem, balances[i], rhsterms[i], j)/timefactor
+                    end
+                end
+            elseif key == "Vars"
+                vars = otherobjects[key][commodity]
+                for i in eachindex(vars)
+                    for (j,jj) in enumerate(periodrange)
+                        othervalues[key][commodity][jj, i] = getvarvalue(problem, vars[i], j)/timefactor
+                    end
+                end
+            end
+        end
+    end
+end
