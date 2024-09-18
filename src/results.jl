@@ -191,14 +191,9 @@ function get_results!(problem, prices, rhstermvalues, production, consumption, h
                             # TODO: Balance and variable can have different horizons
                             horizon = gethorizon(arrow)
 
-                            if isone(conversion)
-                                param = getprice(arrow.balance)
-                            else
-                                param = TwoProductParam(getprice(arrow.balance), conversion)
-                            end
                             querystart = getstarttime(horizon, j, t)
                             querydelta = gettimedelta(horizon, j)
-                            conversionvalue = getparamvalue(param, querystart, querydelta)
+                            conversionvalue = getparamvalue(conversion, querystart, querydelta)
                             if arrow.isingoing
                                 conversionvalue = -conversionvalue
                             end
