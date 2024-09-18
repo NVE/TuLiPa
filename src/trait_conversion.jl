@@ -36,6 +36,7 @@ isconstant(conversion::Conversion) = isconstant(conversion.param)
 iszero(conversion::Conversion) = iszero(conversion.param)
 isone(conversion::Conversion) = isone(conversion.param)
 isdurational(conversion::Conversion) = false
+isstateful(conversion::Conversion) = isstateful(conversion.param)
 getparamvalue(conversion::Conversion, t::ProbTime, d::TimeDelta) = getparamvalue(conversion.param, t, d)
 
 # Only does something for more complex Conversions
