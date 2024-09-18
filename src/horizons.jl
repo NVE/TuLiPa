@@ -90,6 +90,12 @@ function _must_dynamic_update(paramlike::Any, horizon::Horizon)
 
     return false
 end
+function _must_dynamic_update(paramlike::Any) 
+    isstateful(paramlike) && return true
+    isconstant(paramlike) || return true
+
+    return false
+end
 
 getchanges(::Horizon) = error()
 setchanges!(::Horizon, changes::Dict) = error()
