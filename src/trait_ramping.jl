@@ -317,7 +317,7 @@ end
 function update!(p::Prob, trait::TransmissionRamping, start::ProbTime)
     h = gethorizon(trait)
 
-    if !isconstant(trait.rampingcap) || !hasconstantdurations(h)
+    if _must_dynamic_update(trait.rampingcap, h)
         for t in 1:getnumperiods(h)
             querystart = getstarttime(h, t, start)
             querydelta = gettimedelta(h, t)
@@ -332,7 +332,7 @@ end
 function update!(p::Prob, trait::HydroRampingWithout, start::ProbTime)
     h = gethorizon(trait)
 
-    if !isconstant(trait.rampingcap) || !hasconstantdurations(h)
+    if _must_dynamic_update(trait.rampingcap, h)
         for t in 1:(getnumperiods(h)-1)
             querystart = getstarttime(h, t, start)
             querydelta = gettimedelta(h, t)
@@ -347,7 +347,7 @@ end
 function update!(p::Prob, trait::HydroRamping, start::ProbTime)
     h = gethorizon(trait)
 
-    if !isconstant(trait.rampingcap) || !hasconstantdurations(h)
+    if _must_dynamic_update(trait.rampingcap, h)
         for t in 1:getnumperiods(h)
             querystart = getstarttime(h, t, start)
             querydelta = gettimedelta(h, t)

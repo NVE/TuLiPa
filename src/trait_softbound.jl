@@ -81,7 +81,7 @@ function setconstants!(p::Prob, trait::BaseSoftBound)
     end
 
     # Set breach penalty in objective function if its not constant
-    if isconstant(trait.penalty)
+    if !_must_dynamic_update(trait.penalty)
         c = getparamvalue(trait.penalty, ConstantTime(), MsTimeDelta(Hour(1)))
 
         for t in 1:T
@@ -119,7 +119,7 @@ function update!(p::Prob, trait::BaseSoftBound, start::ProbTime)
         sign = -1.0
     end
     
-    if !isconstant(trait.penalty)
+    if _must_dynamic_update(trait.penalty)
         softcapid = getsoftcapid(trait)
         for t in 1:T
             querystart = getstarttime(horizon, t, start)
