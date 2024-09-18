@@ -113,11 +113,7 @@ function update!(p::Prob, var::Any, capacity::PositiveCapacity, start::ProbTime)
                 value = getlb(p, varid, future_t)
                 setlb!(p, varid, t, value)
             end
-        end
-    end
-
-    for t in 1:T
-        if mustupdate(horizon, t) || isstateful(capacity)
+        else
             querystart = getstarttime(horizon, t, start)
             querydelta = gettimedelta(horizon, t)
             value = getparamvalue(capacity, querystart, querydelta)

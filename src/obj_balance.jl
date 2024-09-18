@@ -110,19 +110,15 @@ function update!(p::Prob, balance::BaseBalance, start::ProbTime)
                 (future_t, ok) = mayshiftfrom(balance.horizon, t)
                 if ok && !isstateful(rhsterm)
                     value = getrhsterm(p, balance.id, getid(rhsterm), future_t)
-                    setrhsterm!(p, balance.id, getid(rhsterm), t, value)
-                end
-            end
-            for t in 1:getnumperiods(balance.horizon)
-                if mustupdate(balance.horizon, t) || isstateful(rhsterm)
+                else
                     querystart = getstarttime(balance.horizon, t, start)
                     querydelta = gettimedelta(balance.horizon, t)
                     value = getparamvalue(rhsterm, querystart, querydelta)
                     if !isingoing(rhsterm)
                         value = -value
                     end
-                    setrhsterm!(p, balance.id, getid(rhsterm), t, value)
                 end
+                setrhsterm!(p, balance.id, getid(rhsterm), t, value)
             end
         end
     end

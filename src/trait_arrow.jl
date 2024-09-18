@@ -184,24 +184,15 @@ function update!(p::Prob, var::Any, arrow::BaseArrow, start::ProbTime)
                     (future_t, ok) = mayshiftfrom(varhorizon, t)
                     if ok && !isstateful(param)
                         value = getconcoeff!(p, getid(arrow.balance), getid(var), s, future_t)
-                        setconcoeff!(p, getid(arrow.balance), getid(var), s, t, value)
-                    end
-                end
-            end
-
-            for s in 1:getnumperiods(balancehorizon)
-                subperiods = getsubperiods(balancehorizon, varhorizon, s)
-                for t in subperiods
-                    if mustupdate(varhorizon, t) || isstateful(param)
+                    else
                         querystart = getstarttime(varhorizon, t, start)
                         querydelta = gettimedelta(varhorizon, t)
                         value = getparamvalue(param, querystart, querydelta)
                         if arrow.isingoing 
                             value = -value
                         end
-
-                        setconcoeff!(p, getid(arrow.balance), getid(var), s, t, value)
                     end
+                    setconcoeff!(p, getid(arrow.balance), getid(var), s, t, value)
                 end
             end
         end
