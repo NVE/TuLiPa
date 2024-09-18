@@ -219,10 +219,10 @@ function statedependentprod_init!(problem::Prob, startstorage::Float64, t::ProbT
                 for arrow in getarrows(plant)
                     if getinstancename(getid(getcommodity(getbalance(arrow)))) == "Power"
                         if arrow isa BaseArrow # if standard arrow
-                            arrow.conversion.param = TwoProductParam(arrow.conversion.param, ConstantParam(factor))
+                            arrow.conversion.param = StatefulParam(TwoProductParam(arrow.conversion.param, ConstantParam(factor)))
                         elseif arrow isa SegmentedArrow # if pq-curve, adjust all points
                             for conversion in arrow.conversions
-                                conversion.param = TwoProductParam(conversion.param, ConstantParam(factor))
+                                conversion.param = StatefulParam(TwoProductParam(conversion.param, ConstantParam(factor)))
                             end
                         end
                     end
@@ -276,16 +276,16 @@ function statedependentprod!(problem::Prob, startstates::Dict{String, Float64}; 
                     if getinstancename(getid(getcommodity(getbalance(arrow)))) == "Power"
                         if arrow isa BaseArrow # if standard arrow
                             if init
-                                arrow.conversion.param = TwoProductParam(arrow.conversion.param, ConstantParam(factor))
+                                arrow.conversion.param = StatefulParam(TwoProductParam(arrow.conversion.param, ConstantParam(factor)))
                             else
-                                arrow.conversion.param = TwoProductParam(arrow.conversion.param.param1, ConstantParam(factor))
+                                arrow.conversion.param = StatefulParam(TwoProductParam(arrow.conversion.param.param.param1, ConstantParam(factor)))
                             end
                         elseif arrow isa SegmentedArrow # if pq-curve, adjust all points
                             for conversion in arrow.conversions
                                 if init
-                                    conversion.param = TwoProductParam(conversion.param, ConstantParam(factor))
+                                    conversion.param = StatefulParam(TwoProductParam(conversion.param, ConstantParam(factor)))
                                 else
-                                    conversion.param = TwoProductParam(conversion.param.param1, ConstantParam(factor))
+                                    conversion.param = StatefulParam(TwoProductParam(conversion.param.param.param1, ConstantParam(factor)))
                                 end
                             end
                         end
@@ -335,8 +335,8 @@ function statedependentpump!(problem::Prob, startstates::Dict{String, Float64})
                 energyequivalent = conversion.pumppower/pumpcapacity/3.6
 
                 # Set pump capacity and energy equivalent
-                pump.ub.param = ConstantParam(pumpcapacity)
-                conversion.param = ConstantParam(energyequivalent)
+                pump.ub.param = StatefulParam(M3SToMM3Param(ConstantParam(pumpcapacity)))
+                conversion.param = StatefulParam(ConstantParam(energyequivalent))
             end
         end
         @label exit_pump
