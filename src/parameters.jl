@@ -280,9 +280,10 @@ function getparamvalue(param::TwoProductParam, start::ProbTime, d::TimeDelta; ix
     end
 end
 
-function getparamvalue(param::HourProductParam, ::ProbTime, ::TimeDelta)
+function getparamvalue(param::HourProductParam, start::ProbTime, d::TimeDelta)
     hours = float(getduration(d).value / 3600 / 1000)
-    return param.value*hours
+    value = getparamvalue(param.param, start, d)
+    return value*hours
 end
 
 function getparamvalue(param::FossilMCParam, start::ProbTime, d::TimeDelta; ix=0)

@@ -386,7 +386,7 @@ function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, 
 
     early_ret && return (false, deps)
 
-    rampingpercentage = HourProductParam(getdictvalue(value, "RampingPercentage", Real, elkey))
+    rampingpercentage = HourProductParam(ConstantParam(getdictvalue(value, "RampingPercentage", Real, elkey)))
     flowcap = getub(firstflow).param
     maxflowcap = MWToGWhSeriesParam(flowcap.level, ConstantTimeVector(1.0))
     rampingcap = TwoProductParam(maxflowcap, rampingpercentage)
@@ -421,7 +421,7 @@ function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, 
 
     early_ret && return (false, deps)
 
-    rampingpercentage = HourProductParam(getdictvalue(value, "RampingPercentage", Real, elkey))
+    rampingpercentage = HourProductParam(ConstantParam(getdictvalue(value, "RampingPercentage", Real, elkey)))
     flowcap = getub(flow).param
     maxflowcap = M3SToMM3SeriesParam(flowcap.level, ConstantTimeVector(1.0))
     rampingcap = TwoProductParam(maxflowcap, rampingpercentage)
@@ -456,7 +456,7 @@ function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, 
 
     early_ret && return (false, deps)
 
-    rampingpercentage = HourProductParam(getdictvalue(value, "RampingPercentage", Real, elkey))
+    rampingpercentage = HourProductParam(ConstantParam(getdictvalue(value, "RampingPercentage", Real, elkey)))
     flowcap = getub(flow).param
     maxflowcap = M3SToMM3SeriesParam(flowcap.level, ConstantTimeVector(1.0))
     rampingcap = TwoProductParam(maxflowcap, rampingpercentage)
