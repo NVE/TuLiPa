@@ -26,6 +26,9 @@ struct TwoProductParam{P1 <: Any, P2 <: Any} <: Param
     param1::P1
     param2::P2
 end
+struct HourProductParam{P <: Param} <: Param
+    param::P
+end
 struct StatefulParam{P <: Param} <: Param
     param::P
 end
@@ -178,6 +181,7 @@ iszero(param::PlusOneParam) = false
 iszero(param::MinusOneParam) = false
 iszero(param::ConstantParam) = param.value == 0
 iszero(param::TwoProductParam) = iszero(param.param1) && iszero(param.param2)
+iszero(param::HourProductParam) = false
 iszero(param::FossilMCParam) = false
 iszero(param::M3SToMM3Param) = false
 iszero(param::M3SToMM3SeriesParam) = false
@@ -200,6 +204,7 @@ isone(param::PlusOneParam) = true
 isone(param::MinusOneParam) = false
 isone(param::ConstantParam) = param.value == 1
 isone(param::TwoProductParam) = iszero(param.param1) && iszero(param.param2)
+isone(param::HourProductParam) = false
 isone(param::FossilMCParam) = false
 isone(param::M3SToMM3Param) = false
 isone(param::M3SToMM3SeriesParam) = false
@@ -220,6 +225,7 @@ isconstant(::ConstantParam) = true
 isconstant(::ZeroParam) = true
 isconstant(::PlusOneParam) = true
 isconstant(::MinusOneParam) = true
+isconstant(param::HourProductParam) = false
 isconstant(param::TransmissionLossRHSParam) = isconstant(param.capacity)
 
 # Is the parameter value dependant on the temporal aspect?
@@ -230,7 +236,8 @@ isdurational(param::ZeroParam) = false
 isdurational(param::PlusOneParam) = false
 isdurational(param::MinusOneParam) = false
 isdurational(param::ConstantParam) = false
-isdurational(param::TwoProductParam) = isdurational(param.param1) && isdurational(param.param2)
+isdurational(param::TwoProductParam) = isdurational(param.param1) || isdurational(param.param2)
+isdurational(param::HourProductParam) = true
 isdurational(param::FossilMCParam) = false
 isdurational(param::M3SToMM3Param) = true
 isdurational(param::M3SToMM3SeriesParam) = true
@@ -240,10 +247,10 @@ isdurational(param::CostPerMWToGWhParam) = true
 isdurational(param::MeanSeriesParam) = false
 isdurational(param::MeanSeriesIgnorePhaseinParam) = false
 isdurational(param::PrognosisSeriesParam) = false
-isdurational(param::ExogenCostParam) = isdurational(param.price) && isdurational(param.conversion) && isdurational(param.loss)
-isdurational(param::ExogenIncomeParam) = isdurational(param.price) && isdurational(param.conversion) && isdurational(param.loss)
-isdurational(param::InConversionLossParam) = isdurational(param.conversion) && isdurational(param.loss)
-isdurational(param::OutConversionLossParam) = isdurational(param.conversion) && isdurational(param.loss)
+isdurational(param::ExogenCostParam) = isdurational(param.price) || isdurational(param.conversion) || isdurational(param.loss)
+isdurational(param::ExogenIncomeParam) = isdurational(param.price) || isdurational(param.conversion) || isdurational(param.loss)
+isdurational(param::InConversionLossParam) = isdurational(param.conversion) || isdurational(param.loss)
+isdurational(param::OutConversionLossParam) = isdurational(param.conversion) || isdurational(param.loss)
 isdurational(param::TransmissionLossRHSParam) = isdurational(param.capacity)
 isdurational(param::UMMSeriesParam) = false
 isdurational(param::StatefulParam) = isdurational(param.param)
@@ -263,12 +270,18 @@ getparamvalue(param::ExogenCostParam, start::ProbTime, d::TimeDelta; ix=0) = get
 getparamvalue(param::InConversionLossParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.conversion, start, d)*(1-getparamvalue(param.loss, start, d))
 getparamvalue(param::OutConversionLossParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.conversion, start, d)/(1-getparamvalue(param.loss, start, d))
 getparamvalue(param::TransmissionLossRHSParam, t::ProbTime, d::TimeDelta) = getparamvalue(param.capacity, t, d)*param.loss*param.utilisation
+
 function getparamvalue(param::TwoProductParam, start::ProbTime, d::TimeDelta; ix=0)
     if ix == 0
         return getparamvalue(param.param1, start, d)*getparamvalue(param.param2, start, d)
     else
         return getparamvalue(param.param1, start, d; ix)*getparamvalue(param.param2, start, d)
     end
+end
+
+function getparamvalue(param::HourProductParam, ::ProbTime, ::TimeDelta)
+    hours = float(getduration(d).value / 3600 / 1000)
+    return param.value*hours
 end
 
 function getparamvalue(param::FossilMCParam, start::ProbTime, d::TimeDelta; ix=0)

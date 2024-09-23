@@ -234,7 +234,7 @@ function setconstants!(p::Prob, trait::HydroRampingWithout)
     # Set ramping cap if it does not have to update dynamically
     _must_dynamic_update(trait.rampingcap, h) && return
 
-    if isdurational(trait.rampingcap)
+    if isdurational(trait.rampingcap) # always durational for productionramping
         dummytime = ConstantTime()
         # Q: Why not calculate value only once here?
         # A: Because SequentialHorizon can have two or more sets of (nperiod, duration) pairs
@@ -291,7 +291,7 @@ function setconstants!(p::Prob, trait::HydroRamping)
     # Set ramping cap if it does not have to update dynamically
     _must_dynamic_update(trait.rampingcap, h) && return
 
-    if isdurational(trait.rampingcap)
+    if isdurational(trait.rampingcap) # always durational for productionramping
         dummytime = ConstantTime()
         # Q: Why not calculate value only once here?
         # A: Because SequentialHorizon can have two or more sets of (nperiod, duration) pairs
@@ -416,7 +416,7 @@ function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, 
 
     early_ret && return (false, deps)
 
-    rampingpercentage = ConstantParam(getdictvalue(value, "RampingPercentage", Real, elkey))
+    rampingpercentage = HourProductParam(getdictvalue(value, "RampingPercentage", Real, elkey))
     flowcap = getub(firstflow).param
     maxflowcap = MWToGWhSeriesParam(flowcap.level, ConstantTimeVector(1.0))
     rampingcap = TwoProductParam(maxflowcap, rampingpercentage)
@@ -451,7 +451,7 @@ function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, 
 
     early_ret && return (false, deps)
 
-    rampingpercentage = ConstantParam(getdictvalue(value, "RampingPercentage", Real, elkey))
+    rampingpercentage = HourProductParam(getdictvalue(value, "RampingPercentage", Real, elkey))
     flowcap = getub(flow).param
     maxflowcap = M3SToMM3SeriesParam(flowcap.level, ConstantTimeVector(1.0))
     rampingcap = TwoProductParam(maxflowcap, rampingpercentage)
@@ -486,7 +486,7 @@ function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, 
 
     early_ret && return (false, deps)
 
-    rampingpercentage = ConstantParam(getdictvalue(value, "RampingPercentage", Real, elkey))
+    rampingpercentage = HourProductParam(getdictvalue(value, "RampingPercentage", Real, elkey))
     flowcap = getub(flow).param
     maxflowcap = M3SToMM3SeriesParam(flowcap.level, ConstantTimeVector(1.0))
     rampingcap = TwoProductParam(maxflowcap, rampingpercentage)
