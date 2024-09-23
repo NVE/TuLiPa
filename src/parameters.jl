@@ -257,6 +257,7 @@ isdurational(param::StatefulParam) = isdurational(param.param)
 
 # Will the parameter change at every new state? Means that the parameter value will have to be recalculated at every time step.
 isstateful(param::StatefulParam) = true
+isstateful(param::TwoProductParam) = isdurational(param.param1) || isdurational(param.param2)
 
 # Calculate the parameter value for a given parameter, problem time and timedelta duration
 getparamvalue(::ZeroParam,     ::ProbTime, ::TimeDelta) =  0.0
