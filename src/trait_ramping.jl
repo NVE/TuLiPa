@@ -190,24 +190,14 @@ function setconstants!(p::Prob, trait::TransmissionRamping)
     # Set ramping cap if it does not have to update dynamically
     _must_dynamic_update(trait.rampingcap, h) && return
 
-    if isdurational(trait.rampingcap)
-        dummytime = ConstantTime()
-        # Q: Why not calculate value only once here?
-        # A: Because SequentialHorizon can have two or more sets of (nperiod, duration) pairs
-        for t in 1:T
-            querydelta = gettimedelta(h, t)
-            value = getparamvalue(trait.rampingcap, dummytime, querydelta)
-            setrhsterm!(p, uprampingconid, trait.id, t, value)
-            setrhsterm!(p, downrampingconid, trait.id, t, value)
-        end
-    else
-        dummytime = ConstantTime()
-        dummydelta = MsTimeDelta(Hour(1))
-        value = getparamvalue(trait.rampingcap, dummytime, dummydelta)
-        for t in 1:T
-            setrhsterm!(p, uprampingconid, trait.id, t, value)
-            setrhsterm!(p, downrampingconid, trait.id, t, value)
-        end
+    dummytime = ConstantTime()
+    # Q: Why not calculate value only once here?
+    # A: Because SequentialHorizon can have two or more sets of (nperiod, duration) pairs
+    for t in 1:T
+        querydelta = gettimedelta(h, t)
+        value = getparamvalue(trait.rampingcap, dummytime, querydelta)
+        setrhsterm!(p, uprampingconid, trait.id, t, value)
+        setrhsterm!(p, downrampingconid, trait.id, t, value)
     end
     return
 end
@@ -234,24 +224,14 @@ function setconstants!(p::Prob, trait::HydroRampingWithout)
     # Set ramping cap if it does not have to update dynamically
     _must_dynamic_update(trait.rampingcap, h) && return
 
-    if isdurational(trait.rampingcap) # always durational for productionramping
-        dummytime = ConstantTime()
-        # Q: Why not calculate value only once here?
-        # A: Because SequentialHorizon can have two or more sets of (nperiod, duration) pairs
-        for t in 1:(T-1)
-            querydelta = gettimedelta(h, t)
-            value = getparamvalue(trait.rampingcap, dummytime, querydelta)
-            setrhsterm!(p, uprampingconid, trait.id, t, value)
-            setrhsterm!(p, downrampingconid, trait.id, t, value)
-        end
-    else
-        dummytime = ConstantTime()
-        dummydelta = MsTimeDelta(Hour(1))
-        value = getparamvalue(trait.rampingcap, dummytime, dummydelta)
-        for t in 1:(T-1)
-            setrhsterm!(p, uprampingconid, trait.id, t, value)
-            setrhsterm!(p, downrampingconid, trait.id, t, value)
-        end
+    dummytime = ConstantTime()
+    # Q: Why not calculate value only once here?
+    # A: Because SequentialHorizon can have two or more sets of (nperiod, duration) pairs
+    for t in 1:(T-1)
+        querydelta = gettimedelta(h, t)
+        value = getparamvalue(trait.rampingcap, dummytime, querydelta)
+        setrhsterm!(p, uprampingconid, trait.id, t, value)
+        setrhsterm!(p, downrampingconid, trait.id, t, value)
     end
     return
 end
@@ -291,24 +271,14 @@ function setconstants!(p::Prob, trait::HydroRamping)
     # Set ramping cap if it does not have to update dynamically
     _must_dynamic_update(trait.rampingcap, h) && return
 
-    if isdurational(trait.rampingcap) # always durational for productionramping
-        dummytime = ConstantTime()
-        # Q: Why not calculate value only once here?
-        # A: Because SequentialHorizon can have two or more sets of (nperiod, duration) pairs
-        for t in 1:T
-            querydelta = gettimedelta(h, t)
-            value = getparamvalue(trait.rampingcap, dummytime, querydelta)
-            setrhsterm!(p, uprampingconid, trait.id, t, value)
-            setrhsterm!(p, downrampingconid, trait.id, t, value)
-        end
-    else
-        dummytime = ConstantTime()
-        dummydelta = MsTimeDelta(Hour(1))
-        value = getparamvalue(trait.rampingcap, dummytime, dummydelta)
-        for t in 1:T
-            setrhsterm!(p, uprampingconid, trait.id, t, value)
-            setrhsterm!(p, downrampingconid, trait.id, t, value)
-        end
+    dummytime = ConstantTime()
+    # Q: Why not calculate value only once here?
+    # A: Because SequentialHorizon can have two or more sets of (nperiod, duration) pairs
+    for t in 1:T
+        querydelta = gettimedelta(h, t)
+        value = getparamvalue(trait.rampingcap, dummytime, querydelta)
+        setrhsterm!(p, uprampingconid, trait.id, t, value)
+        setrhsterm!(p, downrampingconid, trait.id, t, value)
     end
     return
 end
