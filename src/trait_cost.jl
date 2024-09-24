@@ -121,7 +121,11 @@ function update!(p::Prob, var::Any, sumcost::SumCost, start::ProbTime)
         if ok && (sumcost.isupdated[t] == false)
             value = getobjcoeff(p, var.id, future_t)
             setobjcoeff!(p, var.id, t, value)
-        else
+        end
+    end
+
+    for t in 1:T
+        if sumcost.isupdated[t] == true
             value = sum(sumcost.values[t, :])
             setobjcoeff!(p, var.id, t, value)
         end

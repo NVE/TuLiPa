@@ -197,7 +197,10 @@ function non_stateful_update(p, horizon, start, var, varid, T, i)
         if ok
             value = getub(p, varid, future_t)
             setub!(p, varid, t, value)
-        else
+        end
+    end
+    for t in 1:T
+        if mustupdate(horizon, t)
             _update_ub(p, horizon, start, var, varid, t, i)
         end
     end
