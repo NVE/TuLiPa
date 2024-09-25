@@ -167,7 +167,8 @@ end
 
 function setconstants!(p::Prob, var::ElasticDemand)
     balanceid = getid(var.balance)
-    T = getnumperiods(gethorizon(var.balance))
+    horizon = gethorizon(var.balance)
+    T = getnumperiods(horizon)
     for i in 1:var.N
         varid = create_segment_id(var, i)
         for t in 1:T
@@ -176,7 +177,31 @@ function setconstants!(p::Prob, var::ElasticDemand)
             setlb!(p, varid, t, 0.0)
         end
     end
+
+    if !_must_dynamic_update(var.firm_demand, horizon)
+        dummytime = ConstantTime()
+        for i in 1:var.N
+            varid = create_segment_id(var, i)
+            for t in 1:T
+                querydelta = gettimedelta(horizon, t)
+                value = getparamvalue(var.firm_demand, dummytime, querydelta)
+                setub!(p, varid, t, value * var.segment_capacities[i])
+            end
+        end  
+    end
  end
+
+ function update!(p::Prob, var::ElasticDemand, start::ProbTime)
+    horizon = gethorizon(var.balance)
+    if _must_dynamic_update(var.firm_demand, horizon)
+        T = getnumperiods(horizon)
+        update_func = isstateful(var.firm_demand) ? stateful_update : non_stateful_update
+        for i in 1:var.N
+            varid = create_segment_id(var, i)
+            update_func(p, horizon, start, var, varid, T, i)
+        end
+    end
+end
 
 function _update_ub(p, horizon, start, var, varid, t, i)
     querystart = getstarttime(horizon, t, start)
@@ -203,16 +228,6 @@ function non_stateful_update(p, horizon, start, var, varid, T, i)
         if mustupdate(horizon, t)
             _update_ub(p, horizon, start, var, varid, t, i)
         end
-    end
-end
-
-function update!(p::Prob, var::ElasticDemand, start::ProbTime)
-    horizon = gethorizon(var.balance)
-    T = getnumperiods(horizon)
-    update_func = isstateful(var.firm_demand) ? stateful_update : non_stateful_update
-    for i in 1:var.N
-        varid = create_segment_id(var, i)
-        update_func(p, horizon, start, var, varid, T, i)
     end
 end
 
