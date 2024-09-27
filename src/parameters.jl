@@ -197,13 +197,14 @@ iszero(param::InConversionLossParam) = iszero(param.conversion)
 iszero(param::OutConversionLossParam) = iszero(param.conversion)
 iszero(param::TransmissionLossRHSParam) = iszero(param.capacity)
 iszero(param::UMMSeriesParam) = false
+iszero(param::StatefulParam) = false
 
 isone(param::FlipSignParam) = false
 isone(param::ZeroParam) = false
 isone(param::PlusOneParam) = true
 isone(param::MinusOneParam) = false
 isone(param::ConstantParam) = param.value == 1
-isone(param::TwoProductParam) = iszero(param.param1) && iszero(param.param2)
+isone(param::TwoProductParam) = isone(param.param1) && isone(param.param2)
 isone(param::HourProductParam) = false
 isone(param::FossilMCParam) = false
 isone(param::M3SToMM3Param) = false
@@ -220,6 +221,7 @@ isone(param::InConversionLossParam) = false
 isone(param::OutConversionLossParam) = false
 isone(param::TransmissionLossRHSParam) = false
 isone(param::UMMSeriesParam) = false
+isone(param::StatefulParam) = false
 
 isconstant(::ConstantParam) = true
 isconstant(::ZeroParam) = true
