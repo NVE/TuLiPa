@@ -190,14 +190,10 @@ function get_results!(problem, prices, rhstermvalues, production, consumption, h
                         if isexogen(getbalance(arrow))
                             # TODO: Balance and variable can have different horizons
                             horizon = gethorizon(arrow)
-
                             querystart = getstarttime(horizon, j, t)
                             querydelta = gettimedelta(horizon, j)
                             conversionvalue = getparamvalue(conversion, querystart, querydelta)
-                            if arrow.isingoing
-                                conversionvalue = -conversionvalue
-                            end
-                            production[jj, i] = getvarvalue(problem, segmentid, j)*conversionvalue/timefactor
+                            production[jj, i] += getvarvalue(problem, segmentid, j)*conversionvalue/timefactor
                         else
                             production[jj, i] += getvarvalue(problem, segmentid, j)*abs(getconcoeff(problem, plantbalances[i], segmentid, j, j))/timefactor
                         end
