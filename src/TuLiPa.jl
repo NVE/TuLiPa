@@ -38,6 +38,7 @@ include("trait_arrow.jl")
 include("trait_rhsterm.jl")
 include("trait_commodity.jl")
 include("trait_metadata.jl")
+include("trait_flow_based_constraints.jl")
 
 # Parameters for model objects and traits (Lowlevel)
 include("parameters.jl")

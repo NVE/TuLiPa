@@ -139,10 +139,16 @@ function test_all_includeelement_methods()
     test_includeSimpleStartUpCost!()
     test_includeElasticDemand!()
     test_includeVectorPrice!()
+	test_includeFlowBased!()
 end
 
 function _setup_common_variables() 
     return (ElementKey("", "", ""), Dict(), Dict())
+end
+
+function test_includeFlowBased!()
+	# TODO:
+    register_tested_methods(includeBaseFlowBased!, 1)
 end
 
 function test_includeVectorTimeIndex!()
