@@ -101,7 +101,7 @@ struct PrognosisSeriesParam{L <: TimeVector, P <: TimeVector, Prog <: TimeVector
     prognosis::Prog
     confidence::C
 
-    function PrognosisSeriesParam(level, profile, prognosis, confidencesteps) # TODO: Add interface for confidencevector
+    function PrognosisSeriesParam(level, profile, prognosis, confidencesteps::Int) # TODO: Add interface for confidencevector
         index = Vector{DateTime}(undef, confidencesteps+1)
         values = Vector{Float64}(undef, confidencesteps+1)
         confidencedelta = last(prognosis.index) - first(prognosis.index)
@@ -116,6 +116,10 @@ struct PrognosisSeriesParam{L <: TimeVector, P <: TimeVector, Prog <: TimeVector
 
     function PrognosisSeriesParam(level, profile, prognosis) 
         confidence = ConstantTimeVector(1.0)
+        new{typeof(level),typeof(profile),typeof(prognosis),typeof(confidence)}(level, profile, prognosis, confidence)
+    end
+
+    function PrognosisSeriesParam(level, profile, prognosis, confidence::TimeVector) 
         new{typeof(level),typeof(profile),typeof(prognosis),typeof(confidence)}(level, profile, prognosis, confidence)
     end
 end
@@ -377,6 +381,17 @@ function _prognosislogic(param::PrognosisSeriesParam, datatime::DateTime, scenar
     return profile
 end
 
+function getparamvalue(param::PrognosisSeriesParam, start::ProbTime, d::TimeDelta)
+    confidence = getweightedaverage(param.confidence, start.datatime, d)
+    last_prognosis_time = last(param.prognosis.index)
+    
+    profile = _prognosislogic(param, start.datatime, start.scenariotime, d, confidence, last_prognosis_time)
+
+    level = getweightedaverage(param.level, start.datatime, d)
+    value = level * profile
+    return value
+end
+
 function getparamvalue(param::PrognosisSeriesParam, start::PrognosisTime, d::TimeDelta)
     confidence = getweightedaverage(param.confidence, start.prognosisdatatime, d)
     last_prognosis_time = last(param.prognosis.index)
@@ -481,6 +496,27 @@ function getparamvalue(param::MWToGWhSeriesParam, start::Union{PhaseinTwoTime,Ph
     return mw * hours / 1e3
 end
 
+function getparamvalue(param::PrognosisSeriesParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime}, d::TimeDelta)
+    confidence = getweightedaverage(param.confidence, start.datatime, d)
+    last_prognosis_time = last(param.prognosis.index)
+    
+    phasein = getweightedaverage(start.phaseinvector, start.scenariotime1, d)
+    local profile::Float64
+    if phasein == 0.0
+        profile = _prognosislogic(param, start.datatime, start.scenariotime1, d, confidence, last_prognosis_time)
+    elseif phasein == 1.0
+        # TODO?: Also possible to phase in datatime: datatime_new = start.datatime + start.scenariotime2 - start.scenariotime1
+        profile = _prognosislogic(param, start.datatime, start.scenariotime2, d, confidence, last_prognosis_time)
+    else
+        profile1 = _prognosislogic(param, start.datatime, start.scenariotime1, d, confidence, last_prognosis_time)
+        profile2 = _prognosislogic(param, start.datatime, start.scenariotime2, d, confidence, last_prognosis_time)
+        profile = profile1*(1-phasein) + profile2*phasein
+    end
+
+    level = getweightedaverage(param.level, start.datatime, d)
+    value = level * profile
+    return value
+end
 
 function getparamvalue(param::PrognosisSeriesParam, start::PhaseinPrognosisTime, d::TimeDelta)
     confidence = getweightedaverage(param.confidence, start.prognosisdatatime, d)
