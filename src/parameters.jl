@@ -124,6 +124,20 @@ struct PrognosisSeriesParam{L <: TimeVector, P <: TimeVector, Prog <: TimeVector
     end
 end
 
+struct DynamicPrognosisSeriesParam{L <: TimeVector, P <: TimeVector, Prog <: TimeVector, C <: TimeVector} <: Param
+    level::L
+    profile::P
+    prognosis::Prog
+    confidence::C
+
+    function DynamicPrognosisSeriesParam(level, profile, prognosis, confidence::TimeVector) 
+        new{typeof(level),typeof(profile),typeof(prognosis),typeof(confidence)}(level, profile, prognosis, confidence)
+    end
+end
+
+getconfidencedatatime(::PrognosisSeriesParam, t::ProbTime) = t.prognosisdatatime
+getconfidencedatatime(::DynamicPrognosisSeriesParam, t::ProbTime) = t.datatime
+
 struct UMMSeriesParam{L<:TimeVector,U<:TimeVector,P<:TimeVector} <: Param
     level::L
     ummprofile::U
@@ -195,6 +209,7 @@ iszero(param::CostPerMWToGWhParam) = false
 iszero(param::MeanSeriesParam) = false
 iszero(param::MeanSeriesIgnorePhaseinParam) = false
 iszero(param::PrognosisSeriesParam) = false
+iszero(param::DynamicPrognosisSeriesParam) = false
 iszero(param::ExogenCostParam) = iszero(param.price) && iszero(param.conversion)
 iszero(param::ExogenIncomeParam) = iszero(param.price) && iszero(param.conversion)
 iszero(param::InConversionLossParam) = iszero(param.conversion)
@@ -219,6 +234,7 @@ isone(param::CostPerMWToGWhParam) = false
 isone(param::MeanSeriesParam) = false
 isone(param::MeanSeriesIgnorePhaseinParam) = false
 isone(param::PrognosisSeriesParam) = false
+isone(param::DynamicPrognosisSeriesParam) = false
 isone(param::ExogenCostParam) = false
 isone(param::ExogenIncomeParam) = false
 isone(param::InConversionLossParam) = false
@@ -253,6 +269,7 @@ isdurational(param::CostPerMWToGWhParam) = true
 isdurational(param::MeanSeriesParam) = false
 isdurational(param::MeanSeriesIgnorePhaseinParam) = false
 isdurational(param::PrognosisSeriesParam) = false
+isdurational(param::DynamicPrognosisSeriesParam) = false
 isdurational(param::ExogenCostParam) = isdurational(param.price) || isdurational(param.conversion) || isdurational(param.loss)
 isdurational(param::ExogenIncomeParam) = isdurational(param.price) || isdurational(param.conversion) || isdurational(param.loss)
 isdurational(param::InConversionLossParam) = isdurational(param.conversion) || isdurational(param.loss)
@@ -358,7 +375,7 @@ function getparamvalue(param::CostPerMWToGWhParam, start::ProbTime, d::TimeDelta
     return cost / hours * 1e3
 end
 
-function _prognosislogic(param::PrognosisSeriesParam, datatime::DateTime, scenariotime::DateTime, d::TimeDelta, confidence::Float64, last_prognosis_time::DateTime)
+function _prognosislogic(param::Union{PrognosisSeriesParam, DynamicPrognosisSeriesParam}, datatime::DateTime, scenariotime::DateTime, d::TimeDelta, confidence::Float64, last_prognosis_time::DateTime)
     if (confidence == 0.0) || (datatime > last_prognosis_time) # Only use profile
         profile = getweightedaverage(param.profile, scenariotime, d)
     elseif (confidence == 1.0) && (datatime + getduration(d) <= last_prognosis_time) # Only use prognosis
@@ -381,19 +398,9 @@ function _prognosislogic(param::PrognosisSeriesParam, datatime::DateTime, scenar
     return profile
 end
 
-function getparamvalue(param::PrognosisSeriesParam, start::ProbTime, d::TimeDelta)
-    confidence = getweightedaverage(param.confidence, start.datatime, d)
-    last_prognosis_time = last(param.prognosis.index)
-    
-    profile = _prognosislogic(param, start.datatime, start.scenariotime, d, confidence, last_prognosis_time)
-
-    level = getweightedaverage(param.level, start.datatime, d)
-    value = level * profile
-    return value
-end
-
-function getparamvalue(param::PrognosisSeriesParam, start::PrognosisTime, d::TimeDelta)
-    confidence = getweightedaverage(param.confidence, start.prognosisdatatime, d)
+function getparamvalue(param::Union{PrognosisSeriesParam, DynamicPrognosisSeriesParam}, start::ProbTime, d::TimeDelta)
+    datatime_confidence = getconfidencedatatime(param, start)
+    confidence = getweightedaverage(param.confidence, datatime_confidence, d)
     last_prognosis_time = last(param.prognosis.index)
     
     profile = _prognosislogic(param, start.datatime, start.scenariotime, d, confidence, last_prognosis_time)
@@ -496,30 +503,9 @@ function getparamvalue(param::MWToGWhSeriesParam, start::Union{PhaseinTwoTime,Ph
     return mw * hours / 1e3
 end
 
-function getparamvalue(param::PrognosisSeriesParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime}, d::TimeDelta)
-    confidence = getweightedaverage(param.confidence, start.datatime, d)
-    last_prognosis_time = last(param.prognosis.index)
-    
-    phasein = getweightedaverage(start.phaseinvector, start.scenariotime1, d)
-    local profile::Float64
-    if phasein == 0.0
-        profile = _prognosislogic(param, start.datatime, start.scenariotime1, d, confidence, last_prognosis_time)
-    elseif phasein == 1.0
-        # TODO?: Also possible to phase in datatime: datatime_new = start.datatime + start.scenariotime2 - start.scenariotime1
-        profile = _prognosislogic(param, start.datatime, start.scenariotime2, d, confidence, last_prognosis_time)
-    else
-        profile1 = _prognosislogic(param, start.datatime, start.scenariotime1, d, confidence, last_prognosis_time)
-        profile2 = _prognosislogic(param, start.datatime, start.scenariotime2, d, confidence, last_prognosis_time)
-        profile = profile1*(1-phasein) + profile2*phasein
-    end
-
-    level = getweightedaverage(param.level, start.datatime, d)
-    value = level * profile
-    return value
-end
-
-function getparamvalue(param::PrognosisSeriesParam, start::PhaseinPrognosisTime, d::TimeDelta)
-    confidence = getweightedaverage(param.confidence, start.prognosisdatatime, d)
+function getparamvalue(param::Union{PrognosisSeriesParam, DynamicPrognosisSeriesParam}, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime,PhaseinPrognosisTime}, d::TimeDelta)
+    datatime_confidence = getconfidencedatatime(param, start)
+    confidence = getweightedaverage(param.confidence, datatime_confidence, d)
     last_prognosis_time = last(param.prognosis.index)
     
     phasein = getweightedaverage(start.phaseinvector, start.scenariotime1, d)
