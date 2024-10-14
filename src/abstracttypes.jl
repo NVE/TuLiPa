@@ -562,3 +562,11 @@ abstract type Offset end
 #    getreserveprice(prob, demand, t)
 
 abstract type Demand end
+
+# ---- FlowBased -------------------
+# 
+# TODO
+# 
+# Interface:
+
+abstract type FlowBased end

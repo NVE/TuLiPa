@@ -1,5 +1,5 @@
 using DataFrames, Statistics, Dates, CSV
-using TuLiPa
+#using TuLiPa
 
 # DataElements for a Thermal power plant
 function addrhsthermal!(elements, name, balance; 
