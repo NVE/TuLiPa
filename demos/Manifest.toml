@@ -2,7 +2,7 @@
 
 julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "01d15c08aa6765ac607f6a0ffd1e3d16a71c722c"
+project_hash = "88ad87739f4c8331e4b9eb29ac995c5ef3c47414"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra", "Requires"]
@@ -533,14 +533,6 @@ version = "1.17.0"
 
     [deps.JuMP.weakdeps]
     DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
-
-[[deps.JulES]]
-deps = ["Clustering", "DataFrames", "Dates", "Distributed", "DistributedArrays", "JSON", "PrecompileTools", "Statistics", "TuLiPa"]
-git-tree-sha1 = "a7205ba7bc89edff39ff7311f28f2ca63d7caee5"
-repo-rev = "master"
-repo-url = "https://github.com/NVE/JulES.git"
-uuid = "05c5cb9d-dcc3-436a-b9c7-df36424a75d6"
-version = "0.1.0"
 
 [[deps.JuliaInterpreter]]
 deps = ["CodeTracking", "InteractiveUtils", "Random", "UUIDs"]
