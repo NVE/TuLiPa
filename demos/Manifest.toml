@@ -1193,11 +1193,11 @@ weakdeps = ["Random", "Test"]
 
 [[deps.TuLiPa]]
 deps = ["CSV", "Clustering", "DataFrames", "Dates", "HiGHS", "Interpolations", "JSON", "JuMP", "PrecompileTools", "Random", "Statistics", "Test"]
-git-tree-sha1 = "69cc399be4ece75c4b37ada4f58949e01f08e915"
-repo-rev = "redesign_JulES"
+git-tree-sha1 = "d7cd80509ff107c7f5a0b7791fea0eb8f0279a1e"
+repo-rev = "master"
 repo-url = "https://github.com/NVE/TuLiPa.git"
 uuid = "970f5c25-cd7d-4f04-b50d-7a4fe2af6639"
-version = "0.1.0"
+version = "0.4.0"
 
 [[deps.URIs]]
 git-tree-sha1 = "67db6cc7b3821e19ebe75791a9dd19c9b1188f2b"
