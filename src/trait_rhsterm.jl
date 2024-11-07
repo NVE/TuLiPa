@@ -26,6 +26,7 @@ end
 # --------- Interface functions ------------
 getid(rhsterm::BaseRHSTerm) = rhsterm.id
 isconstant(rhsterm::BaseRHSTerm) = isconstant(rhsterm.param)
+isstateful(rhsterm::BaseRHSTerm) = isstateful(rhsterm.param)
 getparamvalue(rhsterm::BaseRHSTerm, t::ProbTime, d::TimeDelta) = getparamvalue(rhsterm.param, t, d)
 
 # Represents positive or negative contribution to the Balance

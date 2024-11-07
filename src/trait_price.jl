@@ -12,11 +12,25 @@ mutable struct BasePrice <: Price
     end
 end
 
+mutable struct VectorPrice <: Price
+    values::Vector{Float64}
+end
+
 # --------- Interface functions ------------
 isconstant(price::BasePrice) = isconstant(price.param)
+isconstant(price::VectorPrice) = false
+
 iszero(price::BasePrice) = iszero(price.param)
+iszero(price::VectorPrice) = false
+
 isdurational(price::BasePrice) = false
-getparamvalue(price::BasePrice, t::ProbTime, d::TimeDelta) = getparamvalue(price.param, t, d)
+isdurational(price::VectorPrice) = false
+
+isstateful(cost::BasePrice) = isstateful(cost.param)
+isstateful(cost::VectorPrice) = true
+
+getparamvalue(price::BasePrice, t::ProbTime, d::TimeDelta; ix=0) = getparamvalue(price.param, t, d)
+getparamvalue(price::VectorPrice, t::ProbTime, d::TimeDelta; ix=0) = price.values[ix]
 
 # ------ Include dataelements -------
 function includeBasePrice!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
@@ -32,5 +46,16 @@ function includeBasePrice!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dic
     lowlevel[getobjkey(elkey)] = BasePrice(param)
     return (true, deps)
 end
+function includeVectorPrice!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
+    checkkey(lowlevel, elkey)
+
+    deps = Id[]
+
+    values = getdictvalue(value, "Vector", Vector{Float64}, elkey)
+
+    lowlevel[getobjkey(elkey)] = VectorPrice(values)
+    return (true, deps)
+end
 
 INCLUDEELEMENT[TypeKey(PRICE_CONCEPT, "BasePrice")] = includeBasePrice!
+INCLUDEELEMENT[TypeKey(PRICE_CONCEPT, "VectorPrice")] = includeVectorPrice!

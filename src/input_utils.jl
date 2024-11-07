@@ -61,6 +61,7 @@ const CAPACITY_CONCEPT = "Capacity"
 const PRICE_CONCEPT = "Price"
 const CONVERSION_CONCEPT = "Conversion"
 const LOSS_CONCEPT = "Loss"
+const DEMAND_CONCEPT = "Demand"
 
 # ---- Functions to parse input files containing data elements ----
 
@@ -103,8 +104,15 @@ function getelement(concept, concrete, instance, pairs...; path="")
         elseif concrete == "ReservoirCurve" && ((k == "Res") || (k == "Head"))
             v = v |> Vector{Float64}
             ~all(isfinite, v) && error("Nonfinite values in type $concrete with name $instance")
-        end
+        end        
         d[k] = v
+    end
+    # added to support relative paths in dataset
+    if concrete in ["TwoStateBucketIfm", "TwoStateNeuralODEIfm"] && d["ModelParams"] isa String
+        d["ModelParams"] = joinpath(path, d["ModelParams"])
+    end
+    if concrete == "TwoStateNeuralODEIfm" && d["Moments"] isa String
+        d["Moments"] = joinpath(path, d["Moments"])
     end
     return DataElement(concept, concrete, instance, d)
 end

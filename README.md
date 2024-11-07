@@ -62,9 +62,11 @@ The framework supports having state variables and setting them with boundary con
 - demos/Demo 4 - Deterministic hydro :heavy_check_mark:
 - demos/Demo 5 - Two-stage stochastic hydro :heavy_check_mark:
 - demos/Demo 6 - Two-stage stochastic hydro with Benders decomposition :heavy_check_mark:
-- demos/Demo 8 - Solar & Battery subsystem simulation w Benders :heavy_check_mark:
-- demos/Demo 9 - Hydro simulation w head dependence and scenario modelling :heavy_check_mark:
 - [JulES, an energy market simulation model that uses TuLiPa as building blocks](https://github.com/NVE/JulES/)
+  - JulES/demos/Demo JulES as a solar with battery model :heavy_check_mark:
+  - JulES/demos/Demo JulES as a single watercourse model :heavy_check_mark:
+  - JulES/demos/Demo JulES as a long-term series simulation model
+  - JulES/demos/Demo JulES as a medium-term parallel prognosis model
 
 ### Setup
 *  Install julia version 1.9.2:

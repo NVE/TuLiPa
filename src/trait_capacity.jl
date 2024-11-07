@@ -103,21 +103,8 @@ function update!(p::Prob, var::Any, capacity::PositiveCapacity, start::ProbTime)
 
     varid = getid(var)
 
-    for t in 1:T
-        (future_t, ok) = mayshiftfrom(horizon, t)
-        if ok
-            if capacity.isupper
-                value = getub(p, varid, future_t)
-                setub!(p, varid, t, value)
-            else
-                value = getlb(p, varid, future_t)
-                setlb!(p, varid, t, value)
-            end
-        end
-    end
-
-    for t in 1:T
-        if mustupdate(horizon, t)
+    if isstateful(capacity)
+        for t in 1:T
             querystart = getstarttime(horizon, t, start)
             querydelta = gettimedelta(horizon, t)
             value = getparamvalue(capacity, querystart, querydelta)
@@ -125,6 +112,31 @@ function update!(p::Prob, var::Any, capacity::PositiveCapacity, start::ProbTime)
                 setub!(p, varid, t, value)
             else
                 setlb!(p, varid, t, value)
+            end
+        end
+    else
+        for t in 1:T
+            (future_t, ok) = mayshiftfrom(horizon, t)
+            if ok
+                if capacity.isupper
+                    value = getub(p, varid, future_t)
+                    setub!(p, varid, t, value)
+                else
+                    value = getlb(p, varid, future_t)
+                    setlb!(p, varid, t, value)
+                end
+            end
+        end
+        for t in 1:T
+            if mustupdate(horizon, t)
+                querystart = getstarttime(horizon, t, start)
+                querydelta = gettimedelta(horizon, t)
+                value = getparamvalue(capacity, querystart, querydelta)
+                if capacity.isupper
+                    setub!(p, varid, t, value)
+                else
+                    setlb!(p, varid, t, value)
+                end
             end
         end
     end

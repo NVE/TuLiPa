@@ -26,6 +26,9 @@ struct TwoProductParam{P1 <: Any, P2 <: Any} <: Param
     param1::P1
     param2::P2
 end
+struct HourProductParam{P <: Param} <: Param
+    param::P
+end
 struct StatefulParam{P <: Param} <: Param
     param::P
 end
@@ -98,7 +101,7 @@ struct PrognosisSeriesParam{L <: TimeVector, P <: TimeVector, Prog <: TimeVector
     prognosis::Prog
     confidence::C
 
-    function PrognosisSeriesParam(level, profile, prognosis, confidencesteps) # TODO: Add interface for confidencevector
+    function PrognosisSeriesParam(level, profile, prognosis, confidencesteps::Int) # TODO: Add interface for confidencevector
         index = Vector{DateTime}(undef, confidencesteps+1)
         values = Vector{Float64}(undef, confidencesteps+1)
         confidencedelta = last(prognosis.index) - first(prognosis.index)
@@ -110,7 +113,30 @@ struct PrognosisSeriesParam{L <: TimeVector, P <: TimeVector, Prog <: TimeVector
 
         new{typeof(level),typeof(profile),typeof(prognosis),typeof(confidence)}(level, profile, prognosis, confidence)
     end
+
+    function PrognosisSeriesParam(level, profile, prognosis) 
+        confidence = ConstantTimeVector(1.0)
+        new{typeof(level),typeof(profile),typeof(prognosis),typeof(confidence)}(level, profile, prognosis, confidence)
+    end
+
+    function PrognosisSeriesParam(level, profile, prognosis, confidence::TimeVector) 
+        new{typeof(level),typeof(profile),typeof(prognosis),typeof(confidence)}(level, profile, prognosis, confidence)
+    end
 end
+
+struct DynamicPrognosisSeriesParam{L <: TimeVector, P <: TimeVector, Prog <: TimeVector, C <: TimeVector} <: Param
+    level::L
+    profile::P
+    prognosis::Prog
+    confidence::C
+
+    function DynamicPrognosisSeriesParam(level, profile, prognosis, confidence::TimeVector) 
+        new{typeof(level),typeof(profile),typeof(prognosis),typeof(confidence)}(level, profile, prognosis, confidence)
+    end
+end
+
+getconfidencedatatime(::PrognosisSeriesParam, t::ProbTime) = t.prognosisdatatime
+getconfidencedatatime(::DynamicPrognosisSeriesParam, t::ProbTime) = t.datatime
 
 struct UMMSeriesParam{L<:TimeVector,U<:TimeVector,P<:TimeVector} <: Param
     level::L
@@ -173,6 +199,7 @@ iszero(param::PlusOneParam) = false
 iszero(param::MinusOneParam) = false
 iszero(param::ConstantParam) = param.value == 0
 iszero(param::TwoProductParam) = iszero(param.param1) && iszero(param.param2)
+iszero(param::HourProductParam) = false
 iszero(param::FossilMCParam) = false
 iszero(param::M3SToMM3Param) = false
 iszero(param::M3SToMM3SeriesParam) = false
@@ -182,19 +209,22 @@ iszero(param::CostPerMWToGWhParam) = false
 iszero(param::MeanSeriesParam) = false
 iszero(param::MeanSeriesIgnorePhaseinParam) = false
 iszero(param::PrognosisSeriesParam) = false
+iszero(param::DynamicPrognosisSeriesParam) = false
 iszero(param::ExogenCostParam) = iszero(param.price) && iszero(param.conversion)
 iszero(param::ExogenIncomeParam) = iszero(param.price) && iszero(param.conversion)
 iszero(param::InConversionLossParam) = iszero(param.conversion)
 iszero(param::OutConversionLossParam) = iszero(param.conversion)
 iszero(param::TransmissionLossRHSParam) = iszero(param.capacity)
 iszero(param::UMMSeriesParam) = false
+iszero(param::StatefulParam) = false
 
 isone(param::FlipSignParam) = false
 isone(param::ZeroParam) = false
 isone(param::PlusOneParam) = true
 isone(param::MinusOneParam) = false
 isone(param::ConstantParam) = param.value == 1
-isone(param::TwoProductParam) = iszero(param.param1) && iszero(param.param2)
+isone(param::TwoProductParam) = isone(param.param1) && isone(param.param2)
+isone(param::HourProductParam) = false
 isone(param::FossilMCParam) = false
 isone(param::M3SToMM3Param) = false
 isone(param::M3SToMM3SeriesParam) = false
@@ -204,17 +234,20 @@ isone(param::CostPerMWToGWhParam) = false
 isone(param::MeanSeriesParam) = false
 isone(param::MeanSeriesIgnorePhaseinParam) = false
 isone(param::PrognosisSeriesParam) = false
+isone(param::DynamicPrognosisSeriesParam) = false
 isone(param::ExogenCostParam) = false
 isone(param::ExogenIncomeParam) = false
 isone(param::InConversionLossParam) = false
 isone(param::OutConversionLossParam) = false
 isone(param::TransmissionLossRHSParam) = false
 isone(param::UMMSeriesParam) = false
+isone(param::StatefulParam) = false
 
 isconstant(::ConstantParam) = true
 isconstant(::ZeroParam) = true
 isconstant(::PlusOneParam) = true
 isconstant(::MinusOneParam) = true
+isconstant(param::HourProductParam) = false
 isconstant(param::TransmissionLossRHSParam) = isconstant(param.capacity)
 
 # Is the parameter value dependant on the temporal aspect?
@@ -225,7 +258,8 @@ isdurational(param::ZeroParam) = false
 isdurational(param::PlusOneParam) = false
 isdurational(param::MinusOneParam) = false
 isdurational(param::ConstantParam) = false
-isdurational(param::TwoProductParam) = isdurational(param.param1) && isdurational(param.param2)
+isdurational(param::TwoProductParam) = isdurational(param.param1) || isdurational(param.param2)
+isdurational(param::HourProductParam) = true
 isdurational(param::FossilMCParam) = false
 isdurational(param::M3SToMM3Param) = true
 isdurational(param::M3SToMM3SeriesParam) = true
@@ -235,32 +269,47 @@ isdurational(param::CostPerMWToGWhParam) = true
 isdurational(param::MeanSeriesParam) = false
 isdurational(param::MeanSeriesIgnorePhaseinParam) = false
 isdurational(param::PrognosisSeriesParam) = false
-isdurational(param::ExogenCostParam) = isdurational(param.price) && isdurational(param.conversion) && isdurational(param.loss)
-isdurational(param::ExogenIncomeParam) = isdurational(param.price) && isdurational(param.conversion) && isdurational(param.loss)
-isdurational(param::InConversionLossParam) = isdurational(param.conversion) && isdurational(param.loss)
-isdurational(param::OutConversionLossParam) = isdurational(param.conversion) && isdurational(param.loss)
+isdurational(param::DynamicPrognosisSeriesParam) = false
+isdurational(param::ExogenCostParam) = isdurational(param.price) || isdurational(param.conversion) || isdurational(param.loss)
+isdurational(param::ExogenIncomeParam) = isdurational(param.price) || isdurational(param.conversion) || isdurational(param.loss)
+isdurational(param::InConversionLossParam) = isdurational(param.conversion) || isdurational(param.loss)
+isdurational(param::OutConversionLossParam) = isdurational(param.conversion) || isdurational(param.loss)
 isdurational(param::TransmissionLossRHSParam) = isdurational(param.capacity)
 isdurational(param::UMMSeriesParam) = false
 isdurational(param::StatefulParam) = isdurational(param.param)
 
 # Will the parameter change at every new state? Means that the parameter value will have to be recalculated at every time step.
 isstateful(param::StatefulParam) = true
+isstateful(param::TwoProductParam) = isstateful(param.param1) || isstateful(param.param2)
 
 # Calculate the parameter value for a given parameter, problem time and timedelta duration
 getparamvalue(::ZeroParam,     ::ProbTime, ::TimeDelta) =  0.0
 getparamvalue(::PlusOneParam,  ::ProbTime, ::TimeDelta) =  1.0
 getparamvalue(::MinusOneParam, ::ProbTime, ::TimeDelta) = -1.0
-getparamvalue(param::ConstantParam, ::ProbTime, ::TimeDelta) = param.value
+getparamvalue(param::ConstantParam, ::ProbTime, ::TimeDelta; ix=0) = param.value
 getparamvalue(param::StatefulParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.param, start, d)
-getparamvalue(param::TwoProductParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.param1, start, d)*getparamvalue(param.param2, start, d)
 getparamvalue(param::FlipSignParam, start::ProbTime, d::TimeDelta) = -getparamvalue(param.param, start, d)
-getparamvalue(param::ExogenIncomeParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.price, start, d)*getparamvalue(param.conversion, start, d)*(1-getparamvalue(param.loss, start, d))
-getparamvalue(param::ExogenCostParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.price, start, d)*getparamvalue(param.conversion, start, d)/(1-getparamvalue(param.loss, start, d))
+getparamvalue(param::ExogenIncomeParam, start::ProbTime, d::TimeDelta; ix=0) = getparamvalue(param.price, start, d; ix)*getparamvalue(param.conversion, start, d)*(1-getparamvalue(param.loss, start, d))
+getparamvalue(param::ExogenCostParam, start::ProbTime, d::TimeDelta; ix=0) = getparamvalue(param.price, start, d; ix)*getparamvalue(param.conversion, start, d)/(1-getparamvalue(param.loss, start, d))
 getparamvalue(param::InConversionLossParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.conversion, start, d)*(1-getparamvalue(param.loss, start, d))
 getparamvalue(param::OutConversionLossParam, start::ProbTime, d::TimeDelta) = getparamvalue(param.conversion, start, d)/(1-getparamvalue(param.loss, start, d))
 getparamvalue(param::TransmissionLossRHSParam, t::ProbTime, d::TimeDelta) = getparamvalue(param.capacity, t, d)*param.loss*param.utilisation
 
-function getparamvalue(param::FossilMCParam, start::ProbTime, d::TimeDelta)
+function getparamvalue(param::TwoProductParam, start::ProbTime, d::TimeDelta; ix=0)
+    if ix == 0
+        return getparamvalue(param.param1, start, d)*getparamvalue(param.param2, start, d)
+    else
+        return getparamvalue(param.param1, start, d; ix)*getparamvalue(param.param2, start, d)
+    end
+end
+
+function getparamvalue(param::HourProductParam, start::ProbTime, d::TimeDelta)
+    hours = float(getduration(d).value / 3600 / 1000)
+    value = getparamvalue(param.param, start, d)
+    return value*hours
+end
+
+function getparamvalue(param::FossilMCParam, start::ProbTime, d::TimeDelta; ix=0)
     datatime = getdatatime(start)
     scenariotime = getscenariotime(start)
 
@@ -326,7 +375,7 @@ function getparamvalue(param::CostPerMWToGWhParam, start::ProbTime, d::TimeDelta
     return cost / hours * 1e3
 end
 
-function _prognosislogic(param::PrognosisSeriesParam, datatime::DateTime, scenariotime::DateTime, d::TimeDelta, confidence::Float64, last_prognosis_time::DateTime)
+function _prognosislogic(param::Union{PrognosisSeriesParam, DynamicPrognosisSeriesParam}, datatime::DateTime, scenariotime::DateTime, d::TimeDelta, confidence::Float64, last_prognosis_time::DateTime)
     if (confidence == 0.0) || (datatime > last_prognosis_time) # Only use profile
         profile = getweightedaverage(param.profile, scenariotime, d)
     elseif (confidence == 1.0) && (datatime + getduration(d) <= last_prognosis_time) # Only use prognosis
@@ -349,8 +398,9 @@ function _prognosislogic(param::PrognosisSeriesParam, datatime::DateTime, scenar
     return profile
 end
 
-function getparamvalue(param::PrognosisSeriesParam, start::PrognosisTime, d::TimeDelta)
-    confidence = getweightedaverage(param.confidence, start.prognosisdatatime, d)
+function getparamvalue(param::Union{PrognosisSeriesParam, DynamicPrognosisSeriesParam}, start::ProbTime, d::TimeDelta)
+    datatime_confidence = getconfidencedatatime(param, start)
+    confidence = getweightedaverage(param.confidence, datatime_confidence, d)
     last_prognosis_time = last(param.prognosis.index)
     
     profile = _prognosislogic(param, start.datatime, start.scenariotime, d, confidence, last_prognosis_time)
@@ -361,7 +411,7 @@ function getparamvalue(param::PrognosisSeriesParam, start::PrognosisTime, d::Tim
 end
 
 # Calculate the parameter value if the start value is a PhaseinTwoTime
-function getparamvalue(param::FossilMCParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime}, d::TimeDelta)
+function getparamvalue(param::FossilMCParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime,PhaseinPrognosisTime}, d::TimeDelta)
     fl = getweightedaverage(param.fuellevel,   start.datatime, d)
     cf = getweightedaverage(param.co2factor,   start.datatime, d)
     cl = getweightedaverage(param.co2level,    start.datatime, d)
@@ -391,7 +441,7 @@ function getparamvalue(param::FossilMCParam, start::Union{PhaseinTwoTime,Phasein
     return (fl * fp + cf * cl * cp) / ef + vo
 end
 
-function getparamvalue(param::MeanSeriesParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime}, d::TimeDelta)
+function getparamvalue(param::MeanSeriesParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime,PhaseinPrognosisTime}, d::TimeDelta)
     phasein = getweightedaverage(start.phaseinvector, start.scenariotime1, d)
 
     local profile::Float64
@@ -411,7 +461,7 @@ function getparamvalue(param::MeanSeriesParam, start::Union{PhaseinTwoTime,Phase
     return value
 end
 
-function getparamvalue(param::M3SToMM3SeriesParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime}, d::TimeDelta)
+function getparamvalue(param::M3SToMM3SeriesParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime,PhaseinPrognosisTime}, d::TimeDelta)
     phasein = getweightedaverage(start.phaseinvector, start.scenariotime1, d)
 
     local profile::Float64
@@ -432,7 +482,7 @@ function getparamvalue(param::M3SToMM3SeriesParam, start::Union{PhaseinTwoTime,P
     return m3s * seconds / 1e6
 end
 
-function getparamvalue(param::MWToGWhSeriesParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime}, d::TimeDelta)
+function getparamvalue(param::MWToGWhSeriesParam, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime,PhaseinPrognosisTime}, d::TimeDelta)
     phasein = getweightedaverage(start.phaseinvector, start.scenariotime1, d)
 
     local profile::Float64
@@ -453,10 +503,9 @@ function getparamvalue(param::MWToGWhSeriesParam, start::Union{PhaseinTwoTime,Ph
     return mw * hours / 1e3
 end
 
-
-function getparamvalue(param::PrognosisSeriesParam, start::PhaseinPrognosisTime, d::TimeDelta)
-
-    confidence = getweightedaverage(start.phaseinvector, start.prognosisdatatime, d)
+function getparamvalue(param::Union{PrognosisSeriesParam, DynamicPrognosisSeriesParam}, start::Union{PhaseinTwoTime,PhaseinFixedDataTwoTime,PhaseinPrognosisTime}, d::TimeDelta)
+    datatime_confidence = getconfidencedatatime(param, start)
+    confidence = getweightedaverage(param.confidence, datatime_confidence, d)
     last_prognosis_time = last(param.prognosis.index)
     
     phasein = getweightedaverage(start.phaseinvector, start.scenariotime1, d)
@@ -511,7 +560,7 @@ function _umm_logic(param, start, d, new_profile_start, new_start_delta)
     return ummprofile
 end
 
-function getparamvalue(param::UMMSeriesParam, start::Union{PhaseinTwoTime}, d::TimeDelta)
+function getparamvalue(param::UMMSeriesParam, start::Union{PhaseinTwoTime,PhaseinPrognosisTime}, d::TimeDelta)
     datatime = getdatatime(start)
     scenariotime = getscenariotime(start)
     new_profile_start, new_start_delta = _get_new_profile_start(param, datatime, scenariotime)
@@ -665,12 +714,14 @@ function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, 
 end
 
 function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::M3SToMM3SeriesParam)
+    checkkey(lowlevel, elkey)
     deps = Id[]
     lowlevel[getobjkey(elkey)] = value
     return (true, deps)
 end
 
 function includeM3SToMM3SeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)
+    checkkey(lowlevel, elkey)    
     deps = Id[]
     level = ConstantTimeVector(value)
     profile = ConstantTimeVector(one(typeof(value)))
@@ -704,12 +755,14 @@ function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, v
 end
 
 function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MWToGWhSeriesParam)
+    checkkey(lowlevel, elkey)    
     deps = Id[]
     lowlevel[getobjkey(elkey)] = value
     return (true, deps)
 end
 
 function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)
+    checkkey(lowlevel, elkey)    
     deps = Id[]
     level = ConstantTimeVector(value)
     profile = ConstantTimeVector(one(typeof(value)))
@@ -718,6 +771,8 @@ function includeMWToGWhSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, v
 end
 
 function includeMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
+    checkkey(lowlevel, elkey)
+
     (id, param, ok) = getdictparamvalue(lowlevel, elkey, value)
 
     deps = Id[]
@@ -764,17 +819,18 @@ function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, 
         lowlevel[getobjkey(elkey)] = CostPerMWToGWhParam(MeanSeriesParam(level, profile))
         return (true, deps)
     end
-
-    return (false, deps)
+    error("Missing expected Dict-keys for $elkey")
 end
 
 function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::CostPerMWToGWhParam)
+    checkkey(lowlevel, elkey)    
     deps = Id[]
     lowlevel[getobjkey(elkey)] = value
     return (true, deps)
 end
 
 function includeCostPerMWToGWhParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)
+    checkkey(lowlevel, elkey)    
     deps = Id[]
     lowlevel[getobjkey(elkey)] = CostPerMWToGWhParam(ConstantParam(value))
     return (true, deps)
@@ -806,6 +862,7 @@ function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, valu
 end
 
 function includeMeanSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MeanSeriesParam)
+    checkkey(lowlevel, elkey)    
     deps = Id[]
     lowlevel[getobjkey(elkey)] = value
     return (true, deps)
@@ -837,6 +894,7 @@ function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::Ele
 end
 
 function includeMeanSeriesIgnorePhaseinParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::MeanSeriesIgnorePhaseinParam)
+    checkkey(lowlevel, elkey)    
     deps = Id[]
     lowlevel[getobjkey(elkey)] = value
     return (true, deps)
@@ -875,6 +933,8 @@ function includePrognosisSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey,
 end
 
 function includeUMMSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
+    checkkey(lowlevel, elkey)
+
     level = getdictvalue(value, "Level", TIMEVECTORPARSETYPES, elkey)
     ummprofile = getdictvalue(value, "Ummprofile", TIMEVECTORPARSETYPES, elkey)
     profile = getdictvalue(value, "Profile", TIMEVECTORPARSETYPES, elkey)

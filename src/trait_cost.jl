@@ -45,14 +45,21 @@ function isstateful(cost::SumCost)
     return false
 end
 
+function _must_dynamic_update(cost::SumCost)
+    for term in cost.terms
+        _must_dynamic_update(term) && return true
+    end
+    return false
+end
+
 getid(cost::CostTerm) = cost.id
 
 # Indicate positive or negative contribution to objective function
 isingoing(cost::CostTerm) = cost.isingoing
 isingoing(cost::SumCost) = true
 
-function getparamvalue(cost::CostTerm, t::ProbTime, d::TimeDelta)
-    value = getparamvalue(cost.param, t, d)
+function getparamvalue(cost::CostTerm, t::ProbTime, d::TimeDelta; ix=0)
+    value = getparamvalue(cost.param, t, d, ix=ix)
     if !isingoing(cost)
         return -value
     else
@@ -70,17 +77,17 @@ end
 function setconstants!(p::Prob, var::Any, sumcost::SumCost)
     T = getnumperiods(var.horizon)
     for (col, term) in enumerate(sumcost.terms)
-        if isconstant(term) && !isstateful(term)
+        if !_must_dynamic_update(term)
             dummytime = ConstantTime()
             for t in 1:T
                 querydelta = gettimedelta(var.horizon, t)
-                sumcost.values[t, col] = getparamvalue(term, dummytime, querydelta)::Float64
+                sumcost.values[t, col] = getparamvalue(term, dummytime, querydelta, ix=t)::Float64
                 sumcost.isupdated[t] = true
             end
         end
     end
 
-    if isconstant(sumcost) && !isstateful(sumcost)
+    if !_must_dynamic_update(sumcost)
         for t in 1:T
             if sumcost.isupdated[t] == true
                 value = sum(sumcost.values[t, :])
@@ -91,16 +98,18 @@ function setconstants!(p::Prob, var::Any, sumcost::SumCost)
 end
 
 function update!(p::Prob, var::Any, sumcost::SumCost, start::ProbTime)
+    _must_dynamic_update(sumcost) || return
+    isstateful_sumcost = isstateful(sumcost) # if any stateful costerm we cannot use mayshiftfrom
     fill!(sumcost.isupdated, false)
 
     T = getnumperiods(var.horizon)
     for (col, term) in enumerate(sumcost.terms)
-        if !isconstant(term) || isstateful(term)
+        if _must_dynamic_update(term)
             for t in 1:T
-                if mustupdate(var.horizon, t)
+                if mustupdate(var.horizon, t) || isstateful_sumcost
                     querystart = getstarttime(var.horizon, t, start)
                     querydelta = gettimedelta(var.horizon, t)
-                    sumcost.values[t, col] = getparamvalue(term, querystart, querydelta)::Float64
+                    sumcost.values[t, col] = getparamvalue(term, querystart, querydelta, ix=t)::Float64
                     sumcost.isupdated[t] = true
                 end
             end
@@ -110,13 +119,9 @@ function update!(p::Prob, var::Any, sumcost::SumCost, start::ProbTime)
     for t in 1:T
         (future_t, ok) = mayshiftfrom(var.horizon, t)
         if ok && (sumcost.isupdated[t] == false)
-            value = getobjcoeff!(p, var.id, future_t)
+            value = getobjcoeff(p, var.id, future_t)
             setobjcoeff!(p, var.id, t, value)
-        end
-    end
-
-    for t in 1:T
-        if sumcost.isupdated[t] == true
+        elseif sumcost.isupdated[t] == true
             value = sum(sumcost.values[t, :])
             setobjcoeff!(p, var.id, t, value)
         end

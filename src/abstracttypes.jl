@@ -546,7 +546,27 @@ abstract type TimeVector end
 
 abstract type Offset end
 
+# ---- Demand -------------------
+# 
+# For example Elastic demand when the demand should change with price
+# 
+# Interface:
+#    build!(prob, demand)
+#    setconstants!(prob, demand)
+#    update!(prob, demand, start)
+#    assemble!(demand)
+#    getid(demand)
+#    getparent(demand)
+#    getbalance(demand)
+#    getdemand(prob, demand, t)
+#    getreserveprice(prob, demand, t)
 
+abstract type Demand end
 
+# ---- FlowBased -------------------
+# 
+# TODO
+# 
+# Interface:
 
-
+abstract type FlowBased end

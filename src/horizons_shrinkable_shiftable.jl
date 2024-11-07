@@ -96,6 +96,9 @@ struct ShrinkableHorizon{H <: Horizon, S} <: Horizon
         makeshrinkable!(subhorizon, handler)
         new{typeof(subhorizon), typeof(handler)}(subhorizon, handler)
     end
+    function ShrinkableHorizon(subhorizon::Horizon, handler)
+        new{typeof(subhorizon), typeof(handler)}(subhorizon, handler)
+    end
 end
 
 struct ShiftableHorizon{H <: Horizon, S} <: Horizon
@@ -124,6 +127,7 @@ getstarttime(h::_SHorizons, t::Int, start::ProbTime) = getstarttime(h.subhorizon
 getsubperiods(coarse::_SHorizons, fine::Horizon, coarse_t::Int) = getsubperiods(coarse.subhorizon, fine, coarse_t)
 getsubperiods(coarse::Horizon, fine::_SHorizons, coarse_t::Int) = getsubperiods(coarse, fine.subhorizon, coarse_t)
 getsubperiods(coarse::_SHorizons, fine::_SHorizons, coarse_t::Int) = getsubperiods(coarse.subhorizon,fine.subhorizon,coarse_t)
+getparentindex(h::_SHorizons, t::Int) = getparentindex(h.subhorizon, t)
 
 hasconstantdurations(::ShrinkableHorizon) = false
 hasconstantdurations(h::ShiftableHorizon) = hasconstantdurations(h.subhorizon)
@@ -132,6 +136,29 @@ build!(h::_SHorizons, p::Prob) = build!(h.subhorizon, h.handler, p)
 update!(h::_SHorizons, start::ProbTime) = update!(h.subhorizon, h.handler, start)
 mayshiftfrom(h::_SHorizons, t::Int) = mayshiftfrom(h.subhorizon, h.handler, t)
 mustupdate(h::_SHorizons, t::Int) = mustupdate(h.subhorizon, h.handler, t)
+
+function getlightweightself(h::_SHorizons)
+    return ShrinkableHorizon(
+        getlightweightself(h.subhorizon),
+        h.handler)
+end
+function getchanges(h::ShrinkableHorizon)
+    changes = getchanges(h, h.subhorizon)
+    changes["updates_shift"] = h.handler.shrinker.updates_shift
+    changes["updates_must"] = h.handler.shrinker.updates_must
+    return changes
+end
+getchanges(::ShrinkableHorizon, subhorizon::SequentialHorizon) = Dict{String, Any}("periods" => subhorizon.periods.data)
+getchanges(::ShrinkableHorizon, subhorizon::AdaptiveHorizon) = getchanges(subhorizon)
+function setchanges!(h::ShrinkableHorizon, changes::Dict)
+    h.handler.shrinker.updates_shift .= changes["updates_shift"]
+    h.handler.shrinker.updates_must .= changes["updates_must"]
+    setchanges!(h, h.subhorizon, changes)
+    return
+end
+setchanges!(::ShrinkableHorizon, subhorizon::SequentialHorizon, changes::Dict) = subhorizon.periods.data .= changes["periods"]
+setchanges!(::ShrinkableHorizon, subhorizon::AdaptiveHorizon, changes::Dict) = setchanges!(subhorizon, changes)
+# TODO: ShiftableHorizon - only difference h.handler.shifter
 
 # Implementation of SequentialPeriodsShrinker and SequentialPeriodsShifter
 # and extention of SequentialPeriods with new functions. These will be used

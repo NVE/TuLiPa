@@ -285,6 +285,26 @@ mutable struct SimpleSingleCuts <: BoundaryCondition
     function SimpleSingleCuts()
         return new(Id("Empty","Empty"), [], [], [], [], [], [], [], 0, 0, 0, 0.0)
     end
+    function SimpleSingleCuts(id, objects, statevars, probabilities, constants, scenconstants, slopes, scenslopes, maxcuts, numcuts, cutix, lower_bound)
+        return new(id, objects, statevars, probabilities, constants, scenconstants, slopes, scenslopes, maxcuts, numcuts, cutix, lower_bound)
+    end
+end
+
+function getlightweightself(x::SimpleSingleCuts)
+    return SimpleSingleCuts(
+        x.id,
+        [],
+        x.statevars,
+        [],
+        x.constants,
+        [],
+        x.slopes,
+        [],
+        x.maxcuts,
+        -1,
+        -1,
+        x.lower_bound
+    )
 end
 
 getid(x::SimpleSingleCuts) = x.id
@@ -307,13 +327,13 @@ getcutix(x::SimpleSingleCuts) = x.cutix
 
 getparent(::SimpleSingleCuts) = nothing
 
-function getfuturecostvarid(x::SimpleSingleCuts)
-    return Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "FutureCost"))
-end
+getfuturecostvarid(x::SimpleSingleCuts) = Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "FutureCost"))
 
-function getcutconid(x::SimpleSingleCuts)
-    return Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "CutConstraint"))
-end
+getcutconid(x::SimpleSingleCuts) = Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "CutConstraint"))
+
+# Needed to use setrhsterm! in setconstants!
+# TODO: Extend Prob interface to allow setrhs!(prob, conid, value) instead of setrhsterms!
+getcutconstantid(x::SimpleSingleCuts) = Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "CutConstant"))
 
 function build!(p::Prob, x::SimpleSingleCuts)
     # add single future cost variable
@@ -324,10 +344,6 @@ function build!(p::Prob, x::SimpleSingleCuts)
 
     return
 end
-
-# Needed to use setrhsterm! in setconstants!
-# TODO: Extend Prob interface to allow setrhs!(prob, conid, value) instead of setrhsterms!
-getcutconstantid(x::SimpleSingleCuts) = Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "CutConstant"))
 
 function setconstants!(p::Prob, x::SimpleSingleCuts)
     # set future cost variable objective function
@@ -350,7 +366,7 @@ function setconstants!(p::Prob, x::SimpleSingleCuts)
 end
 
 # Variation where a cut from another problem is used (different state variables due to different time resolutions)
-function setconstants!(p::Prob, x::SimpleSingleCuts, varendperiod::Dict)
+function setconstants!(p::Prob, x::SimpleSingleCuts, varendperiod::Dict) # TODO: Not needed in JulES redesign
     # set future cost variable objective function
     setobjcoeff!(p, getfuturecostvarid(x), 1, 1.0)
 
@@ -391,7 +407,7 @@ function getscencutparameters!(p::Prob, x::SimpleSingleCuts, states::Dict{StateV
 end
 
 # Updates cutparameters for new cut
-function updatecutparameters!(p::Prob, x::SimpleSingleCuts)
+function updatecutparameters!(p::Prob, x::SimpleSingleCuts) # TODO: Remove Prob as input
     # get cutix    
     cutix = getcutix(x) + 1
     if cutix > getmaxcuts(x)
@@ -423,6 +439,13 @@ function updatecutparameters!(p::Prob, x::SimpleSingleCuts)
 end
 
 # Updates all cuts in problem
+function updatecuts!(p::Prob)
+    for obj in getobjects(prob)
+        updatecuts!(p, obj)
+    end
+    return
+end
+
 function updatecuts!(p::Prob, x::SimpleSingleCuts)
     # get internal storage for cut parameters
     avgconstants = getconstants(x)
@@ -440,7 +463,7 @@ function updatecuts!(p::Prob, x::SimpleSingleCuts)
 end
 
 # Variation where a cut from another problem is used (different state variables due to different time resolutions)
-function updatecuts!(p::Prob, x::SimpleSingleCuts, varendperiod::Dict)
+function updatecuts!(p::Prob, x::SimpleSingleCuts, varendperiod::Dict) # TODO: Not needed in JulES redesign
     # get internal storage for cut parameters
     avgconstants = getconstants(x)
     avgslopes = getslopes(x)
@@ -495,6 +518,23 @@ function clearcuts!(p::Prob, x::SimpleSingleCuts)
             setconcoeff!(p, getcutconid(x), varid, cutix, varix, -avgslopes[cutix, j])
         end
     end
+    return
+end
+
+function clearcuts!(x::SimpleSingleCuts)
+    # get internal storage for cut parameters
+    avgconstants = getconstants(x)
+    avgslopes = getslopes(x)
+    
+    # inactivate cut parameters in internal storage
+    fill!(avgconstants, x.lower_bound)
+    fill!(x.scenconstants, x.lower_bound)
+    fill!(avgslopes, 0.0)
+    fill!(x.scenslopes, 0.0)
+
+    # set counters to 0
+    setnumcuts!(x, 0)
+    setcutix!(x, 0)
     return
 end
 

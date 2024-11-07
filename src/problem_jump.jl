@@ -147,7 +147,30 @@ function solve!(p::JuMP_Prob)
         optimize!(p.model)
     end
 
-    @assert termination_status(p.model) == MOI.OPTIMAL
+    if termination_status(p.model) != MOI.OPTIMAL
+        status = termination_status(p.model)
+        modelid = rand(1:999)
+        try
+            threadid = myid()
+            write_to_file(p.model, "failed_model_status_$(status)_thread_$(threadid)_$(modelid).mps")
+        catch
+            write_to_file(p.model, "failed_model_status_$(status)_$(modelid).mps")
+        end
+
+        # https://jump.dev/JuMP.jl/stable/tutorials/getting_started/debugging/#Debugging-an-infeasible-model
+        if termination_status(p.model) == MOI.INFEASIBLE
+            map = TuLiPa.JuMP.relax_with_penalty!(p.model)
+            TuLiPa.JuMP.optimize!(p.model)
+            for (con, penalty) in map
+                violation = TuLiPa.JuMP.value(penalty)
+                if violation > 0
+                    println("Constraint `$(TuLiPa.JuMP.name(con))` is violated by $violation")
+                end
+            end
+        end
+        error("Model $(modelid) failed with status $(status)")
+    end
+
     return
 end
 
@@ -195,6 +218,10 @@ getvarvalue(p::JuMP_Prob, id::Id, i::Int) = value(p.model[Symbol(getname(id))][i
 getcondual(p::JuMP_Prob, id::Id, i::Int)  = dual(p.model[Symbol(getname(id))][i])
 
 getfixvardual(p::JuMP_Prob, varid::Id, varix::Int)  = dual(FixRef(p.model[Symbol(getname(varid))][varix]))
+
+# TODO: Implement
+setwarmstart!(::JuMP_Prob, ::Bool) = nothing
+# getwarmstart setwarmstart!(p::JuMP_Prob
 
 # ------- Fix state variables for boundary conditions ------------
 

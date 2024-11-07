@@ -38,15 +38,22 @@ include("trait_arrow.jl")
 include("trait_rhsterm.jl")
 include("trait_commodity.jl")
 include("trait_metadata.jl")
+include("trait_flow_based_constraints.jl")
 
 # Parameters for model objects and traits (Lowlevel)
 include("parameters.jl")
 
 # Toplevel model objects
+
+
+
 include("obj_balance.jl")
 include("obj_flow.jl")
 include("obj_storage.jl")
 include("obj_aggsupplycurve.jl")
+
+include("obj_elastic_demand.jl")
+
 include("trait_softbound.jl")
 include("trait_startupcost.jl")
 include("trait_ramping.jl")

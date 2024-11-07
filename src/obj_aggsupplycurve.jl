@@ -17,7 +17,9 @@ in the clustering and should be deleted if this type is used
 This method assumes that the Flows are connected to an endogenous Balance.
 If the Balance is exogenous the "simple" Flows are excessive
 
-SegmentedArrow (production represented by efficiency segments) not supported. TODO?
+TODO:
+SegmentedArrow (production represented by efficiency segments) not supported
+Does not support stateful parameters for cost, lb and ub
 """
 
 # ---- Concrete types ----------------

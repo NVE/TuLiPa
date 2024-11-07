@@ -133,6 +133,15 @@ function order_result_objects(resultobjects, includeexogenprice=true)
                 push!(plantbalances,getid(balance))
             end
         end
+        if obj isa ElasticDemand
+            instance = getinstancename(getid(obj))
+            concept = getconceptname(getid(obj))
+            balance = getbalance(obj)
+            for c in 1:obj.N
+                push!(demands, create_segment_id(obj, c))
+                push!(demandbalances, getid(balance))
+            end
+        end
     end
     return powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages
 end
@@ -181,19 +190,10 @@ function get_results!(problem, prices, rhstermvalues, production, consumption, h
                         if isexogen(getbalance(arrow))
                             # TODO: Balance and variable can have different horizons
                             horizon = gethorizon(arrow)
-
-                            if isone(conversion)
-                                param = getprice(arrow.balance)
-                            else
-                                param = TwoProductParam(getprice(arrow.balance), conversion)
-                            end
                             querystart = getstarttime(horizon, j, t)
                             querydelta = gettimedelta(horizon, j)
-                            conversionvalue = getparamvalue(param, querystart, querydelta)
-                            if arrow.isingoing
-                                conversionvalue = -conversionvalue
-                            end
-                            production[jj, i] = getvarvalue(problem, segmentid, j)*conversionvalue/timefactor
+                            conversionvalue = getparamvalue(conversion, querystart, querydelta)
+                            production[jj, i] += getvarvalue(problem, segmentid, j)*conversionvalue/timefactor
                         else
                             production[jj, i] += getvarvalue(problem, segmentid, j)*abs(getconcoeff(problem, plantbalances[i], segmentid, j, j))/timefactor
                         end
@@ -219,16 +219,20 @@ function get_results!(problem, prices, rhstermvalues, production, consumption, h
 
         # Collect demand of all demands
         for i in 1:length(demands) # TODO: Balance and variable can have different horizons
-            if isexogen(modelobjects[demandbalances[i]])
-                arrow = demandarrows[demands[i]]
-                horizon = gethorizon(arrow)
-                conversionparam = getcontributionparam(arrow)
-                querytime = getstarttime(horizon, j, t)
-                querydelta = gettimedelta(horizon, j)
-                conversionvalue = getparamvalue(conversionparam, querytime, querydelta)
-                consumption[jj, i] = getvarvalue(problem, demands[i], j)*conversionvalue/timefactor
+            if getconceptname(demands[i]) != DEMAND_CONCEPT
+                if isexogen(modelobjects[demandbalances[i]])
+                    arrow = demandarrows[demands[i]]
+                    horizon = gethorizon(arrow)
+                    conversionparam = getcontributionparam(arrow)
+                    querytime = getstarttime(horizon, j, t)
+                    querydelta = gettimedelta(horizon, j)
+                    conversionvalue = getparamvalue(conversionparam, querytime, querydelta)
+                    consumption[jj, i] = getvarvalue(problem, demands[i], j)*conversionvalue/timefactor
+                else
+                    consumption[jj, i] = getvarvalue(problem, demands[i], j)*abs(getconcoeff(problem, demandbalances[i], demands[i], j, j))/timefactor
+                end
             else
-                consumption[jj, i] = getvarvalue(problem, demands[i], j)*abs(getconcoeff(problem, demandbalances[i], demands[i], j, j))/timefactor
+                consumption[jj, i] = getvarvalue(problem, demands[i], j)/timefactor
             end
         end
         
@@ -318,4 +322,96 @@ function update_results(problem, oldprices, oldrhstermvalues, oldproduction, old
     batterylevels = vcat(oldbatterylevels, batterylevels)
     
     return prices, rhstermvalues, production, consumption, hydrolevels, batterylevels
+end
+
+# Collect other results (variables and rhsterms given commodity and instancenames) ------------------------------------------------------------------
+function order_result_objects_other(resultobjects, resultinfo::Dict)
+    otherobjects = Dict()
+    otherbalances = Dict()
+
+    for key in keys(resultinfo)
+        otherobjects[key] = Dict()
+        otherbalances[key] = Dict()
+
+        for commodity in keys(resultinfo[key])
+            otherobjects[key][commodity] = []
+            otherbalances[key][commodity] = []
+        end
+
+        if key == "RHSTerms"
+            for obj in resultobjects
+                if obj isa Balance
+                    commodity = getinstancename(getid(getcommodity(obj)))
+                    if commodity in keys(resultinfo[key])
+                        for rhsterm in getrhsterms(obj)
+                            rhsterminstancename = getinstancename(getid(rhsterm))
+                            if any(key -> occursin(key, rhsterminstancename) , resultinfo[key][commodity])
+                                push!(otherobjects[key][commodity],getid(rhsterm))
+                                push!(otherbalances[key][commodity],getid(obj))
+                            end
+                        end
+                    end
+                end
+            end
+        elseif key == "Vars"
+            for obj in resultobjects
+                if obj isa BaseFlow
+                    for commodity in keys(resultinfo[key])
+                        varinstancename = getinstancename(getid(obj))
+                        if any(key -> occursin(key, varinstancename) , resultinfo[key][commodity])
+                            push!(otherobjects[key][commodity],getid(obj))
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return otherobjects, otherbalances
+end
+
+function get_horizon_commodity(modelobjects::Dict, commodity)
+    for (id, obj) in modelobjects
+        if obj isa Balance
+            if getinstancename(getid(getcommodity(obj))) == commodity
+                return gethorizon(obj)
+            end
+        end
+    end
+end
+function get_horizon_commodity(modelobjects::Vector, commodity)
+    for obj in modelobjects
+        if obj isa Balance
+            if getinstancename(getid(getcommodity(obj))) == commodity
+                return gethorizon(obj)
+            end
+        end
+    end
+end
+
+function get_results!(stepnr, problem, otherobjects, otherbalances, othervalues, modelobjects, t)
+    for key in keys(otherobjects)
+        for commodity in keys(otherobjects[key])
+            horizon = get_horizon_commodity(modelobjects, commodity)
+            timefactor = getduration(gettimedelta(horizon, 1))/Millisecond(3600000)
+            numperiods = getnumperiods(horizon)
+            periodrange = Int(numperiods*(stepnr-1)+1):Int(numperiods*(stepnr))
+
+            if key == "RHSTerms"
+                rhsterms = otherobjects[key][commodity]
+                balances = otherbalances[key][commodity]
+                for i in eachindex(rhsterms)
+                    for (j,jj) in enumerate(periodrange)
+                        othervalues[key][commodity][jj, i] = getrhsterm(problem, balances[i], rhsterms[i], j)/timefactor
+                    end
+                end
+            elseif key == "Vars"
+                vars = otherobjects[key][commodity]
+                for i in eachindex(vars)
+                    for (j,jj) in enumerate(periodrange)
+                        othervalues[key][commodity][jj, i] = getvarvalue(problem, vars[i], j)/timefactor
+                    end
+                end
+            end
+        end
+    end
 end

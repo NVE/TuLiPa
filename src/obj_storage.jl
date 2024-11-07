@@ -90,7 +90,7 @@ function setconstants!(p::Prob, var::BaseStorage)
         setconcoeff!(p, getid(getbalance(var)), getid(var), t, t, 1.0)
     end
 
-    if (!isnothing(var.loss) && isconstant(var.loss)) || isnothing(var.loss)
+    if (!isnothing(var.loss) && !_must_dynamic_update(var.loss)) || isnothing(var.loss)
         if !isnothing(var.loss)
             dummytime = ConstantTime()
             dummydelta = MsTimeDelta(Hour(1))
@@ -116,7 +116,7 @@ function update!(p::Prob, var::BaseStorage, start::ProbTime)
 
     !isnothing(var.sumcost) && update!(p, var, var.sumcost, start)
 
-    if !isnothing(var.loss) && !isconstant(var.loss)
+    if !isnothing(var.loss) && _must_dynamic_update(var.loss)
         horizon = gethorizon(var)
 
         querystart = getstarttime(horizon, 1, start)

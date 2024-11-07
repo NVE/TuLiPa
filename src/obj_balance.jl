@@ -86,7 +86,7 @@ function setconstants!(p::Prob, balance::BaseBalance)
     hasconstantdurations(balance.horizon) || return
 
     for rhsterm in balance.rhsterms
-        if isconstant(rhsterm)
+        if !_must_dynamic_update(rhsterm)
             dummytime = ConstantTime()
             for t in 1:getnumperiods(balance.horizon)
                 querystart = getstarttime(balance.horizon, t, dummytime)
@@ -105,28 +105,38 @@ end
 # Set RHSterms if they have to be updated dynamically
 function update!(p::Prob, balance::BaseBalance, start::ProbTime)
     for rhsterm in balance.rhsterms
-        if !isconstant(rhsterm) || !hasconstantdurations(balance.horizon)
-            for t in 1:getnumperiods(balance.horizon)
-                (future_t, ok) = mayshiftfrom(balance.horizon, t)
-                if ok
-                    value = getrhsterm(p, balance.id, getid(rhsterm), future_t)
-                    setrhsterm!(p, balance.id, getid(rhsterm), t, value)
+        if _must_dynamic_update(rhsterm) || !hasconstantdurations(balance.horizon)
+            if isstateful(rhsterm)
+                for t in 1:getnumperiods(balance.horizon)
+                    _update_rhsterm(p, balance, start, rhsterm, t)
                 end
-            end
-            for t in 1:getnumperiods(balance.horizon)
-                if mustupdate(balance.horizon, t)
-                    querystart = getstarttime(balance.horizon, t, start)
-                    querydelta = gettimedelta(balance.horizon, t)
-                    value = getparamvalue(rhsterm, querystart, querydelta)
-                    if !isingoing(rhsterm)
-                        value = -value
+            else
+                for t in 1:getnumperiods(balance.horizon)
+                    (future_t, ok) = mayshiftfrom(balance.horizon, t)
+                    if ok
+                        value = getrhsterm(p, balance.id, getid(rhsterm), future_t)
+                        setrhsterm!(p, balance.id, getid(rhsterm), t, value)
                     end
-                    setrhsterm!(p, balance.id, getid(rhsterm), t, value)
+                end
+                for t in 1:getnumperiods(balance.horizon)
+                    if mustupdate(balance.horizon, t)
+                        _update_rhsterm(p, balance, start, rhsterm, t)
+                    end
                 end
             end
         end
     end
     return
+end
+
+function _update_rhsterm(p, balance, start, rhsterm, t)
+    querystart = getstarttime(balance.horizon, t, start)
+    querydelta = gettimedelta(balance.horizon, t)
+    value = getparamvalue(rhsterm, querystart, querydelta)
+    if !isingoing(rhsterm)
+        value = -value
+    end
+    setrhsterm!(p, balance.id, getid(rhsterm), t, value)
 end
 
 # Balance types are toplevel objects in dataset_compiler, so we must 

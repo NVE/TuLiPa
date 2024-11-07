@@ -219,10 +219,10 @@ function statedependentprod_init!(problem::Prob, startstorage::Float64, t::ProbT
                 for arrow in getarrows(plant)
                     if getinstancename(getid(getcommodity(getbalance(arrow)))) == "Power"
                         if arrow isa BaseArrow # if standard arrow
-                            arrow.conversion.param = TwoProductParam(arrow.conversion.param, ConstantParam(factor))
+                            arrow.conversion.param = StatefulParam(TwoProductParam(arrow.conversion.param, ConstantParam(factor)))
                         elseif arrow isa SegmentedArrow # if pq-curve, adjust all points
                             for conversion in arrow.conversions
-                                conversion.param = TwoProductParam(conversion.param, ConstantParam(factor))
+                                conversion.param = StatefulParam(TwoProductParam(conversion.param, ConstantParam(factor)))
                             end
                         end
                     end
@@ -276,16 +276,16 @@ function statedependentprod!(problem::Prob, startstates::Dict{String, Float64}; 
                     if getinstancename(getid(getcommodity(getbalance(arrow)))) == "Power"
                         if arrow isa BaseArrow # if standard arrow
                             if init
-                                arrow.conversion.param = TwoProductParam(arrow.conversion.param, ConstantParam(factor))
+                                arrow.conversion.param = StatefulParam(TwoProductParam(arrow.conversion.param, ConstantParam(factor)))
                             else
-                                arrow.conversion.param = TwoProductParam(arrow.conversion.param.param1, ConstantParam(factor))
+                                arrow.conversion.param = StatefulParam(TwoProductParam(arrow.conversion.param.param.param1, ConstantParam(factor)))
                             end
                         elseif arrow isa SegmentedArrow # if pq-curve, adjust all points
                             for conversion in arrow.conversions
                                 if init
-                                    conversion.param = TwoProductParam(conversion.param, ConstantParam(factor))
+                                    conversion.param = StatefulParam(TwoProductParam(conversion.param, ConstantParam(factor)))
                                 else
-                                    conversion.param = TwoProductParam(conversion.param.param1, ConstantParam(factor))
+                                    conversion.param = StatefulParam(TwoProductParam(conversion.param.param.param1, ConstantParam(factor)))
                                 end
                             end
                         end
@@ -335,8 +335,8 @@ function statedependentpump!(problem::Prob, startstates::Dict{String, Float64})
                 energyequivalent = conversion.pumppower/pumpcapacity/3.6
 
                 # Set pump capacity and energy equivalent
-                pump.ub.param = ConstantParam(pumpcapacity)
-                conversion.param = ConstantParam(energyequivalent)
+                pump.ub.param = StatefulParam(M3SToMM3Param(ConstantParam(pumpcapacity)))
+                conversion.param = StatefulParam(ConstantParam(energyequivalent))
             end
         end
         @label exit_pump
@@ -373,40 +373,81 @@ function updateheadlosscosts!(method::ReservoirCurveSlopeMethod, clearing::Prob,
     reffactor = 0.67 
 
     # Assumes all reservoirs in master problems are also in clearing problem
-    for master in masters 
+    for master in masters
         for obj in getobjects(master)
             if obj isa Storage
-                if haskey(obj.metadata, RESERVOIRCURVEKEY) # also implies hydro storage
-                    resid = getid(obj)
-                    balid = getid(getbalance(obj))
-                    T = getnumperiods(gethorizon(obj))
+                if haskey(obj.metadata, RESERVOIRCURVEKEY)
+                    (resid, headlosscost, T) = get_headlosscost_data_obj(method, master, t, dummydelta, reffactor, obj)
 
-                    rescurve = obj.metadata[RESERVOIRCURVEKEY]
-                    resend = getvarvalue(master, resid, T)
-                    resmax = getparamvalue(getub(obj), t, dummydelta)
-                    watervalue = getcondual(master, balid, T)
-
-                    R = resmax * reffactor
-                    H = yvalue(rescurve, R)
-
-                    R1 = resend + resmax*0.01
-                    R0 = resend - resmax*0.01
-
-                    H1 = yvalue(rescurve, R1)
-                    H0 = yvalue(rescurve, R0)
-
-                    dH = (H1 - H0) / H
-                    dR = (R1 - R0) / R
-            
-                    F = dH/dR
-            
-                    headlosscost = watervalue * F
-            
-                    setobjcoeff!(clearing, resid, T, headlosscost)
+                    setobjcoeff!(clearing, resid, T, headlosscost) # TODO: Condition that T is the same in clearing and master
                 end
             end
         end
     end
+end
+
+function updateheadlosscosts!(method::ReservoirCurveSlopeMethod, master::Prob, t::ProbTime)
+    dummydelta = MsTimeDelta(Millisecond(0))
+    reffactor = 0.67 
+
+    buffer = Tuple{Id, Float64, Int}[]
+    for obj in getobjects(master)
+        if obj isa Storage
+            if haskey(obj.metadata, RESERVOIRCURVEKEY)
+                (resid, headlosscost, T) = get_headlosscost_data_obj(method, master, t, dummydelta, reffactor, obj)
+                push!(buffer, (resid, headlosscost, T))
+            end
+        end
+    end
+
+    for (resid, headlosscost, T) in buffer
+        setobjcoeff!(master, resid, T, headlosscost)
+    end
+end
+
+function get_headlosscost_data(method::ReservoirCurveSlopeMethod, master::Prob, t::ProbTime)
+    dummydelta = MsTimeDelta(Millisecond(0))
+    reffactor = 0.67 
+    ret = []
+
+    for obj in getobjects(master)
+        if hasproperty(obj, :metadata)
+            if haskey(obj.metadata, RESERVOIRCURVEKEY) # also implies hydro storage
+                push!(ret, get_headlosscost_data_obj(method, master, t, dummydelta, reffactor, obj))
+            end
+        end
+    end
+
+    return ret
+end
+
+function get_headlosscost_data_obj(method::ReservoirCurveSlopeMethod, master::Prob, t::ProbTime, dummydelta::TimeDelta, reffactor::Float64, obj::Any)
+    resid = getid(obj)
+    balid = getid(getbalance(obj))
+    T = getnumperiods(gethorizon(obj))
+
+    rescurve = obj.metadata[RESERVOIRCURVEKEY]
+    resend = getvarvalue(master, resid, T)
+    resmax = getparamvalue(getub(obj), t, dummydelta)
+    watervalue = getcondual(master, balid, T)
+
+    R = resmax * reffactor
+    H = yvalue(rescurve, R)
+
+    R1 = resend + resmax*0.01
+    R0 = resend - resmax*0.01
+
+    H1 = yvalue(rescurve, R1)
+    H0 = yvalue(rescurve, R0)
+
+    dH = (H1 - H0) / H
+    dR = (R1 - R0) / R
+
+    F = dH/dR
+
+    headlosscost = watervalue * F
+
+    return (resid, headlosscost, T)
 end
 
 function resetheadlosscosts!(problem::Prob)
