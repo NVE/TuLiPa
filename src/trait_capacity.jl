@@ -185,7 +185,7 @@ function includeLowerZeroCapacity!(toplevel::Dict, ::Dict, elkey::ElementKey, va
 
     varname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
     varconcept = getdictvalue(value, WHICHCONCEPT,  String, elkey)
-    varkey = BaseId(varconcept, varname)
+    varkey = Id(varconcept, varname)
     push!(deps, varkey)
     
     haskey(toplevel, varkey) || return (false, deps)
