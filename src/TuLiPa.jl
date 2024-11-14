@@ -44,14 +44,10 @@ include("trait_flow_based_constraints.jl")
 include("parameters.jl")
 
 # Toplevel model objects
-
-
-
 include("obj_balance.jl")
 include("obj_flow.jl")
 include("obj_storage.jl")
 include("obj_aggsupplycurve.jl")
-
 include("obj_elastic_demand.jl")
 
 include("trait_softbound.jl")
