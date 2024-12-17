@@ -1,3 +1,14 @@
+"""
+This object makes it possible to have elastic demand, instead of constant demand this 
+demand can increase or decrease based on the price.
+
+This object takes in a balance, price_elasticity, normal_price, max_price, min_price and threshold. Price_elasticity, 
+normal_price, max_price and min_price is used to create supply and demand curve. The curve is then segmented 
+by optimization, finding the smallest N segments that fits the curve within the given threshold. It will then create 
+segments_capacities and reserve_prices vectors, each price segment can then have its own capacity/upper bound.
+"""
+
+
 struct ElasticDemand{B <: Balance, P <: Param, T <: Real} <: Demand
     id::Id
     balance::B
