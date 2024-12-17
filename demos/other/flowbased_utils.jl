@@ -98,7 +98,7 @@ function round_ptdf_values(df)
     return df
 end
 
-function proc_ptdf_csv(df)
+function proc_ptdf_csv(df, remove_nonexisting_emps)
     df = correct_line_direction(df)
     df = fix_col_names(df)
     
@@ -108,9 +108,11 @@ function proc_ptdf_csv(df)
 
     #df.RAM = df.RAM * 100000 # for testing
 
-    # removes missing instead
-    is_in(x) = x in ["Transm_NORGEMIDT->OSTLAND", "Transm_MOERE->VESTMIDT", "Transm_OSTLAND->SVER-SE3", "Transm_HALLINGDAL->SORLAND"]
-    df = df[is_in.(df.line) .== false, :]
+    if remove_nonexisting_emps
+        # removes the lines that are connected in N490-model, but not connected in EMPS.
+        is_in(x) = x in ["Transm_NORGEMIDT->OSTLAND", "Transm_MOERE->VESTMIDT", "Transm_OSTLAND->SVER-SE3", "Transm_HALLINGDAL->SORLAND"]
+        df = df[is_in.(df.line) .== false, :]
+    end
 
     return df
 end
