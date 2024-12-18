@@ -8,7 +8,7 @@ fix_names = Dict([
 ]
 )
 
-non_value_cols = ["line", "RAM", "border"]
+non_value_cols = ["CnecName", "RAM", "border"]
 
 is_transmission(e) = split(e.instancename, "_")[1] == "Transm"
 #istransmissionvariable(x)
@@ -129,18 +129,18 @@ function _make_flowbased(ptdfs, np_lookup)
     elem = Array{T}([])
     
     for row in eachrow(ptdfs)
-        line = row["line"] # Flow variable used for transfer, i.e AB
+        CNEC = row["CnecName"] # Flow variable used for transfer, i.e AB
         border = row["border"]
                 
-        areas = row[Not(["line", "border", "RAM"])]
+        areas = row[Not(["CnecName", "border", "RAM"])]
         max_cap = row["RAM"]
         ptdfs_names = names(areas)
 
         ptdfs_val = Array(areas)
 
    
-        e = T("FlowBased", "BaseFlowBased", line, Dict(
-                "Flow" => line,
+        e = T("FlowBased", "BaseFlowBased", CNEC, Dict(
+                "Flow" => CNEC,
                 "ptdfs_names" => ptdfs_names,
                 "ptdfs" => ptdfs_val,
                 "max_cap" => max_cap, 
