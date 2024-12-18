@@ -199,7 +199,7 @@ function remove_cap_for_flowbased_transm(elements, df)
     end
 
     transm_names = Set([e.instancename for e in elements if is_transmission(e)])
-    df_lines = Set(df.line)
+    df_lines = Set(df.CnecName)
     in_df = intersect(df_lines, transm_names)
 
     filtered = remove_capacity(elements, in_df)
