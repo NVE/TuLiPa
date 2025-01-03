@@ -31,7 +31,21 @@ function order_result_objects(resultobjects, includeexogenprice=true)
     hydrostorages = []
     batterystorages = []
     
+    flowbased = []
+    
     for obj in resultobjects
+        
+        if obj isa FlowBased
+            if !obj.is_flow
+                id = getid(obj)
+                id_in = Id(id.conceptname, id.instancename * "in")
+                id_out = Id(id.conceptname, id.instancename * "out")
+                push!(flowbased, id_in)
+                push!(flowbased, id_out)
+            else
+                push!(flowbased, getid(obj))
+            end
+        end
         
         # Powerbalances
         if obj isa Balance
@@ -143,17 +157,20 @@ function order_result_objects(resultobjects, includeexogenprice=true)
             end
         end
     end
-    return powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages
+    return flowbased, powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages
 end
 
 # Collect results for given modelobjects
-function get_results!(problem, prices, rhstermvalues, production, consumption, hydrolevels, batterylevels, powerbalances, rhsterms, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages, modelobjects, powerrange, hydrorange, periodduration_power, t)
+function get_results!(problem, prices, flowbased_values, rhstermvalues, production, consumption, hydrolevels, batterylevels, flowbased, powerbalances, rhsterms, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages, modelobjects, powerrange, hydrorange, periodduration_power, t)
         
-    for (j,jj) in enumerate(powerrange)
+    for (j,jj) in enumerate(powerrange)                                                                           
 
         # Timefactor transform results from GWh to GW/h regardless of horizon period durations
         timefactor = periodduration_power/Millisecond(3600000)
 
+        for i in 1:length(flowbased)
+            flowbased_values[jj, i] = -getcondual(problem, flowbased[i], j)                                                                
+        end                                          
         # For powerbalances collect prices and rhsterms (like inelastic demand, wind, solar and RoR)
         for i in 1:length(powerbalances)
             if !isexogen(powerbalances[i])
@@ -255,7 +272,7 @@ end
 # Initialize results objects and collect results
 function init_results(steps::Int, problem::Prob, modelobjects, resultobjects, numperiods_powerhorizon, numperiods_hydrohorizon, periodduration_power, t, includeexogenprice=true)
     
-    powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages = order_result_objects(resultobjects, includeexogenprice)
+    flowbased, powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages = order_result_objects2(resultobjects, includeexogenprice)
     
     # Matrices to store results per time period, scenario and object
     prices = zeros(Int(numperiods_powerhorizon*steps), length(powerbalances))
@@ -264,12 +281,15 @@ function init_results(steps::Int, problem::Prob, modelobjects, resultobjects, nu
     consumption = zeros(Int(numperiods_powerhorizon*steps), length(demands))
     hydrolevels = zeros(Int(numperiods_hydrohorizon*steps), length(hydrostorages))
     batterylevels = zeros(Int(numperiods_powerhorizon*steps), length(batterystorages))
+    
+    flowbased_values = zeros(Int(numperiods_powerhorizon*steps), length(flowbased))
 
     # Collect results
-    get_results!(problem, prices, rhstermvalues, production, consumption, hydrolevels, batterylevels, powerbalances, rhsterms, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages, modelobjects, 1:numperiods_powerhorizon, 1:numperiods_hydrohorizon, periodduration_power, t)
+    get_results!(problem, prices, flowbased_values, rhstermvalues, production, consumption, hydrolevels, batterylevels, flowbased, powerbalances, rhsterms, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages, modelobjects, 1:numperiods_powerhorizon, 1:numperiods_hydrohorizon, periodduration_power, t)
     
-    return prices, rhstermvalues, production, consumption, hydrolevels, batterylevels, powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages
+    return prices, flowbased, flowbased_values, rhstermvalues, production, consumption, hydrolevels, batterylevels, powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages
 end
+
 
 # Append results to existing results (e.g. next time step)
 function update_results!(step, problem, prices, rhstermvalues, production, consumption, hydrolevels, batterylevels, powerbalances, rhsterms, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages, modelobjects, numperiods_powerhorizon, numperiods_hydrohorizon, periodduration_power, t)
