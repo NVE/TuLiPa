@@ -62,6 +62,7 @@ const PRICE_CONCEPT = "Price"
 const CONVERSION_CONCEPT = "Conversion"
 const LOSS_CONCEPT = "Loss"
 const DEMAND_CONCEPT = "Demand"
+const FLOW_BASED_CONCEPT = "FlowBased"
 
 # ---- Functions to parse input files containing data elements ----
 

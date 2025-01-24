@@ -272,7 +272,7 @@ end
 # Initialize results objects and collect results
 function init_results(steps::Int, problem::Prob, modelobjects, resultobjects, numperiods_powerhorizon, numperiods_hydrohorizon, periodduration_power, t, includeexogenprice=true)
     
-    flowbased, powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages = order_result_objects2(resultobjects, includeexogenprice)
+    flowbased, powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages = order_result_objects(resultobjects, includeexogenprice)
     
     # Matrices to store results per time period, scenario and object
     prices = zeros(Int(numperiods_powerhorizon*steps), length(powerbalances))
