@@ -9,12 +9,10 @@ mutable struct BaseFlowBased{T <: Real} <: FlowBased
 	ram::Union{Nothing, Param}
 	ptdfs::Array{T}
 	ptdfs_names::Vector{Id}
-	line_in::Dict{String, Vector{Flow} } # Flow
-	line_out::Dict{String, Vector{Flow} }
+	line_in::Dict{String, Vector{Flow}}
+	line_out::Dict{String, Vector{Flow}}
 	is_flow::Bool
     horizon::Horizon
-
-	updated_test::Any ###
 
 	function BaseFlowBased(
 		id::Id,
@@ -75,13 +73,9 @@ function create_rhs_of_constraints(line_id::Id)
 end
 
 function calc_coeffs(line_id::Id, ptdfs_names::Vector{Id}, ptdfs::Vector{Float64}, var::BaseFlowBased)
-
     coeffs_dict = var.is_flow ? create_rhs_of_constraints(line_id) : Dict()
-
 	for (area, ptdf) in zip(ptdfs_names, ptdfs)
-
 		ptdf == 0 && continue
-
 		for flow_obj in var.line_out[area.instancename] # i.e. (Flow_A_B + Flow_A_C)
 			flow = flow_obj.id
 			ptdf_val = -1 * ptdf # Moved to left hand side of eq so flipped sign
@@ -90,13 +84,7 @@ function calc_coeffs(line_id::Id, ptdfs_names::Vector{Id}, ptdfs::Vector{Float64
 			end
 			coeffs_dict[flow] = ptdf_val
 		end
-
 		for flow_obj in var.line_in[area.instancename]# i.e. (Flow_B_A + Flow_C_A)
-
-			#@assert(flow_obj.arrows[1].isingoing)
-			in_arrow = flow_obj.arrows[1].balance.id.instancename == area.instancename ? flow_obj.arrows[1] : flow_obj.arrows[2]
-			#@assert(!in_arrow.isingoing)
-
 			flow = flow_obj.id
 			ptdf_val = ptdf
 			if flow in keys(coeffs_dict)
@@ -147,37 +135,15 @@ function build!(p::Prob, var::BaseFlowBased)
     end
 end
 
-
-
 function update!(p::Prob, var::BaseFlowBased, start::ProbTime)
-	if !var.updated_test
-		T = getnumperiods(gethorizon(var))
-		if var.is_flow
-			setconcoeff_from_ptdf(p, T, var)
-		else
-			non_flow_setconcoeff_from_ptdf(p, T, start, var, 1,  Id(var.id.conceptname, var.id.instancename * "in"))
-			non_flow_setconcoeff_from_ptdf(p, T, start, var, -1, Id(var.id.conceptname, var.id.instancename * "out"))
-		end
-		var.updated_test = true
+	T = getnumperiods(gethorizon(var))
+	if var.is_flow
+		setconcoeff_from_ptdf(p, T, var)
+	else
+		non_flow_setconcoeff_from_ptdf(p, T, start, var, 1,  Id(var.id.conceptname, var.id.instancename * "in"))
+		non_flow_setconcoeff_from_ptdf(p, T, start, var, -1, Id(var.id.conceptname, var.id.instancename * "out"))
 	end
 end
-
-"""
-#function update!(p::Prob, var::BaseFlowBased, start::ProbTime)
-#	nothing
-#end
-
-function setconstants!(p::Prob, var::BaseFlowBased)
-	T = getnumperiods(gethorizon(var))
-    if var.is_flow
-        setconcoeff_from_ptdf(p, T, var)
-	else
-		dummytime = ConstantTime()
-		non_flow_setconcoeff_from_ptdf(p, T, dummytime, var, 1,  Id(var.id.conceptname, var.id.instancename * "in"))
-		non_flow_setconcoeff_from_ptdf(p, T, dummytime, var, -1, Id(var.id.conceptname, var.id.instancename * "out"))
-    end
-end
-"""
 
 function includeBaseFlowBased!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
 	checkkey(toplevel, elkey)
