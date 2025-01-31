@@ -25,7 +25,7 @@ mutable struct BaseFlowBased{T <: Real} <: FlowBased
 		is_flow::Bool,
         horizon::Horizon
 	) where {T <: Real}
-		new{T}(id, balance, ram, ptdfs, ptdfs_names, line_in, line_out, is_flow, horizon, false) ###
+		new{T}(id, balance, ram, ptdfs, ptdfs_names, line_in, line_out, is_flow, horizon)
 	end
 end
 
