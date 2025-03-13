@@ -576,7 +576,7 @@ function includeOneYearTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, va
     isoyear = getisoyear(first(index))
 
     issameisoyear = isoyear == getisoyear(last(index))
-    issameisoyear || error("More than one year in index for $elkey")
+    issameisoyear || error("More than one year in index for $elkey. First and last indexes: $(first(index)) and $(last(index)) with isoyears $(getisoyear(first(index))) and $(getisoyear(last(index)))")
     
     _isdifferent(index, values) || error("Different length for index and values for $elkey")
 
