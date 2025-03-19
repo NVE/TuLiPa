@@ -322,10 +322,12 @@ function addbattery!(elements, name, powerbalance, storagecap, lossbattery, char
     addflow!(elements, chargename)
     addarrow!(elements, "ChargePowerArrow_" * name, 1, chargename, powerbalance, "Out")
     addarrow!(elements,"ChargeBatteryArrow_" * name, 1-lossbattery, chargename, balancename, "In")
-    addcapacity!(elements, "ChargeCapacity_" * name, "Upper", chargecap, chargename, FLOW_CONCEPT)
+    addparam!(elements, "MWToGWhSeriesParam", "ChargeCapacityParam_" * name, chargecap, 1.0)
+    addcapacity!(elements, "ChargeCapacity_" * name, "Upper", "ChargeCapacityParam_" * name, chargename, FLOW_CONCEPT)
     dischargename = "PlantDischarge_" * name
     addflow!(elements,dischargename)
     addarrow!(elements, "DischargePowerArrow_" * name, 1, dischargename, powerbalance, "In")
     addarrow!(elements,"DischargeBatteryArrow_" * name, 1, dischargename, balancename, "Out")
-    addcapacity!(elements, "DischargeCapacity_" * name, "Upper", chargecap, dischargename, FLOW_CONCEPT)
+    addparam!(elements, "MWToGWhSeriesParam", "DischargeCapacityParam_" * name, chargecap, 1.0)
+    addcapacity!(elements, "DischargeCapacity_" * name, "Upper", "DischargeCapacityParam_" * name, dischargename, FLOW_CONCEPT)
 end
