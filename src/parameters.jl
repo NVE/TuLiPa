@@ -325,7 +325,7 @@ function getparamvalue(param::FossilMCParam, start::ProbTime, d::TimeDelta; ix=0
     return (fl * fp + cf * cl * cp) / ef + vo
 end
 
-function getparamvalue(param::MeanSeriesParam, start::ProbTime, d::TimeDelta)
+function getparamvalue(param::MeanSeriesParam, start::ProbTime, d::TimeDelta; ix=0)
     datatime = getdatatime(start)
     scenariotime = getscenariotime(start)
     level = getweightedaverage(param.level, datatime, d)
