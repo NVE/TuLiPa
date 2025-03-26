@@ -392,7 +392,6 @@ function get_results!(stepnr, problem, otherobjects, otherbalances, othervalues,
     for key in keys(otherobjects)
         for commodity in keys(otherobjects[key])
             horizon = get_horizon_commodity(modelobjects, commodity)
-            timefactor = getduration(gettimedelta(horizon, 1))/Millisecond(3600000)
             numperiods = getnumperiods(horizon)
             periodrange = Int(numperiods*(stepnr-1)+1):Int(numperiods*(stepnr))
 
@@ -401,14 +400,14 @@ function get_results!(stepnr, problem, otherobjects, otherbalances, othervalues,
                 balances = otherbalances[key][commodity]
                 for i in eachindex(rhsterms)
                     for (j,jj) in enumerate(periodrange)
-                        othervalues[key][commodity][jj, i] = getrhsterm(problem, balances[i], rhsterms[i], j)/timefactor
+                        othervalues[key][commodity][jj, i] = getrhsterm(problem, balances[i], rhsterms[i], j)
                     end
                 end
             elseif key == "Vars"
                 vars = otherobjects[key][commodity]
                 for i in eachindex(vars)
                     for (j,jj) in enumerate(periodrange)
-                        othervalues[key][commodity][jj, i] = getvarvalue(problem, vars[i], j)/timefactor
+                        othervalues[key][commodity][jj, i] = getvarvalue(problem, vars[i], j)
                     end
                 end
             end
