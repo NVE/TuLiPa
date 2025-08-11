@@ -85,14 +85,14 @@ end
 buildprob(::ProbMethod, modelobjects) = error!("ProbMethod not implemented")
 function buildprob(probmethod::HighsSimplexMethod, modelobjects)
     prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
-    prob.settings.simplex_scale_strategy = 5
+    prob.settings.simplex_scale_strategy = 4
     prob.settings.time_limit = 300
     apply_settings!(prob)
     return prob
 end
 function buildprob(probmethod::HighsPrimalSimplexMethod, modelobjects)
     prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
-    prob.settings.simplex_scale_strategy = 5
+    prob.settings.simplex_scale_strategy = 4
     prob.settings.simplex_strategy = 4
     prob.settings.time_limit = 300
     apply_settings!(prob)
@@ -100,7 +100,7 @@ function buildprob(probmethod::HighsPrimalSimplexMethod, modelobjects)
 end
 function buildprob(probmethod::HighsSimplexSIPMethod, modelobjects)
     prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
-    prob.settings.simplex_scale_strategy = 5
+    prob.settings.simplex_scale_strategy = 4
     prob.settings.simplex_strategy = 2
     prob.settings.time_limit = 300
     if probmethod.concurrency > 0
@@ -111,7 +111,7 @@ function buildprob(probmethod::HighsSimplexSIPMethod, modelobjects)
 end
 function buildprob(probmethod::HighsSimplexPAMIMethod, modelobjects)
     prob = HiGHS_Prob(modelobjects, warmstart=probmethod.warmstart)
-    prob.settings.simplex_scale_strategy = 5
+    prob.settings.simplex_scale_strategy = 4
     prob.settings.simplex_strategy = 2
     prob.settings.time_limit = 300
     if probmethod.concurrency > 0
@@ -163,7 +163,7 @@ function buildprob(probmethod::CPLEXIPMMethod, modelobjects)
     return prob
 end
 
-buildprob(::JuMPHiGHSMethod, modelobjects) = JuMP_Prob(modelobjects, Model(optimizer_with_attributes(HiGHS.Optimizer, "simplex_scale_strategy" => 5)))
+buildprob(::JuMPHiGHSMethod, modelobjects) = JuMP_Prob(modelobjects, Model(optimizer_with_attributes(HiGHS.Optimizer, "simplex_scale_strategy" => 4)))
 buildprob(::JuMPClpMethod, modelobjects) = JuMP_Prob(modelobjects, Model(Clp.Optimizer))
 function buildprob(::JuMPClpIPMMethod, modelobjects)
     model = Model(Clp.Optimizer)

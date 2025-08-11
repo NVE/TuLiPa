@@ -23,7 +23,7 @@ function run_tests()
 
 	value = Ref{Int32}(0)
 	status = Highs_getIntOptionValue(prob, "simplex_scale_strategy", value)
-	@test value[] == 5
+	@test value[] == 4
 
 	value = Ref{Int32}(0)
 	status = Highs_getIntOptionValue(prob, "simplex_strategy", value)
