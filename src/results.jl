@@ -241,7 +241,7 @@ function get_results!(problem, prices, rhstermvalues, production, consumption, h
     # Collect hydro storage levels
     for (j,jj) in enumerate(hydrorange)
         for i in 1:length(hydrostorages)
-            hydrolevels[jj, i] = getvarvalue(problem, hydrostorages[i], j)/1000 # Gm3 TODO: convert to TWh with global energy equivalents of each storage
+            hydrolevels[jj, i] = getvarvalue(problem, hydrostorages[i], j)
         end
     end
 end
