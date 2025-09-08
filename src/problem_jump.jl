@@ -159,16 +159,42 @@ function solve!(p::JuMP_Prob)
 
         # https://jump.dev/JuMP.jl/stable/tutorials/getting_started/debugging/#Debugging-an-infeasible-model
         if termination_status(p.model) == MOI.INFEASIBLE
-            map = TuLiPa.JuMP.relax_with_penalty!(p.model)
-            TuLiPa.JuMP.optimize!(p.model)
-            for (con, penalty) in map
-                violation = TuLiPa.JuMP.value(penalty)
-                if violation > 0
-                    println("Constraint `$(TuLiPa.JuMP.name(con))` is violated by $violation")
+            try
+                error_message = ["Model $(modelid) failed with status $(status)"]
+                JuMP.compute_conflict!(p.model)
+                @assert JuMP.get_attribute(p.model, MOI.ConflictStatus()) == MOI.MOI.CONFLICT_FOUND
+                conflicting_constraints = []
+                for (F, S) in JuMP.list_of_constraint_types(p.model)
+                    for con in JuMP.all_constraints(p.model, F, S)
+                        if JuMP.get_attribute(con, MOI.ConstraintConflictStatus()) == MOI.IN_CONFLICT
+                            push!(conflicting_constraints, string(con))
+                        end
+                    end
+                end
+                error_msg = "Model $(modelid) failed with status $(status). Found conflicting constraints:\n" *
+                            join(conflicting_constraints, "\n")
+                error(error_msg)
+            catch
+                map = TuLiPa.JuMP.relax_with_penalty!(p.model)
+                TuLiPa.JuMP.optimize!(p.model)
+                if termination_status(p.model) != MOI.OPTIMAL
+                    error_msg = "Model $(modelid) failed with status $(status). Also relaxed model failed. " *
+                                "Variable bounds are not relaxed when calling relax_with_penalty!, so there are infeasible variable bounds combinations."
+                    error(error_msg)
+                else
+                    violations = []
+                    for (con, penalty) in map
+                        violation = TuLiPa.JuMP.value(penalty)
+                        if violation > 0
+                            push!(violations, "Constraint `$(TuLiPa.JuMP.name(con))` is violated by $violation")
+                        end
+                    end
+                    error_msg = "Model $(modelid) failed with status $(status). Relaxed model has the following constraints are violated:\n" *
+                                join(violations, "\n")
+                    error(error_msg)
                 end
             end
         end
-        error("Model $(modelid) failed with status $(status)")
     end
 
     return
