@@ -16,8 +16,9 @@ We also experimented with different HiGHS API functions for updating other LP pa
 and found that the class of change-by-mask-functions worked well for our use case.
 
 While implementing HiGHS_Prob, it was very useful to already have JuMP_Prob, 
-because then we could use JuMP_Prob to test that HiGHS_Prob 
-got the same results as JuMP_Prob.
+because then we could use JuMP_Prob to test that HiGHS_Prob got the same results as JuMP_Prob. 
+We also use JuMP_Prob for debugging when HiGHS_Prob fails to solve a problem,
+since JuMP has more extensive error checking and tools.
 """
 
 using HiGHS
@@ -524,18 +525,75 @@ function solve!(p::HiGHS_Prob)
     p.iscondualsupdated = false
 
     if p.isoptimal == false
-        status = Highs_getScaledModelStatus(p)
-        modelid = rand(1:999)
-        try
-            threadid = myid()
-            Highs_writeModel(p, "failed_model_status_$(status)_thread_$(threadid)_$(modelid).mps")
-        catch
-            Highs_writeModel(p, "failed_model_status_$(status)_$(modelid).mps")
-        end
-        error("Model $(modelid) failed with status $(status)")
+        jump_prob = _build_JuMP_Prob_from_HiGHS_Prob(p)
+        solve!(jump_prob)
     end
 
     return
+end
+
+function _build_JuMP_Prob_from_HiGHS_Prob(highs_prob::HiGHS_Prob)
+    jump_prob = JuMP_Prob()
+    jump_prob.model = Model(HiGHS.Optimizer)
+    setsilent!(jump_prob)
+
+    for (id, var_info) in highs_prob.vars
+        N = var_info.num 
+        addvar!(jump_prob, id, Int64(N))
+
+        start_index = var_info.start + 1
+        for i in 1:N
+            ub = highs_prob.col_upper[start_index + i - 1]
+            lb = highs_prob.col_lower[start_index + i - 1]
+            objcoeff = highs_prob.col_cost[start_index + i - 1]
+            if ub != Inf
+                setub!(jump_prob, id, Int64(i), highs_prob.col_upper[start_index + i - 1])
+            end
+            if lb != -Inf
+                setlb!(jump_prob, id, Int64(i), highs_prob.col_lower[start_index + i - 1])
+            end
+            if objcoeff != 0.0
+                setobjcoeff!(jump_prob, id, Int64(i), highs_prob.col_cost[start_index + i - 1])
+            end
+        end
+    end
+
+    for (id, con_info) in highs_prob.cons
+        N = con_info.num
+        contype = con_info.contype
+
+        if contype == 0
+            addeq!(jump_prob, id, Int64(N))
+        elseif contype == 1
+            addle!(jump_prob, id, Int64(N))
+        elseif contype == 2
+            addge!(jump_prob, id, Int64(N))
+        end
+
+        for dim in 1:N
+            row = con_info.start + dim
+    
+            if haskey(highs_prob.A, row)
+                for (var_id, var_info) in highs_prob.vars
+                    var_N = var_info.num 
+                    for var_dim in 1:var_N
+                        if haskey(highs_prob.A[row], var_info.start + var_dim)
+                            coeff = highs_prob.A[row][var_info.start + var_dim]
+                            setconcoeff!(jump_prob, id, var_id, Int64(dim), Int64(var_dim), coeff)
+                        end
+                    end
+                end
+            end
+
+            if length(con_info.rhsterms) > 0
+                for (trait, value) in con_info.rhsterms[dim]
+                    setrhsterm!(jump_prob, id, trait, dim, value)
+                end
+            end
+        end
+    end
+
+    return jump_prob
 end
 
 function setconcoeff!(p::HiGHS_Prob, con::Id, var::Id, ci::Int, vi::Int, value::Float64)
