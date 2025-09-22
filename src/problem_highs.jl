@@ -541,19 +541,18 @@ function _build_JuMP_Prob_from_HiGHS_Prob(highs_prob::HiGHS_Prob)
         N = var_info.num 
         addvar!(jump_prob, id, Int64(N))
 
-        start_index = var_info.start + 1
         for i in 1:N
-            ub = highs_prob.col_upper[start_index + i - 1]
-            lb = highs_prob.col_lower[start_index + i - 1]
-            objcoeff = highs_prob.col_cost[start_index + i - 1]
+            ub = highs_prob.col_upper[var_info.start + i]
+            lb = highs_prob.col_lower[var_info.start + i]
+            objcoeff = highs_prob.col_cost[var_info.start + i]
             if ub != Inf
-                setub!(jump_prob, id, Int64(i), highs_prob.col_upper[start_index + i - 1])
+                setub!(jump_prob, id, Int64(i), ub)
             end
             if lb != -Inf
-                setlb!(jump_prob, id, Int64(i), highs_prob.col_lower[start_index + i - 1])
+                setlb!(jump_prob, id, Int64(i), lb)
             end
             if objcoeff != 0.0
-                setobjcoeff!(jump_prob, id, Int64(i), highs_prob.col_cost[start_index + i - 1])
+                setobjcoeff!(jump_prob, id, Int64(i), objcoeff)
             end
         end
     end
@@ -562,29 +561,37 @@ function _build_JuMP_Prob_from_HiGHS_Prob(highs_prob::HiGHS_Prob)
         N = con_info.num
         contype = con_info.contype
 
-        if contype == 0
+        if contype == CONEQ
             addeq!(jump_prob, id, Int64(N))
-        elseif contype == 1
+        elseif contype == CONLE
             addle!(jump_prob, id, Int64(N))
-        elseif contype == 2
+        elseif contype == CONGE
             addge!(jump_prob, id, Int64(N))
+        elseif contype != CONFIX
+            error("Unknown constraint type: $contype. Expected constraint type is CONFIX.")
         end
 
-        for dim in 1:N
-            row = con_info.start + dim
-    
-            if haskey(highs_prob.A, row)
-                for (var_id, var_info) in highs_prob.vars
-                    var_N = var_info.num 
-                    for var_dim in 1:var_N
-                        if haskey(highs_prob.A[row], var_info.start + var_dim)
-                            coeff = highs_prob.A[row][var_info.start + var_dim]
-                            setconcoeff!(jump_prob, id, var_id, Int64(dim), Int64(var_dim), coeff)
+        for (var_id, var_info) in highs_prob.vars
+            var_N = var_info.num 
+            for var_dim in 1:var_N
+                col = var_info.start + var_dim
+                if haskey(highs_prob.A, col)
+                    for dim in 1:N
+                        row = con_info.start + dim
+                        if haskey(highs_prob.A[col], row)
+                            if contype == CONFIX && (highs_prob.row_lower[row] == highs_prob.row_upper[row])
+                                value = highs_prob.row_lower[row]
+                                fix!(jump_prob, var_id, Int64(var_dim), value)
+                            elseif contype != CONFIX
+                                coeff = highs_prob.A[col][row]
+                                setconcoeff!(jump_prob, id, var_id, Int64(dim), Int64(var_dim), coeff)
+                            end
                         end
                     end
                 end
             end
-
+        end
+        for dim in 1:N
             if length(con_info.rhsterms) > 0
                 for (trait, value) in con_info.rhsterms[dim]
                     setrhsterm!(jump_prob, id, trait, dim, value)

@@ -199,6 +199,7 @@ function debug_infeasible_jump_model(model::JuMP.Model , modelid::Int, status::M
         push!(messages, infeasible_bounds...)
     end
 
+    count = 0
     map = TuLiPa.JuMP.relax_with_penalty!(model)
     TuLiPa.JuMP.optimize!(model)
     if termination_status(model) == MOI.OPTIMAL
@@ -207,6 +208,11 @@ function debug_infeasible_jump_model(model::JuMP.Model , modelid::Int, status::M
             violation = TuLiPa.JuMP.value(penalty)
             if violation > 0
                 push!(messages, "Constraint `$(TuLiPa.JuMP.name(con))` is violated by $violation")
+                count += 1
+                if count >= 50
+                    push!(messages, "...")
+                    break
+                end
             end
         end
     end
@@ -219,6 +225,7 @@ end
 function get_infeasible_bounds(model::JuMP.Model)
     infeasible_bounds = []
     for var in all_variables(model)
+        JuMP.has_lower_bound(var) || continue
         lower_bound = JuMP.lower_bound(var)
         JuMP.has_upper_bound(var) || continue
         upper_bound = JuMP.upper_bound(var)
