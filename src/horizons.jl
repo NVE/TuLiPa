@@ -254,8 +254,8 @@ function getsubperiods(coarse::SequentialPeriods, fine::SequentialPeriods, coars
     fine_start = 0
     acc = Millisecond(0)
 
-    (list_ix, fine_start, acc) = accumulate_duration(fine, acc, startduration, list_ix, fine_start, true) 
-    (list_ix, fine_stop, acc) = accumulate_duration(fine, acc, stopduration, list_ix, fine_start-1, false)
+    (list_ix, fine_start, acc) = accumulate_duration(fine, acc, startduration, list_ix, fine_start) 
+    (list_ix, fine_stop, acc) = accumulate_duration(fine, acc, stopduration, list_ix, fine_start-1)
 
     fine_start += 1
     fine_stop += 1
@@ -263,20 +263,23 @@ function getsubperiods(coarse::SequentialPeriods, fine::SequentialPeriods, coars
     return fine_start:fine_stop
 end
 
-function accumulate_duration(x::SequentialPeriods, acc::Millisecond, target::Millisecond, list_ix::Int, t::Int, start::Bool)
+function accumulate_duration(x::SequentialPeriods, acc::Millisecond, target::Millisecond, list_ix::Int, t::Int)
     for i in list_ix:lastindex(x.data)
         (n, ms) = x.data[i]
 
         to_next_duration = acc + ms * n
 
-        if (target == to_next_duration) && start
+        if target >= to_next_duration
             t += n
             acc = to_next_duration
+            if acc == target
+                return (i+1, t, acc)
+            end
         else
             up = (target - acc).value
             lo = ms.value
             if up % lo != 0
-                error("Fine periods does not fit in coarse periods")
+                error("Fine periods $(x.data) does not fit in coarse period target $target. For $n and $ms")
             else
                 m = up ÷ lo
                 t += m
@@ -582,7 +585,6 @@ function _get_rhs_terms_from_prob(prob::Prob, commodity::String)
         isexogen(obj) && continue
         commodity == getinstancename(getid(getcommodity(obj))) || continue
         for rhs_term in getrhsterms(obj)
-            isconstant(rhs_term) && continue
             getresidualhint(rhs_term) == false && continue
             push!(rhs_terms, rhs_term)
         end

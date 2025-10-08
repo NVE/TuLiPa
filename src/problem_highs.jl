@@ -16,8 +16,9 @@ We also experimented with different HiGHS API functions for updating other LP pa
 and found that the class of change-by-mask-functions worked well for our use case.
 
 While implementing HiGHS_Prob, it was very useful to already have JuMP_Prob, 
-because then we could use JuMP_Prob to test that HiGHS_Prob 
-got the same results as JuMP_Prob.
+because then we could use JuMP_Prob to test that HiGHS_Prob got the same results as JuMP_Prob. 
+We also use JuMP_Prob for debugging when HiGHS_Prob fails to solve a problem,
+since JuMP has more extensive error checking and tools.
 """
 
 using HiGHS
@@ -141,7 +142,7 @@ mutable struct HiGHS_Prob <: Prob
         end
 
         _passLP!(p)
-        Highs_setIntOptionValue(p, "simplex_scale_strategy", 5) # TODO: Can be removed if problems are built with buildprob()
+        Highs_setIntOptionValue(p, "simplex_scale_strategy", 4) # TODO: Can be removed if problems are built with buildprob()
         
         finalizer(Highs_destroy, p)
         
@@ -478,7 +479,7 @@ function solve!(p::HiGHS_Prob)
                 old_scale_strategy = Ref{Int32}(0)
                 Highs_getIntOptionValue(p, "simplex_scale_strategy", old_scale_strategy)
 
-                scale_strategy = 5
+                scale_strategy = 4
                 while (scale_strategy > 2) && (kHighsModelStatusOptimal != Highs_getScaledModelStatus(p))
                     scale_strategy -= 1
                     println(string("Rescaling LP with scale strategy ", scale_strategy))
@@ -524,18 +525,82 @@ function solve!(p::HiGHS_Prob)
     p.iscondualsupdated = false
 
     if p.isoptimal == false
-        status = Highs_getScaledModelStatus(p)
-        modelid = rand(1:999)
-        try
-            threadid = myid()
-            Highs_writeModel(p, "failed_model_status_$(status)_thread_$(threadid)_$(modelid).mps")
-        catch
-            Highs_writeModel(p, "failed_model_status_$(status)_$(modelid).mps")
-        end
-        error("Model $(modelid) failed with status $(status)")
+        jump_prob = _build_JuMP_Prob_from_HiGHS_Prob(p)
+        solve!(jump_prob)
     end
 
     return
+end
+
+function _build_JuMP_Prob_from_HiGHS_Prob(highs_prob::HiGHS_Prob)
+    jump_prob = JuMP_Prob()
+    jump_prob.model = Model(HiGHS.Optimizer)
+    setsilent!(jump_prob)
+
+    for (id, var_info) in highs_prob.vars
+        N = var_info.num 
+        addvar!(jump_prob, id, Int64(N))
+
+        for i in 1:N
+            ub = highs_prob.col_upper[var_info.start + i]
+            lb = highs_prob.col_lower[var_info.start + i]
+            objcoeff = highs_prob.col_cost[var_info.start + i]
+            if ub != Inf
+                setub!(jump_prob, id, Int64(i), ub)
+            end
+            if lb != -Inf
+                setlb!(jump_prob, id, Int64(i), lb)
+            end
+            if objcoeff != 0.0
+                setobjcoeff!(jump_prob, id, Int64(i), objcoeff)
+            end
+        end
+    end
+
+    for (id, con_info) in highs_prob.cons
+        N = con_info.num
+        contype = con_info.contype
+
+        if contype == CONEQ
+            addeq!(jump_prob, id, Int64(N))
+        elseif contype == CONLE
+            addle!(jump_prob, id, Int64(N))
+        elseif contype == CONGE
+            addge!(jump_prob, id, Int64(N))
+        elseif contype != CONFIX
+            error("Unknown constraint type: $contype. Expected constraint type is CONFIX.")
+        end
+
+        for (var_id, var_info) in highs_prob.vars
+            var_N = var_info.num 
+            for var_dim in 1:var_N
+                col = var_info.start + var_dim
+                if haskey(highs_prob.A, col)
+                    for dim in 1:N
+                        row = con_info.start + dim
+                        if haskey(highs_prob.A[col], row)
+                            if contype == CONFIX && (highs_prob.row_lower[row] == highs_prob.row_upper[row])
+                                value = highs_prob.row_lower[row]
+                                fix!(jump_prob, var_id, Int64(var_dim), value)
+                            elseif contype != CONFIX
+                                coeff = highs_prob.A[col][row]
+                                setconcoeff!(jump_prob, id, var_id, Int64(dim), Int64(var_dim), coeff)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        for dim in 1:N
+            if length(con_info.rhsterms) > 0
+                for (trait, value) in con_info.rhsterms[dim]
+                    setrhsterm!(jump_prob, id, trait, dim, value)
+                end
+            end
+        end
+    end
+
+    return jump_prob
 end
 
 function setconcoeff!(p::HiGHS_Prob, con::Id, var::Id, ci::Int, vi::Int, value::Float64)

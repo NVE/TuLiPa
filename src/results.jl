@@ -150,10 +150,6 @@ end
 function get_results!(problem, prices, rhstermvalues, production, consumption, hydrolevels, batterylevels, powerbalances, rhsterms, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages, modelobjects, powerrange, hydrorange, periodduration_power, t)
         
     for (j,jj) in enumerate(powerrange)
-
-        # Timefactor transform results from GWh to GW/h regardless of horizon period durations
-        timefactor = periodduration_power/Millisecond(3600000)
-
         # For powerbalances collect prices and rhsterms (like inelastic demand, wind, solar and RoR)
         for i in 1:length(powerbalances)
             if !isexogen(powerbalances[i])
@@ -161,7 +157,7 @@ function get_results!(problem, prices, rhstermvalues, production, consumption, h
                 if length(getrhsterms(powerbalances[i])) > 0
                     for k in 1:length(rhsterms)
                         if hasrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)
-                            rhstermvalues[jj, k] = getrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)/timefactor
+                            rhstermvalues[jj, k] = getrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)
                         end
                     end
                 end
@@ -193,9 +189,9 @@ function get_results!(problem, prices, rhstermvalues, production, consumption, h
                             querystart = getstarttime(horizon, j, t)
                             querydelta = gettimedelta(horizon, j)
                             conversionvalue = getparamvalue(conversion, querystart, querydelta)
-                            production[jj, i] += getvarvalue(problem, segmentid, j)*conversionvalue/timefactor
+                            production[jj, i] += getvarvalue(problem, segmentid, j)*conversionvalue
                         else
-                            production[jj, i] += getvarvalue(problem, segmentid, j)*abs(getconcoeff(problem, plantbalances[i], segmentid, j, j))/timefactor
+                            production[jj, i] += getvarvalue(problem, segmentid, j)*abs(getconcoeff(problem, plantbalances[i], segmentid, j, j))
                         end
                     end
                 else
@@ -207,13 +203,13 @@ function get_results!(problem, prices, rhstermvalues, production, consumption, h
                         querytime = getstarttime(horizon, j, t)
                         querydelta = gettimedelta(horizon, j)
                         conversionvalue = getparamvalue(conversionparam, querytime, querydelta)
-                        production[jj, i] = getvarvalue(problem, plants[i], j)*conversionvalue/timefactor
+                        production[jj, i] = getvarvalue(problem, plants[i], j)*conversionvalue
                     else
-                        production[jj, i] = getvarvalue(problem, plants[i], j)*abs(getconcoeff(problem, plantbalances[i], plants[i], j, j))/timefactor
+                        production[jj, i] = getvarvalue(problem, plants[i], j)*abs(getconcoeff(problem, plantbalances[i], plants[i], j, j))
                     end
                 end
             else
-                production[jj, i] = getvarvalue(problem, plants[i], j)*abs(getconcoeff(problem, plantbalances[i], plants[i], j, j))/timefactor
+                production[jj, i] = getvarvalue(problem, plants[i], j)*abs(getconcoeff(problem, plantbalances[i], plants[i], j, j))
             end
         end
 
@@ -227,12 +223,12 @@ function get_results!(problem, prices, rhstermvalues, production, consumption, h
                     querytime = getstarttime(horizon, j, t)
                     querydelta = gettimedelta(horizon, j)
                     conversionvalue = getparamvalue(conversionparam, querytime, querydelta)
-                    consumption[jj, i] = getvarvalue(problem, demands[i], j)*conversionvalue/timefactor
+                    consumption[jj, i] = getvarvalue(problem, demands[i], j)*conversionvalue
                 else
-                    consumption[jj, i] = getvarvalue(problem, demands[i], j)*abs(getconcoeff(problem, demandbalances[i], demands[i], j, j))/timefactor
+                    consumption[jj, i] = getvarvalue(problem, demands[i], j)*abs(getconcoeff(problem, demandbalances[i], demands[i], j, j))
                 end
             else
-                consumption[jj, i] = getvarvalue(problem, demands[i], j)/timefactor
+                consumption[jj, i] = getvarvalue(problem, demands[i], j)
             end
         end
         
@@ -245,7 +241,7 @@ function get_results!(problem, prices, rhstermvalues, production, consumption, h
     # Collect hydro storage levels
     for (j,jj) in enumerate(hydrorange)
         for i in 1:length(hydrostorages)
-            hydrolevels[jj, i] = getvarvalue(problem, hydrostorages[i], j)/1000 # Gm3 TODO: convert to TWh with global energy equivalents of each storage
+            hydrolevels[jj, i] = getvarvalue(problem, hydrostorages[i], j)
         end
     end
 end
@@ -392,7 +388,6 @@ function get_results!(stepnr, problem, otherobjects, otherbalances, othervalues,
     for key in keys(otherobjects)
         for commodity in keys(otherobjects[key])
             horizon = get_horizon_commodity(modelobjects, commodity)
-            timefactor = getduration(gettimedelta(horizon, 1))/Millisecond(3600000)
             numperiods = getnumperiods(horizon)
             periodrange = Int(numperiods*(stepnr-1)+1):Int(numperiods*(stepnr))
 
@@ -401,14 +396,14 @@ function get_results!(stepnr, problem, otherobjects, otherbalances, othervalues,
                 balances = otherbalances[key][commodity]
                 for i in eachindex(rhsterms)
                     for (j,jj) in enumerate(periodrange)
-                        othervalues[key][commodity][jj, i] = getrhsterm(problem, balances[i], rhsterms[i], j)/timefactor
+                        othervalues[key][commodity][jj, i] = getrhsterm(problem, balances[i], rhsterms[i], j)
                     end
                 end
             elseif key == "Vars"
                 vars = otherobjects[key][commodity]
                 for i in eachindex(vars)
                     for (j,jj) in enumerate(periodrange)
-                        othervalues[key][commodity][jj, i] = getvarvalue(problem, vars[i], j)/timefactor
+                        othervalues[key][commodity][jj, i] = getvarvalue(problem, vars[i], j)
                     end
                 end
             end
