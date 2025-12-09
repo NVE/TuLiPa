@@ -97,7 +97,11 @@ function getelement(concept, concrete, instance, pairs...; path="")
         elseif (concrete == "BaseTable") & (k == "Names")
             v = v |> Vector{String}
         elseif (k == "Period") | (k == "NumPeriods") | (k == "Steps") # BaseHorizon and MsTimeDelta and RangeTimeIndex and storagehint and PrognosisMeanSeries
-            v = v |> Int64    
+            try
+                v = v |> Int64 
+            catch
+                error("Non-integer value for $k in type $concrete with name $instance")
+            end   
         elseif v isa Int
             v = v |> Float64
             ~isfinite(v) && error("Nonfinite values in type $concrete with name $instance")
