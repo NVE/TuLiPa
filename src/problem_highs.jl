@@ -423,13 +423,15 @@ end
 
 function _Highs_run_reset_clock!(p::HiGHS_Prob)
     ret = Highs_run(p)
-    ret == kHighsStatusError && println("Highs_run gave kHighsStatusError")
+    ret == kHighsStatusError && @warn "Highs_run gave kHighsStatusError"
     ret1 = Highs_zeroAllClocks(p)
     checkret(ret1)
     return ret
 end
 
 function solve!(p::HiGHS_Prob)
+    used_fallback = false
+
     row_bounds_updated = _is_mask_updated(p.row_bounds_mask)
     if row_bounds_updated
         _update_row_bounds(p)
@@ -459,13 +461,14 @@ function solve!(p::HiGHS_Prob)
 
     # If non-optimal try different settings
     if (ret == kHighsStatusError) || kHighsModelStatusOptimal != Highs_getScaledModelStatus(p)  
+        used_fallback = true
 
         # Try resetting and rebuilding problem
         if ret == kHighsStatusError 
-            println("Resetting solver due to HiGHS error: Rebuilding full LP and pass to solver")
+            @warn "Resetting solver due to HiGHS error: Rebuilding full LP and pass to solver"
         elseif kHighsModelStatusOptimal != Highs_getScaledModelStatus(p)
             status = Highs_getScaledModelStatus(p)
-            println("Resetting solver due to solver status $(status): Rebuilding full LP and pass to solver")
+            @warn "Resetting solver due to solver status $(status): Rebuilding full LP and pass to solver"
         end
         _passLP_reset!(p)
         ret = _Highs_run_reset_clock!(p)
@@ -482,7 +485,7 @@ function solve!(p::HiGHS_Prob)
                 scale_strategy = 4
                 while (scale_strategy > 2) && (kHighsModelStatusOptimal != Highs_getScaledModelStatus(p))
                     scale_strategy -= 1
-                    println(string("Rescaling LP with scale strategy ", scale_strategy))
+                    @debug string("Rescaling LP with scale strategy ", scale_strategy)
                     Highs_setIntOptionValue(p, "simplex_scale_strategy", scale_strategy)
                     ret = _Highs_run_reset_clock!(p)
                 end
@@ -494,12 +497,12 @@ function solve!(p::HiGHS_Prob)
                     simplex_strategy = Ref{Int32}(0)
                     Highs_getIntOptionValue(p, "simplex_strategy", simplex_strategy)
                     if simplex_strategy[] != Int32(1)
-                        println("Solving with dual simplex")
+                        @debug "Solving with dual simplex"
                         Highs_setIntOptionValue(p, "simplex_strategy", 1)
                         ret = _Highs_run_reset_clock!(p)
                     end
                     if simplex_strategy[] != Int32(4) && (kHighsModelStatusOptimal != Highs_getScaledModelStatus(p))
-                        println("Solving with primal simplex")
+                        @debug "Solving with primal simplex"
                         Highs_setIntOptionValue(p, "simplex_strategy", 4)
                         ret = _Highs_run_reset_clock!(p)
                     end
@@ -507,7 +510,7 @@ function solve!(p::HiGHS_Prob)
 
                     # Try barrier algorithm
                     if kHighsModelStatusOptimal != Highs_getScaledModelStatus(p)
-                        println("Solving with barrier")
+                        @debug "Solving with barrier"
                         # _passLP_reset!(p) # not necessary, but would like to reset if kHighsStatusError from solves above
                         Highs_setStringOptionValue(p, "solver", "ipm") # interior point method
                         Highs_setStringOptionValue(p, "run_crossover", "off") # without crossover
@@ -519,15 +522,19 @@ function solve!(p::HiGHS_Prob)
         end
     end
 
-    p.isoptimal = kHighsModelStatusOptimal == Highs_getScaledModelStatus(p)
+    final_model_status = Highs_getScaledModelStatus(p)
+    p.isoptimal = kHighsModelStatusOptimal == final_model_status
 
     p.isvarvaluesupdated = false
     p.iscondualsupdated = false
 
     if p.isoptimal == false
+        @warn "HiGHS solve non-optimal; switching to JuMP fallback" model_status=final_model_status
         jump_prob = _build_JuMP_Prob_from_HiGHS_Prob(p)
         solve!(jump_prob)
     end
+
+    @info "HiGHS solve outcome" optimal=p.isoptimal model_status=final_model_status used_fallback=used_fallback
 
     return
 end

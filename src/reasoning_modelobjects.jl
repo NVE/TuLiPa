@@ -537,7 +537,7 @@ function aggzone!(modelobjects, aggzonedict)
         modelobjects[newid] = newbalance
     end
 
-    #println(string("Modelobjects after removing balances: ", length(modelobjects)))
+    #@info string("Modelobjects after removing balances: ", length(modelobjects))
     
     for obj in values(modelobjects)
         replacebalance!(obj, aggzonedict1, modelobjects)
