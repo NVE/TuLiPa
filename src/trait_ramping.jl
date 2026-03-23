@@ -388,8 +388,12 @@ function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, 
 
     rampingpercentage = HourProductParam(ConstantParam(getdictvalue(value, "RampingPercentage", Real, elkey)))
     flowcap = getub(firstflow).param
-    maxflowcap = MWToGWhSeriesParam(flowcap.level, ConstantTimeVector(1.0))
-    rampingcap = TwoProductParam(maxflowcap, rampingpercentage)
+    @assert flowcap isa MWToGWhParam "Flow capacity in TransmissionRamping must be a MWToGWhParam"
+    if flowcap.param isa MeanSeriesParam
+        meanseries = MeanSeriesParam(flowcap.param.level, ConstantTimeVector(1.0))
+        flowcap = MWToGWhParam(meanseries)
+    end
+    rampingcap = TwoProductParam(flowcap, rampingpercentage)
 
     objkey = getobjkey(elkey)
 
