@@ -1,17 +1,19 @@
 using Dates, TuLiPa
 
 # RotationTimeVector only rotate after a full year, not based on start stop dates.
-obj_test = 
-        RotatingTimeVector(
-            [DateTime("1980-01-01T00:00:00"), 
-            DateTime("1980-01-02T00:00:00"),
-            DateTime("1980-01-03T00:00:00")], 
-            [0, 10, 5], 
-            DateTime("1980-01-01T00:00:00"), #start
-            DateTime("1980-01-04T00:00:00")) #stop 
+obj_test = RotatingTimeVector(
+    [
+        DateTime("1980-01-01T00:00:00"),
+        DateTime("1980-01-02T00:00:00"),
+        DateTime("1980-01-03T00:00:00"),
+    ],
+    [0, 10, 5],
+    DateTime("1980-01-01T00:00:00"), #start
+    DateTime("1980-01-04T00:00:00"),
+) #stop
 
 pt = TwoTime(DateTime("2023-01-01T00:00:00"), DateTime("1980-01-01T00:00:00"))
-horizon = SequentialHorizon(700, Day(1)) 
+horizon = SequentialHorizon(700, Day(1))
 
 t = 1
 querystart = getstarttime(horizon, t, pt)

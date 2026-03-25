@@ -1,52 +1,52 @@
 """
 Description of the input system in TuLiPa.
 
-In short, the system works like this: 
-    The getmodelobjects function takes a Vector{DataElement} as input, 
-    use functions stored in the INCLUDEELEMENT function registry to 
-    handle data elements representing different types, and finally puts 
-    everything together and returns a Dict{Id, Any} of model objects. 
+In short, the system works like this:
+    The getmodelobjects function takes a Vector{DataElement} as input,
+    use functions stored in the INCLUDEELEMENT function registry to
+    handle data elements representing different types, and finally puts
+    everything together and returns a Dict{Id, Any} of model objects.
 
 Why data elements and model objects:
-    To work well with LP problems, model objects tend to have a complicated 
-    nested structure with a lot of shared lowlevel objects. While such nested 
-    structure is good for LP problems, we found it too complicated to be used 
-    by end users to create datasets. We wanted an input system that was 
-    extensible, composable and modular, and this suggested to use a flat 
-    structure instead of a nested one. 
+    To work well with LP problems, model objects tend to have a complicated
+    nested structure with a lot of shared lowlevel objects. While such nested
+    structure is good for LP problems, we found it too complicated to be used
+    by end users to create datasets. We wanted an input system that was
+    extensible, composable and modular, and this suggested to use a flat
+    structure instead of a nested one.
 
 Some nice properties of data elements:
     Easy to port datasets from other sources. Since data elements are small
-    and use references to other data elements, it is usually a matter of 
-    looping over objects in the source, create needed data elements 
+    and use references to other data elements, it is usually a matter of
+    looping over objects in the source, create needed data elements
     and add them as you go.
 
-    Easy to store dataset in replaceable parts. E.g. have different 
+    Easy to store dataset in replaceable parts. E.g. have different
     hydropower datasets with different aggregation levels.
-    E.g. have exogeneous or endogenous represenation of the 
+    E.g. have exogeneous or endogenous represenation of the
     continental power system.
-    
-    Easy to add functionality. E.g. give an existing Flow element 
-    SoftBound constraint by adding SoftBound data elements referring 
+
+    Easy to add functionality. E.g. give an existing Flow element
+    SoftBound constraint by adding SoftBound data elements referring
     to the Flow element. E.g. replace BaseArrow with SegmentedArrow
     to model PQ-curves for an existing Flow element.
 
 We have already added INCLUDEELEMENT functions to many objects:
-    We have added INCLUDEELEMENT functions to all objects defined in TuLiPa 
-    that makes sense to store in a end user dataset. See timevectors.jl 
-    or obj_balance.jl for some examples of functions stored in INCLUDEELEMENT.         
+    We have added INCLUDEELEMENT functions to all objects defined in TuLiPa
+    that makes sense to store in a end user dataset. See timevectors.jl
+    or obj_balance.jl for some examples of functions stored in INCLUDEELEMENT.
 
 But you can extend the system:
-    You can define new objects and add getmodelobjects support to them by 
-    defining an appropriate function and store it the INCLUDEELEMENT 
+    You can define new objects and add getmodelobjects support to them by
+    defining an appropriate function and store it the INCLUDEELEMENT
     function registry.
 
 INCLUDEELEMENT functions must behave a certain way:
-    It is very important that the functions stored in INCLUDEELEMENT have a 
+    It is very important that the functions stored in INCLUDEELEMENT have a
     particular signature and behaviour. If not, the getmodelobjects function
-    will fail, or even worse, silently return errouneous results. Fortunately, 
-    it is not too hard to define compliant INCLUDEELEMENT functions. The next 
-    section explanins the INCLUDEELEMENT function interface. 
+    will fail, or even worse, silently return errouneous results. Fortunately,
+    it is not too hard to define compliant INCLUDEELEMENT functions. The next
+    section explanins the INCLUDEELEMENT function interface.
 
 The INCLUDEELEMENT function interface:
     Signature:
@@ -61,52 +61,52 @@ The INCLUDEELEMENT function interface:
         elkey::ElementKey
         value::Any
 
-    Naming: 
-    You can name INCLUDEELEMENT functions (f in above signature) however you want, 
+    Naming:
+    You can name INCLUDEELEMENT functions (f in above signature) however you want,
     but we use the convention:
-            include + [object type] + ! 
+            include + [object type] + !
     to name such functions in TuLiPa (e.g. includeInfiniteTimeVector!).
 
     On the behaviour of an INCLUDEELEMENT function:
-    - Should return all possible dependencies, also when f returns 
+    - Should return all possible dependencies, also when f returns
       early with ok=false
 
     - Should validate dependencies and throw useful errors
 
-    - If ok=false for other reasons than missing dependencies, 
-      return dependencies with type Tuple{Vector{String}, Vector{Id}}, 
-      where the Vector{String} part is error messages explaining what went wrong. 
-      (The first part is the usual vector with all possible dependencies.) 
-      Most INCLUDEELEMENT functions does not need this, but some do. 
-      For an example, see the definition of includeHydroRamping! in the 
+    - If ok=false for other reasons than missing dependencies,
+      return dependencies with type Tuple{Vector{String}, Vector{Id}},
+      where the Vector{String} part is error messages explaining what went wrong.
+      (The first part is the usual vector with all possible dependencies.)
+      Most INCLUDEELEMENT functions does not need this, but some do.
+      For an example, see the definition of includeHydroRamping! in the
       file trait_ramping.jl.
 
-    - Should either modify lowlevel, toplevel or both. One example could be 
-      to create and object and store it in either lowlevel 
-      (see e.g. includeInfiniteTimeVector! in timevectors.jl) or toplevel 
+    - Should either modify lowlevel, toplevel or both. One example could be
+      to create and object and store it in either lowlevel
+      (see e.g. includeInfiniteTimeVector! in timevectors.jl) or toplevel
       (see e.g. includeBaseBalance! in obj_balance.jl). Another example could be to create
-      an object and store it in an existing toplevel object 
-      (see e.g. includePositiveCapacity! in trait_capacity.jl). 
+      an object and store it in an existing toplevel object
+      (see e.g. includePositiveCapacity! in trait_capacity.jl).
       A final example could be to create an object
-      and both store it into an an existing toplevel object, 
-      and store the object itself in e.g. lowlevel 
+      and both store it into an an existing toplevel object,
+      and store the object itself in e.g. lowlevel
       (see e.g. includeBaseRHSTerm! in trait_rhsterm.jl).
 
-    Registration: 
-    To register a function (f) in the INCLUDEELEMENT registry, add this line to 
+    Registration:
+    To register a function (f) in the INCLUDEELEMENT registry, add this line to
     the source file below the definitions of your model object and the function f:
         INCLUDEELEMENT[TypeKey("YourConceptName", "YourTypeName")] = f
-    Where: 
+    Where:
         "YourConceptName" should be the concept name your model object
         belongs to (e.g. "Flow" or "TimeVector"). Note, it must not be an
         existing concept. You can create a new concept as well.
         "YourTypeName" should be the concrete type of your model object
-        (e.g. "BaseFlow" or "InfiniteTimeVector"). 
-    In TuLiPa, we usually define INCLUDEELEMENT functions and register them at 
+        (e.g. "BaseFlow" or "InfiniteTimeVector").
+    In TuLiPa, we usually define INCLUDEELEMENT functions and register them at
     the bottom of source files (see e.g. timevectors.jl).
 
 Other notes that may be useful:
-- Some data elements re-use existing types 
+- Some data elements re-use existing types
   (e.g. OneYearTimeVector in timevectors.jl)
 """
 
@@ -149,18 +149,18 @@ gettypekey(x::DataElement) = TypeKey(x.conceptname, x.typename)
 
 # ---- The INCLUDEELEMENT function registry used by the getmodelobjects function ----
 
-const INCLUDEELEMENT = Dict{TypeKey, Function}()
+const INCLUDEELEMENT = Dict{TypeKey,Function}()
 
 # ---- The getmodelobjects function, which compiles data elements into model objects ----
 
 """
-Compiles data elements into model objects. 
+Compiles data elements into model objects.
 
 Inputs:
   elements::Vector{DataElement}
 
 Optional keyword arguments:
-  validate::Bool - true by default. If true we call the validate_modelobjects 
+  validate::Bool - true by default. If true we call the validate_modelobjects
                    function on modelobjects before returning
 
   deps::Bool - false by default. When true, we return (modelobjects, dependencies)
@@ -168,10 +168,14 @@ Optional keyword arguments:
                information about which indices in elements are direct dependencies
                of elements. This can be used to identify all elements belonging to
                a subset of data elements or model objects. E.g. we use til to find
-               all data elements belonging to model objects in a storage system. 
+               all data elements belonging to model objects in a storage system.
 
 """
-function getmodelobjects(elements::Vector{DataElement}; validate::Bool=true, deps::Bool=false)
+function getmodelobjects(
+    elements::Vector{DataElement};
+    validate::Bool = true,
+    deps::Bool = false,
+)
     error_if_duplicates(elements)
     (modelobjects, dependencies) = include_all_elements(elements)
     assemble!(modelobjects)
@@ -185,7 +189,7 @@ function getmodelobjects(elements::Vector{DataElement}; validate::Bool=true, dep
     return modelobjects
 end
 
-function assemble!(modelobjects::Dict{Id, Any})
+function assemble!(modelobjects::Dict{Id,Any})
     completed = Set{Id}()
     while true
         numbefore = length(completed)
@@ -208,7 +212,10 @@ function assemble!(modelobjects::Dict{Id, Any})
     end
 end
 
-function compact_dependencies(dependencies::Dict{ElementKey, Any}, elements::Vector{DataElement})
+function compact_dependencies(
+    dependencies::Dict{ElementKey,Any},
+    elements::Vector{DataElement},
+)
     (errors, dependencies, missings) = split_dependencies(dependencies, elements)
 
     @assert all(length(x) == 0 for x in values(missings))
@@ -216,7 +223,7 @@ function compact_dependencies(dependencies::Dict{ElementKey, Any}, elements::Vec
 
     ix_map = Dict(getelkey(e) => i for (i, e) in enumerate(elements))
 
-    out = Dict{ElementKey, Vector{Int}}()
+    out = Dict{ElementKey,Vector{Int}}()
     for (k, elkeys) in dependencies
         out[k] = sort([ix_map[j] for j in elkeys])
     end
@@ -236,7 +243,7 @@ end
 #     end
 #     return Dict(k => sort(collect(v)) for (k, v) in d)
 # end
- 
+
 # function update_deep_dependencies(d, e, elements, direct_dependencies, seen, refs, concepts)
 #     deep_dependencies = Set{Int}()
 #     for i in direct_dependencies[getelkey(e)]
@@ -259,7 +266,7 @@ end
 #     d[e] = deep_dependencies
 #     return
 # end
- 
+
 # function get_referenced_by(elements, direct_dependencies)
 #     d = Dict{eltype(elements), Set{Int}}()
 #     ei = Dict(getelkey(e) => i for (i, e) in enumerate(elements))
@@ -274,7 +281,7 @@ end
 #     end
 #     return d
 # end
- 
+
 # function get_candidates(i, elements, refs, concepts)
 #     candidates = Set{Int}([i])
 #     if isnothing(concepts)
@@ -292,9 +299,9 @@ end
 # end
 
 function get_deep_dependencies(elements, direct_dependencies)
-    d = Dict{eltype(elements), Set{Int}}()
+    d = Dict{eltype(elements),Set{Int}}()
     for e in elements
-        seen = Set{Int}()        
+        seen = Set{Int}()
         update_deep_dependencies(e, d, elements, direct_dependencies, seen)
     end
     for (i, e) in enumerate(elements)
@@ -302,7 +309,7 @@ function get_deep_dependencies(elements, direct_dependencies)
     end
     return Dict(k => sort(collect(v)) for (k, v) in d)
 end
- 
+
 function update_deep_dependencies(e, d, elements, direct_dependencies, seen)
     deep_dependencies = Set{Int}()
     for i in direct_dependencies[getelkey(e)]
@@ -325,10 +332,10 @@ function update_deep_dependencies(e, d, elements, direct_dependencies, seen)
 end
 
 function include_all_elements(elements::Vector{DataElement})
-    toplevel = Dict{Id, Any}()
-    lowlevel = Dict{Id, Any}()
+    toplevel = Dict{Id,Any}()
+    lowlevel = Dict{Id,Any}()
     completed = Set{ElementKey}()
-    dependencies = Dict{ElementKey, Any}()
+    dependencies = Dict{ElementKey,Any}()
 
     numelements = length(elements)
 
@@ -338,17 +345,23 @@ function include_all_elements(elements::Vector{DataElement})
         include_some_elements!(completed, dependencies, toplevel, lowlevel, elements)
 
         numafter = length(completed)
-        
+
         if numafter == numelements
             return (toplevel, dependencies)
-            
+
         elseif numbefore == numafter
             error_include_all_elements(completed, dependencies, elements)
         end
-    end    
+    end
 end
 
-function include_some_elements!(completed::Set{ElementKey}, dependencies::Dict{ElementKey, Any}, toplevel::Dict{Id, Any}, lowlevel::Dict{Id, Any}, elements::Vector{DataElement})
+function include_some_elements!(
+    completed::Set{ElementKey},
+    dependencies::Dict{ElementKey,Any},
+    toplevel::Dict{Id,Any},
+    lowlevel::Dict{Id,Any},
+    elements::Vector{DataElement},
+)
     for element in elements
         elkey = getelkey(element)
 
@@ -383,7 +396,7 @@ function error_if_unknown_element_type(typekey)
 end
 
 function error_if_unexpected_return_type(ret, elkey::ElementKey)
-    if !(typeof(ret) <: Tuple{Bool, Any})
+    if !(typeof(ret) <: Tuple{Bool,Any})
         s1 = "Unexpected INCLUDEELEMENT function return type for\n$elkey\n"
         s2 = "Expected T <: Tuple{Bool, Any}}, got $(typeof(ret))."
         msg = string(s1, s2)
@@ -392,7 +405,7 @@ function error_if_unexpected_return_type(ret, elkey::ElementKey)
 end
 
 # TODO: Change assemble! interface to support better error messages (i.e. informing why assemble failed)?
-function error_assemble(modelobjects::Dict{Id, Any}, completed::Set{Id})
+function error_assemble(modelobjects::Dict{Id,Any}, completed::Set{Id})
     messages = String[]
     for id in keys(modelobjects)
         (id in completed) && continue
@@ -426,14 +439,20 @@ function error_if_duplicates(elements::Vector{DataElement})
     end
 end
 
-function error_include_all_elements(completed::Set{ElementKey}, dependencies::Dict{ElementKey, Any}, elements::Vector{DataElement})
+function error_include_all_elements(
+    completed::Set{ElementKey},
+    dependencies::Dict{ElementKey,Any},
+    elements::Vector{DataElement},
+)
     (errors, dependencies, missings) = split_dependencies(dependencies, elements)
 
     assert_all_elkeys_in_dependencies(dependencies, elements)
 
     failed = Set{ElementKey}(k for k in keys(dependencies) if !(k in completed))
 
-    root_causes = Set{ElementKey}(k for k in failed if does_not_depend_on_failed(k, dependencies, failed))
+    root_causes = Set{ElementKey}(
+        k for k in failed if does_not_depend_on_failed(k, dependencies, failed)
+    )
 
     messages = String[]
 
@@ -495,9 +514,12 @@ function assert_all_elkeys_in_dependencies(dependencies, elements)
     @assert E == D
 end
 
-function split_dependencies(dependencies::Dict{ElementKey, Any}, elements::Vector{DataElement})
-    errs = Dict{ElementKey, Vector{String}}()
-    deps = Dict{ElementKey, Vector{Id}}()
+function split_dependencies(
+    dependencies::Dict{ElementKey,Any},
+    elements::Vector{DataElement},
+)
+    errs = Dict{ElementKey,Vector{String}}()
+    deps = Dict{ElementKey,Vector{Id}}()
 
     for (elkey, d) in dependencies
         if d isa Tuple
@@ -514,11 +536,14 @@ function split_dependencies(dependencies::Dict{ElementKey, Any}, elements::Vecto
     return (errs, deps, missings)
 end
 
-function objkeys_to_elkeys(dependencies::Dict{ElementKey, Vector{Id}}, elements::Vector{DataElement})
-    elkey_dependencies = Dict{ElementKey, Vector{ElementKey}}()
-    missing_ids = Dict{ElementKey, Vector{Id}}()
+function objkeys_to_elkeys(
+    dependencies::Dict{ElementKey,Vector{Id}},
+    elements::Vector{DataElement},
+)
+    elkey_dependencies = Dict{ElementKey,Vector{ElementKey}}()
+    missing_ids = Dict{ElementKey,Vector{Id}}()
 
-    id_to_elkey = Dict{Id, ElementKey}()
+    id_to_elkey = Dict{Id,ElementKey}()
     for e in elements
         id = Id(e.conceptname, e.instancename)
         id_to_elkey[id] = getelkey(e)
@@ -542,7 +567,11 @@ function objkeys_to_elkeys(dependencies::Dict{ElementKey, Vector{Id}}, elements:
     return (elkey_dependencies, missing_ids)
 end
 
-function does_not_depend_on_failed(k::ElementKey, dependencies::Dict{ElementKey, Vector{ElementKey}}, failed::Set{ElementKey})
+function does_not_depend_on_failed(
+    k::ElementKey,
+    dependencies::Dict{ElementKey,Vector{ElementKey}},
+    failed::Set{ElementKey},
+)
     if haskey(dependencies, k)
         for elkey in dependencies[k]
             if elkey in failed
@@ -555,6 +584,6 @@ end
 
 # TODO: Rule out empty balance objects
 # TODO: Add more stuff
-function validate_modelobjects(modelobjects::Dict{Id, Any})
+function validate_modelobjects(modelobjects::Dict{Id,Any})
     nothing
 end

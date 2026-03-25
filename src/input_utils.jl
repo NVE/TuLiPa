@@ -1,5 +1,5 @@
 """
-Stuff we use in connection with the input system, 
+Stuff we use in connection with the input system,
 which are not essential parts of the input system.
 
 In this file we define:
@@ -55,7 +55,7 @@ const PARAM_CONCEPT = "Param"
 const SOFTBOUND_CONCEPT = "SoftBound"
 const COST_CONCEPT = "Cost"
 const RHSTERM_CONCEPT = "RHSTerm"
-const METADATA_CONCEPT = "Metadata" 
+const METADATA_CONCEPT = "Metadata"
 const BOUNDARYCONDITION_CONCEPT = "BoundaryCondition"
 const CAPACITY_CONCEPT = "Capacity"
 const PRICE_CONCEPT = "Price"
@@ -65,7 +65,7 @@ const DEMAND_CONCEPT = "Demand"
 
 # ---- Functions to parse input files containing data elements ----
 
-function getelement(elements::Vector{DataElement},instancename::String)
+function getelement(elements::Vector{DataElement}, instancename::String)
     for element in elements
         element.instancename == instancename && return element
     end
@@ -73,7 +73,7 @@ function getelement(elements::Vector{DataElement},instancename::String)
     error("Element not in list")
 end
 
-function getelements(tupleelements::Vector{Any}, path="")
+function getelements(tupleelements::Vector{Any}, path = "")
     elements = DataElement[]
     for element in tupleelements
         push!(elements, getelement(element...; path))
@@ -81,38 +81,42 @@ function getelements(tupleelements::Vector{Any}, path="")
     return elements
 end
 
-function getelement(concept, concrete, instance, pairs...; path="") 
+function getelement(concept, concrete, instance, pairs...; path = "")
     d = Dict()
     for (k, v) in pairs
         if concrete == "VectorTimeIndex"
-            v = [DateTime(i,dateformat"yyyy-mm-dd HH:MM:SS") for i in v]
+            v = [DateTime(i, dateformat"yyyy-mm-dd HH:MM:SS") for i in v]
         elseif (concrete == "RangeTimeIndex") & (k == "Start")
-            v = DateTime(v,dateformat"yyyy-mm-dd HH:MM:SS")
+            v = DateTime(v, dateformat"yyyy-mm-dd HH:MM:SS")
         elseif concrete == "VectorTimeValues"
             v = v |> Vector{Float64}
-            ~all(isfinite, v) && error("Nonfinite values in type $concrete with name $instance") # move these checks to includeelement?
+            ~all(isfinite, v) &&
+                error("Nonfinite values in type $concrete with name $instance") # move these checks to includeelement?
         elseif (concrete == "BaseTable") & (k == "Matrix")
-            v = CSV.read(joinpath(path, v), header=0, DataFrame) |> Matrix{Float64} # read csv
-            ~all(isfinite, v) && error("Nonfinite values in type $concrete with name $instance")
+            v = CSV.read(joinpath(path, v), header = 0, DataFrame) |> Matrix{Float64} # read csv
+            ~all(isfinite, v) &&
+                error("Nonfinite values in type $concrete with name $instance")
         elseif (concrete == "BaseTable") & (k == "Names")
             v = v |> Vector{String}
         elseif (k == "Period") | (k == "NumPeriods") | (k == "Steps") # BaseHorizon and MsTimeDelta and RangeTimeIndex and storagehint and PrognosisMeanSeries
             try
-                v = v |> Int64 
+                v = v |> Int64
             catch
                 error("Non-integer value for $k in type $concrete with name $instance")
-            end   
+            end
         elseif v isa Int
             v = v |> Float64
             ~isfinite(v) && error("Nonfinite values in type $concrete with name $instance")
         elseif concrete == "ReservoirCurve" && ((k == "Res") || (k == "Head"))
             v = v |> Vector{Float64}
-            ~all(isfinite, v) && error("Nonfinite values in type $concrete with name $instance")
-        end        
+            ~all(isfinite, v) &&
+                error("Nonfinite values in type $concrete with name $instance")
+        end
         d[k] = v
     end
     # added to support relative paths in dataset
-    if concrete in ["TwoStateBucketIfm", "TwoStateNeuralODEIfm"] && d["ModelParams"] isa String
+    if concrete in ["TwoStateBucketIfm", "TwoStateNeuralODEIfm"] &&
+       d["ModelParams"] isa String
         d["ModelParams"] = joinpath(path, d["ModelParams"])
     end
     if concrete == "TwoStateNeuralODEIfm" && d["Moments"] isa String
@@ -130,9 +134,9 @@ function _update_deps(deps::Vector{Id}, ids, ok::Bool)
         _update_deps(deps, i, ok)
     end
 end
-_update_deps(deps::Tuple{Vector{String}, Vector{Id}}, id::Nothing, ok::Bool) = @assert ok
-_update_deps(deps::Tuple{Vector{String}, Vector{Id}}, id::Id, ok::Bool) = push!(deps[2], id)
-function _update_deps(deps::Tuple{Vector{String}, Vector{Id}}, ids, ok::Bool)
+_update_deps(deps::Tuple{Vector{String},Vector{Id}}, id::Nothing, ok::Bool) = @assert ok
+_update_deps(deps::Tuple{Vector{String},Vector{Id}}, id::Id, ok::Bool) = push!(deps[2], id)
+function _update_deps(deps::Tuple{Vector{String},Vector{Id}}, ids, ok::Bool)
     for i in ids
         _update_deps(deps, i, ok)
     end
@@ -172,35 +176,54 @@ function getdictisresidual(value::Dict, elkey::ElementKey)
     error("$RESIDUALHINTKEY must be True or False for $elkey")
 end
 
-const TIMEVECTORPARSETYPES = Union{AbstractFloat, String, TimeVector}
+const TIMEVECTORPARSETYPES = Union{AbstractFloat,String,TimeVector}
 function getdicttimevectorvalue(lowlevel::Dict, value::String)
     objkey = Id(TIMEVECTOR_CONCEPT, value)
     haskey(lowlevel, objkey) && return (objkey, lowlevel[objkey], true)
     return (objkey, value, false)
 end
-getdicttimevectorvalue(::Dict, value::AbstractFloat) = (nothing, ConstantTimeVector(value), true)
+getdicttimevectorvalue(::Dict, value::AbstractFloat) =
+    (nothing, ConstantTimeVector(value), true)
 getdicttimevectorvalue(::Dict, value::TimeVector) = (nothing, value, true)
 
-const PARAMPARSETYPES = Union{AbstractFloat, String, Param}
-function getdictparamvalue(lowlevel::Dict, elkey::ElementKey, value::Dict, paramname=PARAM_CONCEPT)
+const PARAMPARSETYPES = Union{AbstractFloat,String,Param}
+function getdictparamvalue(
+    lowlevel::Dict,
+    elkey::ElementKey,
+    value::Dict,
+    paramname = PARAM_CONCEPT,
+)
     haskey(value, paramname) || error("Missing $paramname for $elkey")
     return getdictparamvalue(lowlevel, elkey, value[paramname])
 end
-function getdictparamvalue(lowlevel::Dict, ::ElementKey, value::String, paramname=PARAM_CONCEPT)
+function getdictparamvalue(
+    lowlevel::Dict,
+    ::ElementKey,
+    value::String,
+    paramname = PARAM_CONCEPT,
+)
     objkey = Id(paramname, value)
     haskey(lowlevel, objkey) && return (objkey, lowlevel[objkey], true)
     return (objkey, value, false)
 end
-getdictparamvalue(::Dict, ::ElementKey, value::AbstractFloat, paramname=PARAM_CONCEPT) = (nothing, ConstantParam(value), true)
-getdictparamvalue(::Dict, ::ElementKey, value::Param, paramname=PARAM_CONCEPT) = (nothing, value, true)
+getdictparamvalue(::Dict, ::ElementKey, value::AbstractFloat, paramname = PARAM_CONCEPT) =
+    (nothing, ConstantParam(value), true)
+getdictparamvalue(::Dict, ::ElementKey, value::Param, paramname = PARAM_CONCEPT) =
+    (nothing, value, true)
 
-function getdictparamlist(lowlevel::Dict, elkey::ElementKey, value::Dict, paramname=PARAM_CONCEPT)
+function getdictparamlist(
+    lowlevel::Dict,
+    elkey::ElementKey,
+    value::Dict,
+    paramname = PARAM_CONCEPT,
+)
     haskey(value, paramname) || error("Missing $paramname for $elkey")
-    paramlist = [getdictparamvalue(lowlevel, elkey, listvalue) for listvalue in value[paramname]]
+    paramlist =
+        [getdictparamvalue(lowlevel, elkey, listvalue) for listvalue in value[paramname]]
     paramvaluelist = [p for (id, p, ok) in paramlist]
     parambools = [ok for (id, p, ok) in paramlist]
     ids = [id for (id, p, ok) in paramlist]
-    return (ids, paramvaluelist, all(y->y==true, parambools))
+    return (ids, paramvaluelist, all(y -> y == true, parambools))
 end
 
 function getdictconversionvalue(lowlevel::Dict, elkey::ElementKey, value::Dict)
@@ -219,8 +242,10 @@ function getdictconversionvalue(lowlevel::Dict, elkey::ElementKey, value::String
     end
     return ([objkey_c, objkey_p], value, false)
 end
-getdictconversionvalue(::Dict, ::ElementKey, value::AbstractFloat) = (nothing, BaseConversion(ConstantParam(value)), true)
-getdictconversionvalue(::Dict, ::ElementKey, value::Param) = (nothing, BaseConversion(value), true)
+getdictconversionvalue(::Dict, ::ElementKey, value::AbstractFloat) =
+    (nothing, BaseConversion(ConstantParam(value)), true)
+getdictconversionvalue(::Dict, ::ElementKey, value::Param) =
+    (nothing, BaseConversion(value), true)
 getdictconversionvalue(::Dict, ::ElementKey, value::Conversion) = (nothing, value, true)
 
 function getdictpricevalue(lowlevel::Dict, elkey::ElementKey, value::Dict)
@@ -238,40 +263,59 @@ function getdictpricevalue(lowlevel::Dict, elkey::ElementKey, value::String)
     end
     return ([objkey_price, objkey_param], value, false)
 end
-getdictpricevalue(::Dict, ::ElementKey, value::AbstractFloat) = (nothing, BasePrice(ConstantParam(value)), true)
+getdictpricevalue(::Dict, ::ElementKey, value::AbstractFloat) =
+    (nothing, BasePrice(ConstantParam(value)), true)
 getdictpricevalue(::Dict, ::ElementKey, value::Param) = (nothing, BasePrice(value), true)
 getdictpricevalue(::Dict, ::ElementKey, value::Price) = (nothing, value, true)
 
 # ---- Functions to add elements programatically (we use these to define datasets in demos) ----
 
 function addflow!(elements, instance)
-    push!(elements, getelement(FLOW_CONCEPT,"BaseFlow",instance))
+    push!(elements, getelement(FLOW_CONCEPT, "BaseFlow", instance))
 end
-        
+
 function addstorage!(elements, instance, balance)
-    push!(elements, getelement(STORAGE_CONCEPT,"BaseStorage",instance,
-          (BALANCE_CONCEPT,balance)))
+    push!(
+        elements,
+        getelement(STORAGE_CONCEPT, "BaseStorage", instance, (BALANCE_CONCEPT, balance)),
+    )
 end
 
 function addarrow!(elements, instance, conversion, flow, balance, direction)
-    push!(elements, getelement(ARROW_CONCEPT,"BaseArrow",instance,
-          (CONVERSION_CONCEPT,conversion),
-          (FLOW_CONCEPT,flow),
-          (BALANCE_CONCEPT,balance),
-          (DIRECTIONKEY,direction)))
+    push!(
+        elements,
+        getelement(
+            ARROW_CONCEPT,
+            "BaseArrow",
+            instance,
+            (CONVERSION_CONCEPT, conversion),
+            (FLOW_CONCEPT, flow),
+            (BALANCE_CONCEPT, balance),
+            (DIRECTIONKEY, direction),
+        ),
+    )
 end
-        
+
 function addcapacity!(elements, instance, uplow, param, whichinstance, whichconcept)
-    push!(elements, getelement(CAPACITY_CONCEPT, "PositiveCapacity", instance,
+    push!(
+        elements,
+        getelement(
+            CAPACITY_CONCEPT,
+            "PositiveCapacity",
+            instance,
             (WHICHCONCEPT, whichconcept),
             (WHICHINSTANCE, whichinstance),
             (PARAM_CONCEPT, param),
-            (BOUNDKEY, uplow)))
+            (BOUNDKEY, uplow),
+        ),
+    )
 end
 
 function addbalance!(elements, name, commodity)
-    push!(elements, getelement(BALANCE_CONCEPT, "BaseBalance", name, 
-            (COMMODITY_CONCEPT, commodity)))
+    push!(
+        elements,
+        getelement(BALANCE_CONCEPT, "BaseBalance", name, (COMMODITY_CONCEPT, commodity)),
+    )
     if commodity == "Power"
         slackname = "SlackVar" * name
         addflow!(elements, slackname)
@@ -281,27 +325,56 @@ function addbalance!(elements, name, commodity)
 end
 
 function addexogenbalance!(elements, name, commodity, price)
-    push!(elements, getelement(BALANCE_CONCEPT, "ExogenBalance", name, 
+    push!(
+        elements,
+        getelement(
+            BALANCE_CONCEPT,
+            "ExogenBalance",
+            name,
             (COMMODITY_CONCEPT, commodity),
-            (PRICE_CONCEPT, price)))
+            (PRICE_CONCEPT, price),
+        ),
+    )
 end
 
 function addrhsterm!(elements, name, balance, direction)
-    push!(elements, getelement(RHSTERM_CONCEPT, "BaseRHSTerm", name, 
-        (BALANCE_CONCEPT, balance), 
-        (PARAM_CONCEPT, name),
-        (DIRECTIONKEY, direction))) 
+    push!(
+        elements,
+        getelement(
+            RHSTERM_CONCEPT,
+            "BaseRHSTerm",
+            name,
+            (BALANCE_CONCEPT, balance),
+            (PARAM_CONCEPT, name),
+            (DIRECTIONKEY, direction),
+        ),
+    )
 end
 
 function addparam!(elements, concrete, instance, level, profile)
-    push!(elements, getelement(PARAM_CONCEPT,concrete,instance,
-          ("Level", level),
-          ("Profile", profile)))
+    push!(
+        elements,
+        getelement(
+            PARAM_CONCEPT,
+            concrete,
+            instance,
+            ("Level", level),
+            ("Profile", profile),
+        ),
+    )
 end
 
 function addscenariotimeperiod!(elements, instance, start, stop)
-    push!(elements, getelement(TIMEPERIOD_CONCEPT, "ScenarioTimePeriod", instance, 
-    ("Start", start), ("Stop", stop)))
+    push!(
+        elements,
+        getelement(
+            TIMEPERIOD_CONCEPT,
+            "ScenarioTimePeriod",
+            instance,
+            ("Start", start),
+            ("Stop", stop),
+        ),
+    )
 end
 
 function addpowertrans!(elements, frombalance, tobalance, cap, eff)
@@ -321,17 +394,58 @@ function addbattery!(elements, name, powerbalance, storagecap, lossbattery, char
     addbalance!(elements, balancename, "Battery")
     storagename = "BatteryStorage_" * name
     addstorage!(elements, storagename, balancename)
-    addcapacity!(elements, "BatteryStorageCap_" * name, BOUNDUPPER, storagecap, storagename, STORAGE_CONCEPT)
+    addcapacity!(
+        elements,
+        "BatteryStorageCap_" * name,
+        BOUNDUPPER,
+        storagecap,
+        storagename,
+        STORAGE_CONCEPT,
+    )
     chargename = "PlantCharge_" * name
     addflow!(elements, chargename)
     addarrow!(elements, "ChargePowerArrow_" * name, 1, chargename, powerbalance, "Out")
-    addarrow!(elements,"ChargeBatteryArrow_" * name, 1-lossbattery, chargename, balancename, "In")
+    addarrow!(
+        elements,
+        "ChargeBatteryArrow_" * name,
+        1 - lossbattery,
+        chargename,
+        balancename,
+        "In",
+    )
     addparam!(elements, "MWToGWhSeriesParam", "ChargeCapacityParam_" * name, chargecap, 1.0)
-    addcapacity!(elements, "ChargeCapacity_" * name, "Upper", "ChargeCapacityParam_" * name, chargename, FLOW_CONCEPT)
+    addcapacity!(
+        elements,
+        "ChargeCapacity_" * name,
+        "Upper",
+        "ChargeCapacityParam_" * name,
+        chargename,
+        FLOW_CONCEPT,
+    )
     dischargename = "PlantDischarge_" * name
-    addflow!(elements,dischargename)
+    addflow!(elements, dischargename)
     addarrow!(elements, "DischargePowerArrow_" * name, 1, dischargename, powerbalance, "In")
-    addarrow!(elements,"DischargeBatteryArrow_" * name, 1, dischargename, balancename, "Out")
-    addparam!(elements, "MWToGWhSeriesParam", "DischargeCapacityParam_" * name, chargecap, 1.0)
-    addcapacity!(elements, "DischargeCapacity_" * name, "Upper", "DischargeCapacityParam_" * name, dischargename, FLOW_CONCEPT)
+    addarrow!(
+        elements,
+        "DischargeBatteryArrow_" * name,
+        1,
+        dischargename,
+        balancename,
+        "Out",
+    )
+    addparam!(
+        elements,
+        "MWToGWhSeriesParam",
+        "DischargeCapacityParam_" * name,
+        chargecap,
+        1.0,
+    )
+    addcapacity!(
+        elements,
+        "DischargeCapacity_" * name,
+        "Upper",
+        "DischargeCapacityParam_" * name,
+        dischargename,
+        FLOW_CONCEPT,
+    )
 end

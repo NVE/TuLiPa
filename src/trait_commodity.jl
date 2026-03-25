@@ -17,10 +17,10 @@ function includeBaseCommodity!(::Dict, lowlevel::Dict, elkey::ElementKey, value:
     checkkey(lowlevel, elkey)
 
     deps = Id[]
-    
+
     haskey(value, HORIZON_CONCEPT) || error("Missing $HORIZON_CONCEPT for $elkey")
 
-    horizon = getdictvalue(value, HORIZON_CONCEPT, Union{String, Horizon}, elkey)
+    horizon = getdictvalue(value, HORIZON_CONCEPT, Union{String,Horizon}, elkey)
 
     if horizon isa String
         horizonkey = Id(HORIZON_CONCEPT, horizon)
@@ -28,11 +28,11 @@ function includeBaseCommodity!(::Dict, lowlevel::Dict, elkey::ElementKey, value:
         haskey(lowlevel, horizonkey) || return (false, deps)
         horizon = lowlevel[horizonkey]
     end
-   
+
     objkey = getobjkey(elkey)
-    
+
     lowlevel[objkey] = BaseCommodity(objkey, horizon)
-    
+
     return (true, deps)
 end
 

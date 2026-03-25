@@ -6,18 +6,18 @@ We implement BaseFlow (see general description in abstracttypes.jl)
 mutable struct BaseFlow <: Flow
     id::Id
 
-    horizon::Union{Horizon, Nothing}
+    horizon::Union{Horizon,Nothing}
 
-    ub::Union{Capacity, Nothing}
+    ub::Union{Capacity,Nothing}
     lb::Union{Capacity}
 
     costs::Vector{Cost}
-    sumcost::Union{Nothing, SumCost}
+    sumcost::Union{Nothing,SumCost}
 
     arrows::Vector{Arrow}
 
     metadata::Dict
-    
+
     function BaseFlow(id::Id)
         new(id, nothing, nothing, LowerZeroCapacity(), [], nothing, [], Dict())
     end
@@ -119,15 +119,15 @@ function assemble!(var::BaseFlow)::Bool
     # Put costs from ExogenBalance into list of cost terms
     for a in var.arrows
         excost = getexogencost(a)
-        if !isnothing(excost)        
+        if !isnothing(excost)
             addcost!(var, excost)
         end
     end
 
-    # Collect the finest Balance Horizon that the Flow is connected to through arrows. 
+    # Collect the finest Balance Horizon that the Flow is connected to through arrows.
     # TODO: Add checks that the finest Horizon is compatible with the others
     var.horizon = gethorizon(first(var.arrows))
-    for i in 2:lastindex(var.arrows)
+    for i = 2:lastindex(var.arrows)
         h = gethorizon(var.arrows[i])
         if getnumperiods(h) > getnumperiods(var.horizon)
             var.horizon = h
@@ -147,12 +147,12 @@ function includeBaseFlow!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict
     checkkey(toplevel, elkey)
 
     deps = Id[]
-    
+
     objkey = getobjkey(elkey)
-    
+
     toplevel[objkey] = BaseFlow(objkey)
-    
-    return (true, deps)    
+
+    return (true, deps)
 end
 
 INCLUDEELEMENT[TypeKey(FLOW_CONCEPT, "BaseFlow")] = includeBaseFlow!

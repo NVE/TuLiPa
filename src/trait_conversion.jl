@@ -19,7 +19,7 @@ end
 mutable struct PumpConversion <: Conversion
     param::Param
 
-    releaseheightcurve
+    releaseheightcurve::Any
     hmin::Float64
     hmax::Float64
     pumppower::Float64
@@ -37,7 +37,8 @@ iszero(conversion::Conversion) = iszero(conversion.param)
 isone(conversion::Conversion) = isone(conversion.param)
 isdurational(conversion::Conversion) = false
 isstateful(conversion::Conversion) = isstateful(conversion.param)
-getparamvalue(conversion::Conversion, t::ProbTime, d::TimeDelta) = getparamvalue(conversion.param, t, d)
+getparamvalue(conversion::Conversion, t::ProbTime, d::TimeDelta) =
+    getparamvalue(conversion.param, t, d)
 
 # Only does something for more complex Conversions
 build!(::Prob, ::Conversion) = nothing
@@ -49,7 +50,7 @@ function includeBaseConversion!(::Dict, lowlevel::Dict, elkey::ElementKey, value
     checkkey(lowlevel, elkey)
 
     deps = Id[]
-    
+
     (id, param, ok) = getdictparamvalue(lowlevel, elkey, value)
     _update_deps(deps, id, ok)
 
@@ -67,16 +68,17 @@ function includePumpConversion!(::Dict, lowlevel::Dict, elkey::ElementKey, value
     (id, param, ok) = getdictparamvalue(lowlevel, elkey, value)
     ok || return (false, deps)
 
-    hmin = getdictvalue(value, "hmin", Float64, elkey) 
+    hmin = getdictvalue(value, "hmin", Float64, elkey)
     hmax = getdictvalue(value, "hmax", Float64, elkey)
-    qmin = getdictvalue(value, "qmin", Float64, elkey) 
+    qmin = getdictvalue(value, "qmin", Float64, elkey)
     qmax = getdictvalue(value, "qmax", Float64, elkey)
     releaseheightcurve = XYCurve([hmin, hmax], [qmin, qmax])
 
     intakelevel = getdictvalue(value, "IntakeLevel", Float64, elkey)
     pumppower = getdictvalue(value, "PumpPower", Float64, elkey)
 
-    lowlevel[getobjkey(elkey)] = PumpConversion(param, releaseheightcurve, hmin, hmax, pumppower, intakelevel)
+    lowlevel[getobjkey(elkey)] =
+        PumpConversion(param, releaseheightcurve, hmin, hmax, pumppower, intakelevel)
     return (true, deps)
 end
 

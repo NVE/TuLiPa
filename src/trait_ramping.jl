@@ -1,7 +1,7 @@
 """
 We implement TransmissionRamping, HydroRampingWithout, HydroRamping (also see abstracttypes.jl)
 
-TransmissionRamping is ramping restriction for both up and down-ramping on a transmission line. 
+TransmissionRamping is ramping restriction for both up and down-ramping on a transmission line.
 The transmission is represented by two flows, one for each direction.
 Ramping capacity input is percentage of max capacity of one of the flows (TODO: Make version where up and downramping is different?)
 - Assumes that the flow capacity is a MWToGWhSeriesParam with a level and a profile (TODO?)
@@ -130,8 +130,8 @@ function build!(p::Prob, trait::HydroRampingWithout)
     T = getnumperiods(gethorizon(trait))
 
     # Build internal variables and equations
-    addle!(p, getuprampingconid(trait), T-1)
-    addle!(p, getdownrampingconid(trait), T-1)
+    addle!(p, getuprampingconid(trait), T - 1)
+    addle!(p, getdownrampingconid(trait), T - 1)
 
     return
 end
@@ -164,7 +164,7 @@ function setconstants!(p::Prob, trait::TransmissionRamping)
     uprampingconid = getuprampingconid(trait)
     downrampingconid = getdownrampingconid(trait)
 
-    for t in 1:T
+    for t = 1:T
 
         # Include variables in equations
         # secondflow[t] - firstflow[t] == sumtransmission[t]
@@ -175,10 +175,10 @@ function setconstants!(p::Prob, trait::TransmissionRamping)
         # (d/dt) sumtransmission[t] <= rampingcap[t] for t > 1 (up)
         # - (d/dt) sumtransmission[t] <= rampingcap[t] for t > 1 (down)
         setconcoeff!(p, uprampingconid, sumtransmissionvarid, t, t, -1.0)
-        setconcoeff!(p, downrampingconid, sumtransmissionvarid, t, t, 1.0) 
+        setconcoeff!(p, downrampingconid, sumtransmissionvarid, t, t, 1.0)
         if t > 1
-            setconcoeff!(p, uprampingconid, sumtransmissionvarid, t, t-1, 1.0) 
-            setconcoeff!(p, downrampingconid, sumtransmissionvarid, t, t-1, -1.0) 
+            setconcoeff!(p, uprampingconid, sumtransmissionvarid, t, t - 1, 1.0)
+            setconcoeff!(p, downrampingconid, sumtransmissionvarid, t, t - 1, -1.0)
         end
     end
 
@@ -193,7 +193,7 @@ function setconstants!(p::Prob, trait::TransmissionRamping)
     dummytime = ConstantTime()
     # Q: Why not calculate value only once here?
     # A: Because SequentialHorizon can have two or more sets of (nperiod, duration) pairs
-    for t in 1:T
+    for t = 1:T
         querydelta = gettimedelta(h, t)
         value = getparamvalue(trait.rampingcap, dummytime, querydelta)
         setrhsterm!(p, uprampingconid, trait.id, t, value)
@@ -210,15 +210,15 @@ function setconstants!(p::Prob, trait::HydroRampingWithout)
     uprampingconid = getuprampingconid(trait)
     downrampingconid = getdownrampingconid(trait)
 
-    for t in 2:T
+    for t = 2:T
         # Include variables in equations
 
         # (d/dt) flow[t] <= rampingcap[t] for t > 2 (up)
         # - (d/dt) flow[t] <= rampingcap[t] for t > 2 (down)
-        setconcoeff!(p, uprampingconid, flowid, t-1, t, -1.0)
-        setconcoeff!(p, uprampingconid, flowid, t-1, t-1, 1.0) 
-        setconcoeff!(p, downrampingconid, flowid, t-1, t, 1.0)
-        setconcoeff!(p, downrampingconid, flowid, t-1, t-1, -1.0)
+        setconcoeff!(p, uprampingconid, flowid, t - 1, t, -1.0)
+        setconcoeff!(p, uprampingconid, flowid, t - 1, t - 1, 1.0)
+        setconcoeff!(p, downrampingconid, flowid, t - 1, t, 1.0)
+        setconcoeff!(p, downrampingconid, flowid, t - 1, t - 1, -1.0)
     end
 
     # Set ramping cap if it does not have to update dynamically
@@ -227,7 +227,7 @@ function setconstants!(p::Prob, trait::HydroRampingWithout)
     dummytime = ConstantTime()
     # Q: Why not calculate value only once here?
     # A: Because SequentialHorizon can have two or more sets of (nperiod, duration) pairs
-    for t in 1:(T-1)
+    for t = 1:(T-1)
         querydelta = gettimedelta(h, t)
         value = getparamvalue(trait.rampingcap, dummytime, querydelta)
         setrhsterm!(p, uprampingconid, trait.id, t, value)
@@ -251,7 +251,7 @@ function setconstants!(p::Prob, trait::HydroRamping)
     setconcoeff!(p, endconid, endflowid, 1, 1, -1.0)
     setconcoeff!(p, endconid, flowid, 1, T, 1.0)
 
-    for t in 1:T
+    for t = 1:T
         # Include variables in equations
 
         # (d/dt) flow[t] <= rampingcap[t] for t > 1 (up)
@@ -260,8 +260,8 @@ function setconstants!(p::Prob, trait::HydroRamping)
         setconcoeff!(p, downrampingconid, flowid, t, t, 1.0)
 
         if t > 1
-            setconcoeff!(p, uprampingconid, flowid, t, t-1, 1.0) 
-            setconcoeff!(p, downrampingconid, flowid, t, t-1, -1.0)
+            setconcoeff!(p, uprampingconid, flowid, t, t - 1, 1.0)
+            setconcoeff!(p, downrampingconid, flowid, t, t - 1, -1.0)
         end
     end
 
@@ -274,7 +274,7 @@ function setconstants!(p::Prob, trait::HydroRamping)
     dummytime = ConstantTime()
     # Q: Why not calculate value only once here?
     # A: Because SequentialHorizon can have two or more sets of (nperiod, duration) pairs
-    for t in 1:T
+    for t = 1:T
         querydelta = gettimedelta(h, t)
         value = getparamvalue(trait.rampingcap, dummytime, querydelta)
         setrhsterm!(p, uprampingconid, trait.id, t, value)
@@ -288,7 +288,7 @@ function update!(p::Prob, trait::TransmissionRamping, start::ProbTime)
     h = gethorizon(trait)
 
     if _must_dynamic_update(trait.rampingcap, h)
-        for t in 1:getnumperiods(h)
+        for t = 1:getnumperiods(h)
             querystart = getstarttime(h, t, start)
             querydelta = gettimedelta(h, t)
             value = getparamvalue(trait.rampingcap, querystart, querydelta)
@@ -303,7 +303,7 @@ function update!(p::Prob, trait::HydroRampingWithout, start::ProbTime)
     h = gethorizon(trait)
 
     if _must_dynamic_update(trait.rampingcap, h)
-        for t in 1:(getnumperiods(h)-1)
+        for t = 1:(getnumperiods(h)-1)
             querystart = getstarttime(h, t, start)
             querydelta = gettimedelta(h, t)
             value = getparamvalue(trait.rampingcap, querystart, querydelta)
@@ -318,7 +318,7 @@ function update!(p::Prob, trait::HydroRamping, start::ProbTime)
     h = gethorizon(trait)
 
     if _must_dynamic_update(trait.rampingcap, h)
-        for t in 1:getnumperiods(h)
+        for t = 1:getnumperiods(h)
             querystart = getstarttime(h, t, start)
             querydelta = gettimedelta(h, t)
             value = getparamvalue(trait.rampingcap, querystart, querydelta)
@@ -347,7 +347,7 @@ function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, 
     checkkey(toplevel, elkey)
 
     deps = Id[]
-    
+
     firstflowname = getdictvalue(value, "FirstFlow", String, elkey)
     firstflowkey = Id(FLOW_CONCEPT, firstflowname)
     push!(deps, firstflowkey)
@@ -360,7 +360,7 @@ function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, 
 
     if haskey(toplevel, firstflowkey)
         firstflow = toplevel[firstflowkey]
-        if isnothing(getub(firstflow)) 
+        if isnothing(getub(firstflow))
             early_ret = true
             s = "Missing upper bound in $firstflow for $elkey"
             deps = ([s], deps)
@@ -371,7 +371,7 @@ function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, 
 
     if haskey(toplevel, secondflowkey)
         secondflow = toplevel[secondflowkey]
-        if isnothing(getub(secondflow)) 
+        if isnothing(getub(secondflow))
             early_ret = true
             s = "Missing upper bound in $secondflow for $elkey"
             if deps isa Tuple
@@ -386,7 +386,9 @@ function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, 
 
     early_ret && return (false, deps)
 
-    rampingpercentage = HourProductParam(ConstantParam(getdictvalue(value, "RampingPercentage", Real, elkey)))
+    rampingpercentage = HourProductParam(
+        ConstantParam(getdictvalue(value, "RampingPercentage", Real, elkey)),
+    )
     flowcap = getub(firstflow).param
     maxflowcap = MWToGWhSeriesParam(flowcap.level, ConstantTimeVector(1.0))
     rampingcap = TwoProductParam(maxflowcap, rampingpercentage)
@@ -394,15 +396,15 @@ function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, 
     objkey = getobjkey(elkey)
 
     toplevel[objkey] = TransmissionRamping(objkey, firstflow, secondflow, rampingcap)
-    
-    return (true, deps)
- end
 
- function includeHydroRampingWithout!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
+    return (true, deps)
+end
+
+function includeHydroRampingWithout!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
     checkkey(toplevel, elkey)
 
     deps = Id[]
-    
+
     flowname = getdictvalue(value, FLOW_CONCEPT, String, elkey)
     flowkey = Id(FLOW_CONCEPT, flowname)
 
@@ -421,7 +423,9 @@ function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, 
 
     early_ret && return (false, deps)
 
-    rampingpercentage = HourProductParam(ConstantParam(getdictvalue(value, "RampingPercentage", Real, elkey)))
+    rampingpercentage = HourProductParam(
+        ConstantParam(getdictvalue(value, "RampingPercentage", Real, elkey)),
+    )
     flowcap = getub(flow).param
     maxflowcap = M3SToMM3SeriesParam(flowcap.level, ConstantTimeVector(1.0))
     rampingcap = TwoProductParam(maxflowcap, rampingpercentage)
@@ -429,15 +433,15 @@ function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, 
     objkey = getobjkey(elkey)
 
     toplevel[objkey] = HydroRampingWithout(objkey, flow, rampingcap)
-    
-    return (true, deps)
- end
 
- function includeHydroRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
+    return (true, deps)
+end
+
+function includeHydroRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
     checkkey(toplevel, elkey)
 
     deps = Id[]
-    
+
     flowname = getdictvalue(value, FLOW_CONCEPT, String, elkey)
     flowkey = Id(FLOW_CONCEPT, flowname)
 
@@ -456,7 +460,9 @@ function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, 
 
     early_ret && return (false, deps)
 
-    rampingpercentage = HourProductParam(ConstantParam(getdictvalue(value, "RampingPercentage", Real, elkey)))
+    rampingpercentage = HourProductParam(
+        ConstantParam(getdictvalue(value, "RampingPercentage", Real, elkey)),
+    )
     flowcap = getub(flow).param
     maxflowcap = M3SToMM3SeriesParam(flowcap.level, ConstantTimeVector(1.0))
     rampingcap = TwoProductParam(maxflowcap, rampingpercentage)
@@ -464,10 +470,12 @@ function includeTransmissionRamping!(toplevel::Dict, ::Dict, elkey::ElementKey, 
     objkey = getobjkey(elkey)
 
     toplevel[objkey] = HydroRamping(objkey, flow, rampingcap)
-    
-    return (true, deps)
- end
 
-INCLUDEELEMENT[TypeKey(RAMPING_CONCEPT, "TransmissionRamping")] = includeTransmissionRamping!
-INCLUDEELEMENT[TypeKey(RAMPING_CONCEPT, "HydroRampingWithout")] = includeHydroRampingWithout!
+    return (true, deps)
+end
+
+INCLUDEELEMENT[TypeKey(RAMPING_CONCEPT, "TransmissionRamping")] =
+    includeTransmissionRamping!
+INCLUDEELEMENT[TypeKey(RAMPING_CONCEPT, "HydroRampingWithout")] =
+    includeHydroRampingWithout!
 INCLUDEELEMENT[TypeKey(RAMPING_CONCEPT, "HydroRamping")] = includeHydroRamping!

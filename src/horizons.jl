@@ -1,35 +1,35 @@
-﻿"""
-We implement SequentialHorizon and AdaptiveHorizon 
+"""
+We implement SequentialHorizon and AdaptiveHorizon
 (see abstracttypes.jl for general description)
 
 SequentialHorizon --------------------------
 Consist of two main elements:
-- SequentialPeriods: A list of (N, timedelta) pairs, so a simple 
-SequentialPeriods could have N periods of duration timedelta. A more 
-complex SequentialPeriods could have first N1 periods of duration 
-timedelta1 and then N2 periods of duration timedelta2. One usecase 
-for this is if the desired total problem time cant be divided by 
-the desired timedelta1. Then we could have N1 periods of timedelta1 
+- SequentialPeriods: A list of (N, timedelta) pairs, so a simple
+SequentialPeriods could have N periods of duration timedelta. A more
+complex SequentialPeriods could have first N1 periods of duration
+timedelta1 and then N2 periods of duration timedelta2. One usecase
+for this is if the desired total problem time cant be divided by
+the desired timedelta1. Then we could have N1 periods of timedelta1
 and 1 period of timedelta2 = total time - timedelta1*N1.
-- Offset: An optional element that shifts where the Horizon starts. 
+- Offset: An optional element that shifts where the Horizon starts.
 Can consist of a isoyear the starttime should be shifted to, and/or
-a TimeDelta. Can be used to combine datasets in time (e.g. adding 
+a TimeDelta. Can be used to combine datasets in time (e.g. adding
 future scenarios). See timeoffset.jl
 
 AdaptiveHorizon ----------------------------
-Horizon with two dimensions. The overlying dimension is a 
-SequentialHorizon consisting of SequentialPeriods and Offset. In the 
-second dimension we want to group hours (or time periods) in every 
-macro period into blocks based on their characteristics (e.g. hours 
-with similar residual load). Every block is a period of 
+Horizon with two dimensions. The overlying dimension is a
+SequentialHorizon consisting of SequentialPeriods and Offset. In the
+second dimension we want to group hours (or time periods) in every
+macro period into blocks based on their characteristics (e.g. hours
+with similar residual load). Every block is a period of
 AdaptiveHorizon consisting of a UnitsTimeDelta.
 
-AdaptiveHorizon is built based on a dataset. We implement 
+AdaptiveHorizon is built based on a dataset. We implement
 StaticRHSAHData, DynamicRHSAHData and DynamicExogenPriceAHData.
-AdaptiveHorizon can be built with different methods. We implement 
+AdaptiveHorizon can be built with different methods. We implement
 PercentilesAHMethod and KMeansAHMethod
 
-Heres an example if we split the hours in every week, into 2 blocks 
+Heres an example if we split the hours in every week, into 2 blocks
 by high load (day), and low load (night):
 macro_periods: weekly resolution
 num_block: 2 blocks per macro period
@@ -54,13 +54,13 @@ Horizon interface functions ---------------------
     getstartduration(::Horizon, ::Int) -> Millisecond
     getendperiodfromduration(::Horizon, ::Millisecond) -> Int
     gettimedelta(::Horizon, ::Int) -> TimeDelta
-    
+
     # To support different Horizons between variables (Flow and Storage) and Balances
     # Return subperiods from the fine Horizon that are inside period s in the coarse Horizon.
     # The two Horizons must be compatible
     getsubperiods(coarse::Horizon, fine::Horizon, s::Int) -> UnitRange{Int}
 
-    # To support AdaptiveHorizon which has to be built and possibly updated dynamically 
+    # To support AdaptiveHorizon which has to be built and possibly updated dynamically
     build!(horizon::Horizon, prob::Prob)
     update!(horizon::Horizon, t::ProbTime)
 
@@ -76,11 +76,11 @@ Horizon interface functions ---------------------
 using Clustering, Random
 
 # --------- Generic fallback Horizon interface -----------------
-# We want to update the problem efficiently, so we check if 
+# We want to update the problem efficiently, so we check if
 # problem values must be updated dynamically
-# If the value is the same for all scenarios and time periods, 
+# If the value is the same for all scenarios and time periods,
 # it should only be updated once using setconstants! instead of update!
-function _must_dynamic_update(paramlike::Any, horizon::Horizon) 
+function _must_dynamic_update(paramlike::Any, horizon::Horizon)
     isstateful(paramlike) && return true
     isconstant(paramlike) || return true
 
@@ -90,7 +90,7 @@ function _must_dynamic_update(paramlike::Any, horizon::Horizon)
 
     return false
 end
-function _must_dynamic_update(paramlike::Any) 
+function _must_dynamic_update(paramlike::Any)
     isstateful(paramlike) && return true
     isconstant(paramlike) || return true
 
@@ -105,9 +105,9 @@ getlastperiod(h::Horizon) = getnumperiods(h)
 # ------ SequentialPeriods -----------
 # Component in SequentialHorizon and AdaptiveHorizon
 struct SequentialPeriods
-    data::Vector{Tuple{Int, Millisecond}}
+    data::Vector{Tuple{Int,Millisecond}}
 
-    function SequentialPeriods(data::Vector{Tuple{Int, Millisecond}}) 
+    function SequentialPeriods(data::Vector{Tuple{Int,Millisecond}})
         for (n, ms) in data
             @assert n > 0
             @assert ms > Millisecond(0)
@@ -124,7 +124,7 @@ function parse_int_period_args(int_period...)
 
     num_tuples = n ÷ 2
 
-    list = Vector{Tuple{Int, Millisecond}}(undef, num_tuples)
+    list = Vector{Tuple{Int,Millisecond}}(undef, num_tuples)
     for (i, ev) in enumerate(2:2:(n+1))
         od = ev - 1
         n = int_period[od]
@@ -152,7 +152,7 @@ function parse_timeperiod_args(start::DateTime, stop::DateTime, delta::Period)
         error("delta < Millisecond(1)")
     end
 
-    up = (stop-start).value
+    up = (stop - start).value
     lo = delta.value
     n = Int(floor(up / lo))
     rest = stop - (start + delta * n)
@@ -174,7 +174,7 @@ function SequentialPeriods(start::DateTime, stop::DateTime, delta::Period)
 end
 
 function getXs(x::SequentialPeriods, unit_duration::Millisecond)
-    Xs = Dict{Millisecond, Vector{Float64}}()
+    Xs = Dict{Millisecond,Vector{Float64}}()
     for (__, ms) in x.data
         if !haskey(Xs, ms)
             num_col = Int(ms.value / unit_duration.value)
@@ -187,7 +187,7 @@ end
 function getduration(x::SequentialPeriods)
     acc = Millisecond(0)
     for (n, ms) in x.data
-        acc += ms * n 
+        acc += ms * n
     end
     return acc
 end
@@ -216,7 +216,7 @@ function getendperiodfromduration(x::SequentialPeriods, d::Millisecond)
     acc = Millisecond(0)
     period = 0
     for (n, ms) in x.data
-        for i in 1:n
+        for i = 1:n
             period += 1
             acc += ms
             if acc == d
@@ -248,14 +248,16 @@ function getsubperiods(coarse::SequentialPeriods, fine::SequentialPeriods, coars
 
     # Other cases
     startduration = getstartduration(coarse, coarse_t)
-    stopduration  = getstartduration(coarse, coarse_t + 1)
-    
+    stopduration = getstartduration(coarse, coarse_t + 1)
+
     list_ix = 1
     fine_start = 0
     acc = Millisecond(0)
 
-    (list_ix, fine_start, acc) = accumulate_duration(fine, acc, startduration, list_ix, fine_start) 
-    (list_ix, fine_stop, acc) = accumulate_duration(fine, acc, stopduration, list_ix, fine_start-1)
+    (list_ix, fine_start, acc) =
+        accumulate_duration(fine, acc, startduration, list_ix, fine_start)
+    (list_ix, fine_stop, acc) =
+        accumulate_duration(fine, acc, stopduration, list_ix, fine_start - 1)
 
     fine_start += 1
     fine_stop += 1
@@ -263,8 +265,14 @@ function getsubperiods(coarse::SequentialPeriods, fine::SequentialPeriods, coars
     return fine_start:fine_stop
 end
 
-function accumulate_duration(x::SequentialPeriods, acc::Millisecond, target::Millisecond, list_ix::Int, t::Int)
-    for i in list_ix:lastindex(x.data)
+function accumulate_duration(
+    x::SequentialPeriods,
+    acc::Millisecond,
+    target::Millisecond,
+    list_ix::Int,
+    t::Int,
+)
+    for i = list_ix:lastindex(x.data)
         (n, ms) = x.data[i]
 
         to_next_duration = acc + ms * n
@@ -273,13 +281,15 @@ function accumulate_duration(x::SequentialPeriods, acc::Millisecond, target::Mil
             t += n
             acc = to_next_duration
             if acc == target
-                return (i+1, t, acc)
+                return (i + 1, t, acc)
             end
         else
             up = (target - acc).value
             lo = ms.value
             if up % lo != 0
-                error("Fine periods $(x.data) does not fit in coarse period target $target. For $n and $ms")
+                error(
+                    "Fine periods $(x.data) does not fit in coarse period target $target. For $n and $ms",
+                )
             else
                 m = up ÷ lo
                 t += m
@@ -296,30 +306,34 @@ end
 # --------- SequentialHorizon ------------------
 struct SequentialHorizon <: Horizon
     periods::SequentialPeriods
-    offset::Union{Offset, Nothing}
+    offset::Union{Offset,Nothing}
 
-    function SequentialHorizon(int_period...; offset::Union{Offset, Nothing} = nothing)
+    function SequentialHorizon(int_period...; offset::Union{Offset,Nothing} = nothing)
         periods = SequentialPeriods(int_period...)
         new(periods, offset)
     end
 
-    function SequentialHorizon(start::DateTime, stop::DateTime, duration::Period; 
-                                offset::Union{Offset, Nothing} = nothing)
+    function SequentialHorizon(
+        start::DateTime,
+        stop::DateTime,
+        duration::Period;
+        offset::Union{Offset,Nothing} = nothing,
+    )
         periods = SequentialPeriods(start, stop, duration)
         new(periods, offset)
     end
 
     # Make a fine horizon that is compatible with a coarse horizon (TODO: Also split mulitple (n,ms) pairs?)
-    function SequentialHorizon(coarse::SequentialHorizon, fineparts::Int) 
+    function SequentialHorizon(coarse::SequentialHorizon, fineparts::Int)
         data = Tuple{Int,Millisecond}[]
         offset = coarse.offset
 
-        for (i, (n,ms)) in enumerate(coarse.periods.data)
+        for (i, (n, ms)) in enumerate(coarse.periods.data)
             if i == 1
                 n *= fineparts
                 ms /= fineparts
             end
-            push!(data, (n,ms))
+            push!(data, (n, ms))
         end
 
         new(SequentialPeriods(data), offset)
@@ -332,7 +346,8 @@ build!(::SequentialHorizon, ::Prob) = nothing
 update!(::SequentialHorizon, ::ProbTime) = nothing
 getnumperiods(h::SequentialHorizon) = getnumperiods(h.periods)
 getstartduration(h::SequentialHorizon, t::Int) = getstartduration(h.periods, t)
-getendperiodfromduration(h::SequentialHorizon, d::Millisecond) = getendperiodfromduration(h.periods, d)
+getendperiodfromduration(h::SequentialHorizon, d::Millisecond) =
+    getendperiodfromduration(h.periods, d)
 getduration(h::SequentialHorizon) = getduration(h.periods)
 gettimedelta(h::SequentialHorizon, t::Int) = gettimedelta(h.periods, t)
 hasoffset(h::SequentialHorizon) = h.offset !== nothing
@@ -353,17 +368,31 @@ function getstarttime(h::SequentialHorizon, t::Int, start::ProbTime)
     return starttime
 end
 
-function getstarttime(h::SequentialHorizon, t::Int, start::Union{PrognosisTime, PhaseinPrognosisTime})
+function getstarttime(
+    h::SequentialHorizon,
+    t::Int,
+    start::Union{PrognosisTime,PhaseinPrognosisTime},
+)
     if hasoffset(h)
         offsetstart = getoffsettime(start, getoffset(h))
     else
         offsetstart = start
     end
-    starttime = offsetstart +  getstartduration(h.periods, t)
+    starttime = offsetstart + getstartduration(h.periods, t)
     if start isa PrognosisTime
-        return PrognosisTime(getdatatime(starttime), getprognosisdatatime(offsetstart), getscenariotime(starttime))
+        return PrognosisTime(
+            getdatatime(starttime),
+            getprognosisdatatime(offsetstart),
+            getscenariotime(starttime),
+        )
     else
-        return PhaseinPrognosisTime(getdatatime(starttime), getprognosisdatatime(offsetstart), getscenariotime1(starttime), getscenariotime2(starttime), getphaseinvector(starttime))
+        return PhaseinPrognosisTime(
+            getdatatime(starttime),
+            getprognosisdatatime(offsetstart),
+            getscenariotime1(starttime),
+            getscenariotime2(starttime),
+            getphaseinvector(starttime),
+        )
     end
 end
 
@@ -372,23 +401,29 @@ function getsubperiods(coarse::SequentialHorizon, fine::SequentialHorizon, coars
 end
 
 
-# ------------- AdaptiveHorizon ---------------- 
+# ------------- AdaptiveHorizon ----------------
 
 abstract type AdaptiveHorizonData end
 abstract type AdaptiveHorizonMethod end
 
-struct AdaptiveHorizon{D <: AdaptiveHorizonData, M <: AdaptiveHorizonMethod} <: Horizon
+struct AdaptiveHorizon{D<:AdaptiveHorizonData,M<:AdaptiveHorizonMethod} <: Horizon
     macro_periods::SequentialPeriods
     num_block::Int
     unit_duration::Millisecond
     data::D
     method::M
     periods::Vector{UnitsTimeDelta}
-    Xs::Dict{Millisecond, Vector{Float64}}
-    offset::Union{Offset, Nothing}
+    Xs::Dict{Millisecond,Vector{Float64}}
+    offset::Union{Offset,Nothing}
 
-    function AdaptiveHorizon(macro_periods::SequentialPeriods, num_block::Int, unit_duration::Period, 
-                            data, method; offset::Union{Offset, Nothing} = nothing)
+    function AdaptiveHorizon(
+        macro_periods::SequentialPeriods,
+        num_block::Int,
+        unit_duration::Period,
+        data,
+        method;
+        offset::Union{Offset,Nothing} = nothing,
+    )
         unit_duration = Millisecond(unit_duration)
         @assert num_block > 0
         @assert unit_duration > Millisecond(0)
@@ -399,31 +434,88 @@ struct AdaptiveHorizon{D <: AdaptiveHorizonData, M <: AdaptiveHorizonMethod} <: 
         if hasconstantdurations(method)
             # setconstants!(prob) may be called (if AdaptiveHorizonData is dynamic and dataset has constant values)
             # in this case, setconstants! needs to know the amount of units in each timedelta. Which units are not important, only the number
-            periods = [UnitsTimeDelta([1:Int(mp_duration/unit_duration/num_block)], unit_duration) for (num_mp, mp_duration) in macro_periods.data for __ in 1:num_mp*num_block]
+            periods = [
+                UnitsTimeDelta(
+                    [1:Int(mp_duration / unit_duration / num_block)],
+                    unit_duration,
+                ) for (num_mp, mp_duration) in macro_periods.data for
+                __ = 1:num_mp*num_block
+            ]
         else
-            periods = [UnitsTimeDelta([], unit_duration) for __ in 1:num_periods]
+            periods = [UnitsTimeDelta([], unit_duration) for __ = 1:num_periods]
         end
-        new{typeof(data), typeof(method)}(macro_periods, num_block, unit_duration, 
-                                        data, method, periods, Xs, offset)
+        new{typeof(data),typeof(method)}(
+            macro_periods,
+            num_block,
+            unit_duration,
+            data,
+            method,
+            periods,
+            Xs,
+            offset,
+        )
     end
 
-    function AdaptiveHorizon(num_block::Int, unit_duration::Period, 
-                            data, method, int_period...; offset::Union{Offset, Nothing} = nothing)
+    function AdaptiveHorizon(
+        num_block::Int,
+        unit_duration::Period,
+        data,
+        method,
+        int_period...;
+        offset::Union{Offset,Nothing} = nothing,
+    )
         macro_periods = SequentialPeriods(int_period...)
-        AdaptiveHorizon(macro_periods, num_block, unit_duration, data, method; offset=offset)
+        AdaptiveHorizon(
+            macro_periods,
+            num_block,
+            unit_duration,
+            data,
+            method;
+            offset = offset,
+        )
     end
 
-    function AdaptiveHorizon(num_block::Int, unit_duration::Period, data, method, 
-                            start::DateTime, stop::DateTime, macro_duration::Period; 
-                            offset::Union{Offset, Nothing} = nothing)
+    function AdaptiveHorizon(
+        num_block::Int,
+        unit_duration::Period,
+        data,
+        method,
+        start::DateTime,
+        stop::DateTime,
+        macro_duration::Period;
+        offset::Union{Offset,Nothing} = nothing,
+    )
         macro_periods = SequentialPeriods(start, stop, macro_duration)
-        AdaptiveHorizon(macro_periods, num_block, unit_duration, data, method; offset=offset)
+        AdaptiveHorizon(
+            macro_periods,
+            num_block,
+            unit_duration,
+            data,
+            method;
+            offset = offset,
+        )
     end
 
-    function AdaptiveHorizon(macro_periods::SequentialPeriods, num_block::Int, unit_duration::Millisecond, 
-                            data, method, periods::Vector{UnitsTimeDelta}, Xs::Dict{Millisecond, Vector{Float64}},
-                            offset::Union{Offset, Nothing} = nothing)
-        new{typeof(data), typeof(method)}(macro_periods, num_block, unit_duration, data, method, periods, Xs, offset)
+    function AdaptiveHorizon(
+        macro_periods::SequentialPeriods,
+        num_block::Int,
+        unit_duration::Millisecond,
+        data,
+        method,
+        periods::Vector{UnitsTimeDelta},
+        Xs::Dict{Millisecond,Vector{Float64}},
+        offset::Union{Offset,Nothing} = nothing,
+    )
+        new{typeof(data),typeof(method)}(
+            macro_periods,
+            num_block,
+            unit_duration,
+            data,
+            method,
+            periods,
+            Xs,
+            offset,
+        )
     end
 end
 
@@ -439,10 +531,12 @@ function getlightweightself(h::AdaptiveHorizon)
         AHDummyData(),
         AHDummyMethod(),
         h.periods,
-        Dict{Millisecond, Vector{Float64}}(),
-        h.offset)
+        Dict{Millisecond,Vector{Float64}}(),
+        h.offset,
+    )
 end
-getchanges(h::AdaptiveHorizon) = Dict("periods" => h.periods, "macro_periods_data" => h.macro_periods.data)
+getchanges(h::AdaptiveHorizon) =
+    Dict("periods" => h.periods, "macro_periods_data" => h.macro_periods.data)
 function setchanges!(h::AdaptiveHorizon, changes::Dict)
     # May have been modified by update!(horizon, t)
     h.periods .= changes["periods"]
@@ -464,7 +558,7 @@ function update!(horizon::AdaptiveHorizon, start::ProbTime)
     acc = Millisecond(0)
     for (num_mp, mp_duration) in horizon.macro_periods.data
         X = horizon.Xs[mp_duration]
-        for __ in 1:num_mp
+        for __ = 1:num_mp
             update_X!(X, horizon.data, start, acc, horizon.unit_duration)
             acc += mp_duration
 
@@ -478,11 +572,11 @@ function update!(horizon::AdaptiveHorizon, start::ProbTime)
             end
         end
     end
-    return 
+    return
 end
 
-function _get_units_per_block(assignments::Vector{T}, num_block::Int) where {T <: Real}
-    units_per_block = [UnitRange{Int}[] for __ in 1:num_block]
+function _get_units_per_block(assignments::Vector{T}, num_block::Int) where {T<:Real}
+    units_per_block = [UnitRange{Int}[] for __ = 1:num_block]
     current_block = first(assignments)
     start = 1
     prev = start
@@ -531,7 +625,11 @@ function getstarttime(h::AdaptiveHorizon, t::Int, start::ProbTime)
     return starttime
 end
 
-function getstarttime(h::AdaptiveHorizon, t::Int, start::Union{PrognosisTime, PhaseinPrognosisTime})
+function getstarttime(
+    h::AdaptiveHorizon,
+    t::Int,
+    start::Union{PrognosisTime,PhaseinPrognosisTime},
+)
     if hasoffset(h)
         offsetstart = getoffsettime(start, getoffset(h))
     else
@@ -539,13 +637,24 @@ function getstarttime(h::AdaptiveHorizon, t::Int, start::Union{PrognosisTime, Ph
     end
     starttime = offsetstart + getstartduration(h, t)
     if start isa PrognosisTime
-        return PrognosisTime(getdatatime(starttime), getprognosisdatatime(offsetstart), getscenariotime(starttime))
+        return PrognosisTime(
+            getdatatime(starttime),
+            getprognosisdatatime(offsetstart),
+            getscenariotime(starttime),
+        )
     else
-        return PhaseinPrognosisTime(getdatatime(starttime), getprognosisdatatime(offsetstart), getscenariotime1(starttime), getscenariotime2(starttime), getphaseinvector(starttime))
+        return PhaseinPrognosisTime(
+            getdatatime(starttime),
+            getprognosisdatatime(offsetstart),
+            getscenariotime1(starttime),
+            getscenariotime2(starttime),
+            getphaseinvector(starttime),
+        )
     end
 end
 
-getstartduration(h::AdaptiveHorizon, t::Int) = getstartduration(h.macro_periods, (t-1) ÷ h.num_block + 1)
+getstartduration(h::AdaptiveHorizon, t::Int) =
+    getstartduration(h.macro_periods, (t - 1) ÷ h.num_block + 1)
 gettimedelta(h::AdaptiveHorizon, t::Int) = h.periods[t]
 
 function getendperiodfromduration(h::AdaptiveHorizon, d::Millisecond)
@@ -593,8 +702,13 @@ function _get_rhs_terms_from_prob(prob::Prob, commodity::String)
     return rhs_terms
 end
 
-function _get_residual_load(rhs_terms::Vector, datatime::DateTime, start::DateTime, 
-                            stop::DateTime, unit_duration::Millisecond)
+function _get_residual_load(
+    rhs_terms::Vector,
+    datatime::DateTime,
+    start::DateTime,
+    stop::DateTime,
+    unit_duration::Millisecond,
+)
     num_values = Int((stop - start).value / unit_duration.value)
     x = zeros(num_values)
     index = StepRange(start, unit_duration, stop - unit_duration)
@@ -639,14 +753,24 @@ mutable struct StaticRHSAHData <: AdaptiveHorizonData
     datatime::DateTime
     start::DateTime
     stop::DateTime
-    unit_duration::Union{Nothing, Millisecond}
-    residual_load::Union{Nothing, RotatingTimeVector}
+    unit_duration::Union{Nothing,Millisecond}
+    residual_load::Union{Nothing,RotatingTimeVector}
 
-    function StaticRHSAHData(commodity::String, datatime::DateTime, start::DateTime, stop::DateTime)
+    function StaticRHSAHData(
+        commodity::String,
+        datatime::DateTime,
+        start::DateTime,
+        stop::DateTime,
+    )
         new(commodity, datatime, start, stop, nothing, nothing)
     end
 
-    function StaticRHSAHData(commodity::String, datayear::Int, startyear::Int, stopyear::Int)
+    function StaticRHSAHData(
+        commodity::String,
+        datayear::Int,
+        startyear::Int,
+        stopyear::Int,
+    )
         datatime = getisoyearstart(datayear)
         start = getisoyearstart(startyear)
         stop = getisoyearstart(stopyear)
@@ -654,20 +778,36 @@ mutable struct StaticRHSAHData <: AdaptiveHorizonData
     end
 end
 
-function init!(data::StaticRHSAHData, ::SequentialPeriods, ::Int, unit_duration::Millisecond)
+function init!(
+    data::StaticRHSAHData,
+    ::SequentialPeriods,
+    ::Int,
+    unit_duration::Millisecond,
+)
     data.unit_duration = unit_duration
     return
 end
 
 function build!(data::StaticRHSAHData, prob::Prob)
     rhs_terms = _get_rhs_terms_from_prob(prob, data.commodity)
-    residual_load = _get_residual_load(rhs_terms, data.datatime, data.start, data.stop, data.unit_duration)
+    residual_load = _get_residual_load(
+        rhs_terms,
+        data.datatime,
+        data.start,
+        data.stop,
+        data.unit_duration,
+    )
     data.residual_load = residual_load
     return
 end
 
-function update_X!(X::Vector{Float64}, data::StaticRHSAHData, start::ProbTime, 
-                   acc::Millisecond, unit_duration::Millisecond)
+function update_X!(
+    X::Vector{Float64},
+    data::StaticRHSAHData,
+    start::ProbTime,
+    acc::Millisecond,
+    unit_duration::Millisecond,
+)
     unit_delta = MsTimeDelta(unit_duration)
     scenariotime = getscenariotime(start)
     for col in eachindex(X)
@@ -691,8 +831,13 @@ function build!(data::DynamicRHSAHData, prob::Prob)
     return
 end
 
-function update_X!(X::Vector{Float64}, data::DynamicRHSAHData, start::ProbTime, 
-                   acc::Millisecond, unit_duration::Millisecond)
+function update_X!(
+    X::Vector{Float64},
+    data::DynamicRHSAHData,
+    start::ProbTime,
+    acc::Millisecond,
+    unit_duration::Millisecond,
+)
     fill!(X, 0.0)
     unit_delta = MsTimeDelta(unit_duration)
 
@@ -712,15 +857,16 @@ end
 # ------- DynamicExogenPriceAHData and FindFirstDynamicExogenPriceAHData
 mutable struct DynamicExogenPriceAHData <: AdaptiveHorizonData
     balanceid::Id
-    price::Union{Price, Nothing}
+    price::Union{Price,Nothing}
     DynamicExogenPriceAHData(balanceid) = new(balanceid, nothing)
 end
 mutable struct FindFirstDynamicExogenPriceAHData <: AdaptiveHorizonData
-    price::Union{Price, Nothing}
+    price::Union{Price,Nothing}
     FindFirstDynamicExogenPriceAHData() = new(nothing)
 end
 
-const DynamicExogenPriceAHDatas = Union{DynamicExogenPriceAHData, FindFirstDynamicExogenPriceAHData}
+const DynamicExogenPriceAHDatas =
+    Union{DynamicExogenPriceAHData,FindFirstDynamicExogenPriceAHData}
 
 init!(::DynamicExogenPriceAHDatas, ::SequentialPeriods, ::Int, ::Millisecond) = nothing
 
@@ -733,8 +879,13 @@ function build!(data::FindFirstDynamicExogenPriceAHData, prob::Prob)
     return
 end
 
-function update_X!(X::Vector{Float64}, data::DynamicExogenPriceAHDatas, start::ProbTime, 
-                   acc::Millisecond, unit_duration::Millisecond)
+function update_X!(
+    X::Vector{Float64},
+    data::DynamicExogenPriceAHDatas,
+    start::ProbTime,
+    acc::Millisecond,
+    unit_duration::Millisecond,
+)
     fill!(X, 0.0)
     unit_delta = MsTimeDelta(unit_duration)
 
@@ -748,7 +899,7 @@ end
 # ------- AdaptiveHorizonMethod types -------
 
 # AHDummyMethod -----------------
-struct AHDummyMethod <: AdaptiveHorizonMethod  end
+struct AHDummyMethod <: AdaptiveHorizonMethod end
 
 hasconstantdurations(::AHDummyMethod) = false
 
@@ -765,7 +916,7 @@ mutable struct PercentilesAHMethod <: AdaptiveHorizonMethod
 
         @assert n > 1
         @assert all(0 < i < 1 for i in x)
-        @assert all(x[i-1] < x[i] for i in 2:lastindex(x))
+        @assert all(x[i-1] < x[i] for i = 2:lastindex(x))
 
         new(x)
     end
@@ -776,7 +927,7 @@ hasconstantdurations(::PercentilesAHMethod) = true
 function init!(x::PercentilesAHMethod, ::SequentialPeriods, num_blocks::Int, ::Millisecond)
     if length(x.percentiles) == 0
         n = num_blocks
-        x.percentiles = [i/n for i in 1:(n-1)]
+        x.percentiles = [i / n for i = 1:(n-1)]
     else
         @assert length(x.percentiles) == (num_blocks + 1)
     end
@@ -797,7 +948,7 @@ function assign_blocks!(method::PercentilesAHMethod, X::Vector{Float64})
 
         if percent > limit
             block += 1
-            
+
             if block > length(method.percentiles)
                 limit = 1.0
             else
@@ -830,7 +981,8 @@ function assign_blocks!(method::KMeansAHMethod, X::Vector{Float64})
 
     # If there are less unique values than clusters, kmeans will not assign values to all cluster
     if length(Set(result.assignments)) < method.num_cluster
-        missing_clusters = setdiff([a for a in 1:method.num_cluster], Set(result.assignments))
+        missing_clusters =
+            setdiff([a for a = 1:method.num_cluster], Set(result.assignments))
         missing_index = 1
         for i in eachindex(result.assignments)
             if count(==(result.assignments[i]), result.assignments) > 1
@@ -845,14 +997,14 @@ function assign_blocks!(method::KMeansAHMethod, X::Vector{Float64})
     return result.assignments
 end
 
-# ------------- ExternalHorizon ---------------- 
+# ------------- ExternalHorizon ----------------
 """
-We need to transfer master-horizons from one core to other cores, 
+We need to transfer master-horizons from one core to other cores,
 and these should not do anything in update!(horizon, t),
 because they are updated as part of the data transfer, as the true
 horizon-update have already taken place in the master-horizon.
 """
-struct ExternalHorizon{H <: Horizon} <: Horizon
+struct ExternalHorizon{H<:Horizon} <: Horizon
     subhorizon::H
     function ExternalHorizon(h::Horizon)
         @assert !(h isa ExternalHorizon)
@@ -864,15 +1016,20 @@ end
 isadaptive(h::ExternalHorizon) = isadaptive(h.subhorizon)
 getnumperiods(h::ExternalHorizon) = getnumperiods(h.subhorizon)
 getstartduration(h::ExternalHorizon, t::Int) = getstartduration(h.subhorizon, t)
-getendperiodfromduration(h::ExternalHorizon, d::Millisecond) = getendperiodfromduration(h.subhorizon, d)
+getendperiodfromduration(h::ExternalHorizon, d::Millisecond) =
+    getendperiodfromduration(h.subhorizon, d)
 getduration(h::ExternalHorizon) = getduration(h.subhorizon)
 gettimedelta(h::ExternalHorizon, t::Int) = gettimedelta(h.subhorizon, t)
 hasoffset(h::ExternalHorizon) = hasoffset(h.subhorizon)
 getoffset(h::ExternalHorizon) = getoffset(h.subhorizon)
-getstarttime(h::ExternalHorizon, t::Int, start::ProbTime) = getstarttime(h.subhorizon, t, start)
-getsubperiods(coarse::ExternalHorizon, fine::Horizon, coarse_t::Int) = getsubperiods(coarse.subhorizon, fine, coarse_t)
-getsubperiods(coarse::Horizon, fine::ExternalHorizon, coarse_t::Int) = getsubperiods(coarse, fine.subhorizon, coarse_t)
-getsubperiods(coarse::ExternalHorizon, fine::ExternalHorizon, coarse_t::Int) = getsubperiods(coarse.subhorizon,fine.subhorizon,coarse_t)
+getstarttime(h::ExternalHorizon, t::Int, start::ProbTime) =
+    getstarttime(h.subhorizon, t, start)
+getsubperiods(coarse::ExternalHorizon, fine::Horizon, coarse_t::Int) =
+    getsubperiods(coarse.subhorizon, fine, coarse_t)
+getsubperiods(coarse::Horizon, fine::ExternalHorizon, coarse_t::Int) =
+    getsubperiods(coarse, fine.subhorizon, coarse_t)
+getsubperiods(coarse::ExternalHorizon, fine::ExternalHorizon, coarse_t::Int) =
+    getsubperiods(coarse.subhorizon, fine.subhorizon, coarse_t)
 hasconstantdurations(h::ExternalHorizon) = hasconstantdurations(h.subhorizon)
 mayshiftfrom(h::ExternalHorizon, t::Int) = mayshiftfrom(h.subhorizon, t)
 mustupdate(h::ExternalHorizon, t::Int) = mustupdate(h.subhorizon, t)
@@ -883,10 +1040,10 @@ setchanges!(h::ExternalHorizon, changes::Dict) = setchanges!(h.subhorizon, chang
 build!(h::ExternalHorizon, p::Prob) = nothing
 update!(::ExternalHorizon, ::ProbTime) = nothing
 
-# ------------- ShortenedHorizon ---------------- 
+# ------------- ShortenedHorizon ----------------
 """
-In JulES, we would like subsystem models to use same horizon 
-as price prognosis models, but not neccesary the whole horizon. For many systems, 
+In JulES, we would like subsystem models to use same horizon
+as price prognosis models, but not neccesary the whole horizon. For many systems,
 the first 2-3 years would be sufficiently long horizon. ShortenedHorizon meets
 this need, as it wraps another horizon, and only use some of the first periods.
 """
@@ -908,20 +1065,28 @@ hasconstantdurations(h::ShortenedHorizon) = hasconstantdurations(h.subhorizon)
 
 # Specialized methods
 getparentindex(h::ShortenedHorizon, t::Int) = t + h.ix_start - 1
-getstartduration(h::ShortenedHorizon, t::Int) = getstartduration(h.subhorizon, getparentindex(h.subhorizon, t))
-gettimedelta(h::ShortenedHorizon, t::Int) = gettimedelta(h.subhorizon, getparentindex(h.subhorizon, t))
-getstarttime(h::ShortenedHorizon, t::Int, start::ProbTime) = getstarttime(h.subhorizon, getparentindex(h.subhorizon, t), start)
+getstartduration(h::ShortenedHorizon, t::Int) =
+    getstartduration(h.subhorizon, getparentindex(h.subhorizon, t))
+gettimedelta(h::ShortenedHorizon, t::Int) =
+    gettimedelta(h.subhorizon, getparentindex(h.subhorizon, t))
+getstarttime(h::ShortenedHorizon, t::Int, start::ProbTime) =
+    getstarttime(h.subhorizon, getparentindex(h.subhorizon, t), start)
 getnumperiods(h::ShortenedHorizon) = h.ix_stop - h.ix_start + 1
 getlastperiod(h::ShortenedHorizon) = h.ix_stop
-mustupdate(h::ShortenedHorizon, t::Int) = mustupdate(h.subhorizon, getparentindex(h.subhorizon, t))
+mustupdate(h::ShortenedHorizon, t::Int) =
+    mustupdate(h.subhorizon, getparentindex(h.subhorizon, t))
 getperiods(h::ShortenedHorizon) = h.ix_start:h.ix_stop
 
-getsubperiods(coarse::ShortenedHorizon, fine::Horizon, coarse_t::Int) = error("getsubperiods() for coarse ShortenedHorizon and fine Horizon not supported")
-getsubperiods(coarse::Horizon, fine::ShortenedHorizon, coarse_t::Int) = error("getsubperiods() for coarse Horizon and fine ShortenedHorizon not supported")
+getsubperiods(coarse::ShortenedHorizon, fine::Horizon, coarse_t::Int) =
+    error("getsubperiods() for coarse ShortenedHorizon and fine Horizon not supported")
+getsubperiods(coarse::Horizon, fine::ShortenedHorizon, coarse_t::Int) =
+    error("getsubperiods() for coarse Horizon and fine ShortenedHorizon not supported")
 function getsubperiods(coarse::ShortenedHorizon, fine::ShortenedHorizon, coarse_t::Int)
     coarse_t_parent = getparentindex(coarse, coarse_t)
-    subperiods_parent = getsubperiods(coarse.subhorizon,fine.subhorizon,coarse_t_parent)
-    return (first(subperiods_parent)-fine.ix_start+1):(last(subperiods_parent)-fine.ix_start+1)
+    subperiods_parent = getsubperiods(coarse.subhorizon, fine.subhorizon, coarse_t_parent)
+    return (first(subperiods_parent)-fine.ix_start+1):(last(
+        subperiods_parent,
+    )-fine.ix_start+1)
 end
 
 function mayshiftfrom(h::ShortenedHorizon, t::Int)
@@ -930,13 +1095,13 @@ function mayshiftfrom(h::ShortenedHorizon, t::Int)
     t_future = t_parent_future - h.ix_start + 1
     if ok && (t_parent_future > h.ix_stop)
         return (t_future, false)
-    end 
+    end
     return (t_future, ok)
 end
 
 function getduration(h::ShortenedHorizon)
     acc = Millisecond(0)
-    for t in h.ix_start:h.ix_stop
+    for t = h.ix_start:h.ix_stop
         acc += getduration(gettimedelta(h.subhorizon, t))
     end
     return acc
@@ -944,14 +1109,14 @@ end
 
 function getdurationtoend(h::ShortenedHorizon)
     acc = Millisecond(0)
-    for t in 1:h.ix_stop
+    for t = 1:h.ix_stop
         acc += getduration(gettimedelta(h.subhorizon, t))
     end
     return acc
 end
 
 function getendperiodfromduration(h::ShortenedHorizon, d::Millisecond)
-    for t_front in 1:(h.ix_start-1)
+    for t_front = 1:(h.ix_start-1)
         d += getduration(gettimedelta(h.subhorizon, t_front))
     end
     t_parent = getendperiodfromduration(h.subhorizon, d)
@@ -961,16 +1126,16 @@ end
 build!(h::ShortenedHorizon, p::Prob) = build!(h.subhorizon, p)
 update!(h::ShortenedHorizon, t::ProbTime) = update!(h.subhorizon, t)
 
-# ------------- IgnoreMustupdateMayshiftfromHorizon ---------------- 
+# ------------- IgnoreMustupdateMayshiftfromHorizon ----------------
 """
-A horizon that deactivates the mustupdate and mayshiftfrom functionality of 
+A horizon that deactivates the mustupdate and mayshiftfrom functionality of
 ShrinkableHorizon and ShiftableHorizon. Useful in JulES if subsystems models
 use the same horizons as price prognosis models. The subsystems models can not
 use the mustupdate and mayshiftfrom functionality if the scenario generation
 changes the scenarios for each step.
 
 """
-struct IgnoreMustupdateMayshiftfromHorizon{H <: Horizon} <: Horizon
+struct IgnoreMustupdateMayshiftfromHorizon{H<:Horizon} <: Horizon
     subhorizon::H
     function IgnoreMustupdateMayshiftfromHorizon(h::Horizon)
         @assert !(h isa IgnoreMustupdateMayshiftfromHorizon)
@@ -984,20 +1149,31 @@ update!(h::IgnoreMustupdateMayshiftfromHorizon, t::ProbTime) = update!(h.subhori
 isadaptive(h::IgnoreMustupdateMayshiftfromHorizon) = isadaptive(h.subhorizon)
 getnumperiods(h::IgnoreMustupdateMayshiftfromHorizon) = getnumperiods(h.subhorizon)
 getlastperiod(h::IgnoreMustupdateMayshiftfromHorizon) = getlastperiod(h.subhorizon)
-getstartduration(h::IgnoreMustupdateMayshiftfromHorizon, t::Int) = getstartduration(h.subhorizon, t)
-getendperiodfromduration(h::IgnoreMustupdateMayshiftfromHorizon, d::Millisecond) = getendperiodfromduration(h.subhorizon, d)
+getstartduration(h::IgnoreMustupdateMayshiftfromHorizon, t::Int) =
+    getstartduration(h.subhorizon, t)
+getendperiodfromduration(h::IgnoreMustupdateMayshiftfromHorizon, d::Millisecond) =
+    getendperiodfromduration(h.subhorizon, d)
 getduration(h::IgnoreMustupdateMayshiftfromHorizon) = getduration(h.subhorizon)
 getdurationtoend(h::IgnoreMustupdateMayshiftfromHorizon) = getdurationtoend(h.subhorizon)
 gettimedelta(h::IgnoreMustupdateMayshiftfromHorizon, t::Int) = gettimedelta(h.subhorizon, t)
 hasoffset(h::IgnoreMustupdateMayshiftfromHorizon) = hasoffset(h.subhorizon)
 getoffset(h::IgnoreMustupdateMayshiftfromHorizon) = getoffset(h.subhorizon)
 getperiods(h::IgnoreMustupdateMayshiftfromHorizon) = getperiods(h.subhorizon)
-getstarttime(h::IgnoreMustupdateMayshiftfromHorizon, t::Int, start::ProbTime) = getstarttime(h.subhorizon, t, start)
-getsubperiods(coarse::IgnoreMustupdateMayshiftfromHorizon, fine::Horizon, coarse_t::Int) = getsubperiods(coarse.subhorizon, fine, coarse_t)
-getsubperiods(coarse::Horizon, fine::IgnoreMustupdateMayshiftfromHorizon, coarse_t::Int) = getsubperiods(coarse, fine.subhorizon, coarse_t)
-getsubperiods(coarse::IgnoreMustupdateMayshiftfromHorizon, fine::IgnoreMustupdateMayshiftfromHorizon, coarse_t::Int) = getsubperiods(coarse.subhorizon,fine.subhorizon,coarse_t)
-hasconstantdurations(h::IgnoreMustupdateMayshiftfromHorizon) = hasconstantdurations(h.subhorizon)
-getparentindex(h::IgnoreMustupdateMayshiftfromHorizon, t::Int) = getparentindex(h.subhorizon, t)
+getstarttime(h::IgnoreMustupdateMayshiftfromHorizon, t::Int, start::ProbTime) =
+    getstarttime(h.subhorizon, t, start)
+getsubperiods(coarse::IgnoreMustupdateMayshiftfromHorizon, fine::Horizon, coarse_t::Int) =
+    getsubperiods(coarse.subhorizon, fine, coarse_t)
+getsubperiods(coarse::Horizon, fine::IgnoreMustupdateMayshiftfromHorizon, coarse_t::Int) =
+    getsubperiods(coarse, fine.subhorizon, coarse_t)
+getsubperiods(
+    coarse::IgnoreMustupdateMayshiftfromHorizon,
+    fine::IgnoreMustupdateMayshiftfromHorizon,
+    coarse_t::Int,
+) = getsubperiods(coarse.subhorizon, fine.subhorizon, coarse_t)
+hasconstantdurations(h::IgnoreMustupdateMayshiftfromHorizon) =
+    hasconstantdurations(h.subhorizon)
+getparentindex(h::IgnoreMustupdateMayshiftfromHorizon, t::Int) =
+    getparentindex(h.subhorizon, t)
 
 # Specialized methods are the same as generic
 # mayshiftfrom(::Horizon, ::Int) = (HORIZON_NOSHIFT, false)
@@ -1005,8 +1181,3 @@ getparentindex(h::IgnoreMustupdateMayshiftfromHorizon, t::Int) = getparentindex(
 
 # ------ Include dataelements -------
 # TODO
-
-
-
-
-

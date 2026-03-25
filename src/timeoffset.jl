@@ -4,10 +4,10 @@ We implement TimeDeltaOffset and IsoYearOffset
 TimeDeltaOffset shifts ProbTime with a TimeDelta
 
 ScenarioOffset also has an offset that represent the scenario. The total
-offset is the sum of the two offsets. Compatible with PhaseInTwoTime where 
+offset is the sum of the two offsets. Compatible with PhaseInTwoTime where
 both offsets does not apply to the same elements.
 
-IsoYearOffset shifts ProbTime with a TimeDelta and also the 
+IsoYearOffset shifts ProbTime with a TimeDelta and also the
 scenariotime to another isoyear.
 """
 
@@ -38,42 +38,74 @@ end
 
 
 function getoffsettime(start::TwoTime, offset::ScenarioOffset)
-    starttime = TwoTime(getdatatime(start), getscenariotime(start) + getduration(getscenariodelta(offset)))
+    starttime = TwoTime(
+        getdatatime(start),
+        getscenariotime(start) + getduration(getscenariodelta(offset)),
+    )
     return starttime + gettimedelta(offset)
 end
 
 function getoffsettime(start::FixedDataTwoTime, offset::ScenarioOffset)
-    starttime = FixedDataTwoTime(getdatatime(start), getscenariotime(start) + getduration(getscenariodelta(offset)))
+    starttime = FixedDataTwoTime(
+        getdatatime(start),
+        getscenariotime(start) + getduration(getscenariodelta(offset)),
+    )
     return starttime + gettimedelta(offset)
 end
 
 function getoffsettime(start::PhaseinTwoTime, offset::ScenarioOffset)
-    starttime = PhaseinTwoTime(getdatatime(start), getscenariotime1(start), getscenariotime2(start) + getduration(getscenariodelta(offset)), getphaseinvector(start))
+    starttime = PhaseinTwoTime(
+        getdatatime(start),
+        getscenariotime1(start),
+        getscenariotime2(start) + getduration(getscenariodelta(offset)),
+        getphaseinvector(start),
+    )
     return starttime + gettimedelta(offset)
 end
 
 function getoffsettime(start::PhaseinFixedDataTwoTime, offset::ScenarioOffset)
-    starttime = PhaseinFixedDataTwoTime(getdatatime(start), getscenariotime1(start), getscenariotime2(start) + getduration(getscenariodelta(offset)), getphaseinvector(start))
+    starttime = PhaseinFixedDataTwoTime(
+        getdatatime(start),
+        getscenariotime1(start),
+        getscenariotime2(start) + getduration(getscenariodelta(offset)),
+        getphaseinvector(start),
+    )
     return starttime + gettimedelta(offset)
 end
 
 
 function getoffsettime(start::TwoTime, offset::IsoYearOffset)
-    starttime = TwoTime(getdatatime(start), getsimilardatetime(getscenariotime(start), getisoyear(offset)))
+    starttime = TwoTime(
+        getdatatime(start),
+        getsimilardatetime(getscenariotime(start), getisoyear(offset)),
+    )
     return starttime + gettimedelta(offset)
 end
 
 function getoffsettime(start::FixedDataTwoTime, offset::IsoYearOffset)
-    starttime = FixedDataTwoTime(getdatatime(start), getsimilardatetime(getscenariotime(start), getisoyear(offset)))
+    starttime = FixedDataTwoTime(
+        getdatatime(start),
+        getsimilardatetime(getscenariotime(start), getisoyear(offset)),
+    )
     return starttime + gettimedelta(offset)
 end
 
 function getoffsettime(start::PhaseinTwoTime, offset::IsoYearOffset)
-    starttime = PhaseinTwoTime(getdatatime(start), getscenariotime1(start), getsimilardatetime(getscenariotime2(start), getisoyear(offset)), getphaseinvector(start))
+    starttime = PhaseinTwoTime(
+        getdatatime(start),
+        getscenariotime1(start),
+        getsimilardatetime(getscenariotime2(start), getisoyear(offset)),
+        getphaseinvector(start),
+    )
     return starttime + gettimedelta(offset)
 end
 
 function getoffsettime(start::PhaseinFixedDataTwoTime, offset::IsoYearOffset)
-    starttime = PhaseinFixedDataTwoTime(getdatatime(start), getscenariotime1(start), getsimilardatetime(getscenariotime2(start), getisoyear(offset)), getphaseinvector(start))
+    starttime = PhaseinFixedDataTwoTime(
+        getdatatime(start),
+        getscenariotime1(start),
+        getsimilardatetime(getscenariotime2(start), getisoyear(offset)),
+        getphaseinvector(start),
+    )
     return starttime + gettimedelta(offset)
 end

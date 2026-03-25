@@ -23,9 +23,9 @@ function includeSimpleLoss!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, v
 
     utilization = getdictvalue(value, UTILIZATIONKEY, Float64, elkey)
     @assert 0.0 <= utilization <= 1.0
-    
-    objname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
-    objconcept = getdictvalue(value, WHICHCONCEPT,  String, elkey)
+
+    objname = getdictvalue(value, WHICHINSTANCE, String, elkey)
+    objconcept = getdictvalue(value, WHICHCONCEPT, String, elkey)
     objkey = Id(objconcept, objname)
     push!(deps, objkey)
 
@@ -40,7 +40,7 @@ function includeSimpleLoss!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, v
     loss = SimpleLoss(lossvalue, utilization)
 
     setloss!(obj, loss)
-    
+
     return (true, deps)
 end
 

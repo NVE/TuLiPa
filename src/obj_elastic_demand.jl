@@ -1,70 +1,72 @@
 """
-This object makes it possible to have elastic demand, instead of constant demand this 
+This object makes it possible to have elastic demand, instead of constant demand this
 demand can increase or decrease based on the price.
 
-This object takes in a balance, price_elasticity, normal_price, max_price, min_price and threshold. Price_elasticity, 
-normal_price, max_price and min_price is used to create supply and demand curve. The curve is then segmented 
-by optimization, finding the smallest N segments that fits the curve within the given threshold. It will then create 
+This object takes in a balance, price_elasticity, normal_price, max_price, min_price and threshold. Price_elasticity,
+normal_price, max_price and min_price is used to create supply and demand curve. The curve is then segmented
+by optimization, finding the smallest N segments that fits the curve within the given threshold. It will then create
 segments_capacities and reserve_prices vectors, each price segment can then have its own capacity/upper bound.
 """
 
 
-struct ElasticDemand{B <: Balance, P <: Param, T <: Real} <: Demand
+struct ElasticDemand{B<:Balance,P<:Param,T<:Real} <: Demand
     id::Id
     balance::B
     firm_demand::P
     normal_price::T
     price_elasticity::T
-    min_price::T 
+    min_price::T
     max_price::T
     N::Int64
     segment_capacities::Vector{T}
     reserve_prices::Vector{T}
-    
-    function ElasticDemand(
-            id::Id, 
-            balance::B, 
-            firm_demand_param::P, 
-            price_elasticity::T, 
-            normal_price::T, 
-            max_price::T, 
-            min_price::T,
-            threshold::T
-        ) where {B <: Balance, P <: Param, T <: Real}
 
-        min_relative_demand = price_to_relative_demand(normal_price, price_elasticity, max_price)
-        max_relative_demand = price_to_relative_demand(normal_price, price_elasticity, min_price)
+    function ElasticDemand(
+        id::Id,
+        balance::B,
+        firm_demand_param::P,
+        price_elasticity::T,
+        normal_price::T,
+        max_price::T,
+        min_price::T,
+        threshold::T,
+    ) where {B<:Balance,P<:Param,T<:Real}
+
+        min_relative_demand =
+            price_to_relative_demand(normal_price, price_elasticity, max_price)
+        max_relative_demand =
+            price_to_relative_demand(normal_price, price_elasticity, min_price)
 
         L, reserve_prices, N = optimize_segments(
-            normal_price, 
-            price_elasticity, 
-            min_relative_demand, 
-            max_relative_demand, 
-            threshold
-        ) 
+            normal_price,
+            price_elasticity,
+            min_relative_demand,
+            max_relative_demand,
+            threshold,
+        )
 
         reserve_prices = adjust_prices_for_demand_curve_area(
-            normal_price, 
-            price_elasticity, 
-            min_relative_demand, 
+            normal_price,
+            price_elasticity,
+            min_relative_demand,
             max_relative_demand,
-            L, 
-            reserve_prices
+            L,
+            reserve_prices,
         )
 
         segment_capacities = [first(L), diff(L)...]
 
-        new{B, P, T}(
-            id, 
-            balance, 
-            firm_demand_param, 
-            normal_price, 
-            price_elasticity, 
-            min_price, 
-            max_price, 
+        new{B,P,T}(
+            id,
+            balance,
+            firm_demand_param,
+            normal_price,
+            price_elasticity,
+            min_price,
+            max_price,
             N,
-            segment_capacities, 
-            reserve_prices
+            segment_capacities,
+            reserve_prices,
         )
     end
 end
@@ -75,9 +77,9 @@ getparent(var::ElasticDemand) = var.balance
 
 function getreserveprice(p::Prob, var::ElasticDemand, t::Int64)
     price = relative_demand_to_price(
-        var.normal_price, 
-        var.price_elasticity, 
-        getdemand(p, var, t)
+        var.normal_price,
+        var.price_elasticity,
+        getdemand(p, var, t),
     )
     price > var.max_price && return var.max_price
     price < var.min_price && return var.min_price
@@ -86,7 +88,7 @@ end
 
 function getdemand(p::Prob, var::ElasticDemand, t::Int64)
     total_demand = 0
-    for seg_no in 1:var.N
+    for seg_no = 1:var.N
         seg_id = create_segment_id(var, seg_no)
         total_demand += getvarvalue(p, seg_id, t)
     end
@@ -97,14 +99,14 @@ end
 function relative_demand_to_price(normal_price, price_elasticity, f)
     p_ref = normal_price
     e = price_elasticity
-    return p_ref .* f.^(1/e)
+    return p_ref .* f .^ (1 / e)
 end
 
 # Price_to_demand divided by f_ref
 function price_to_relative_demand(normal_price, price_elasticity, p)
     p_ref = normal_price
     e = price_elasticity
-    return (p./p_ref).^e
+    return (p ./ p_ref) .^ e
 end
 
 function create_segment_id(var::ElasticDemand, seg_no::Int)
@@ -112,36 +114,48 @@ function create_segment_id(var::ElasticDemand, seg_no::Int)
 end
 
 function adjust_prices_for_demand_curve_area(
-        normal_price, 
-        price_elasticity, 
-        min_relative_demand, 
-        max_relative_demand,
-        L, 
-        reserve_prices
-    )
+    normal_price,
+    price_elasticity,
+    min_relative_demand,
+    max_relative_demand,
+    L,
+    reserve_prices,
+)
     max_price = reserve_prices[1]
-    demand_integral = (p_normal, e, f) -> (p_normal .* e .* f.^(1 + 1/e))/(1 + e)
-    demand_area = (p_normal, e, f1, f2) -> demand_integral(p_normal, e, f2) - demand_integral(p_normal, e, f1)
+    demand_integral = (p_normal, e, f) -> (p_normal .* e .* f .^ (1 + 1 / e)) / (1 + e)
+    demand_area =
+        (p_normal, e, f1, f2) ->
+            demand_integral(p_normal, e, f2) - demand_integral(p_normal, e, f1)
     demand_approx_area = (p, seg) -> sum(p .* seg)
-    factor = (p_normal, e, f1, f2, p, seg) -> demand_area(p_normal, e, f1, f2) / demand_approx_area(p, seg)
+    factor =
+        (p_normal, e, f1, f2, p, seg) ->
+            demand_area(p_normal, e, f1, f2) / demand_approx_area(p, seg)
     reserve = reserve_prices[1:end-1]
     seg = diff(L)
     p_factor = factor(
-        normal_price, 
-        price_elasticity, 
-        min_relative_demand, 
-        max_relative_demand, 
-        reserve, 
-        seg
-    ) 
+        normal_price,
+        price_elasticity,
+        min_relative_demand,
+        max_relative_demand,
+        reserve,
+        seg,
+    )
     reserve_prices = reserve * p_factor
     insert!(reserve_prices, 1, max_price)
     return reserve_prices
 end
 
-function optimize_segments(normal_price, price_elasticity, min_relative_demand, max_relative_demand, tolerance; max_depth = 6)
+function optimize_segments(
+    normal_price,
+    price_elasticity,
+    min_relative_demand,
+    max_relative_demand,
+    tolerance;
+    max_depth = 6,
+)
     f = (x) -> relative_demand_to_price(normal_price, price_elasticity, x)
-    x_points = adaptive_sampling(f, min_relative_demand, max_relative_demand, tolerance, max_depth)
+    x_points =
+        adaptive_sampling(f, min_relative_demand, max_relative_demand, tolerance, max_depth)
     y_points = relative_demand_to_price(normal_price, price_elasticity, x_points)
     N = length(x_points)
     @assert N <= 10
@@ -171,7 +185,7 @@ end
 
 function build!(p::Prob, var::ElasticDemand)
     T = getnumperiods(gethorizon(var.balance))
-    for i in 1:var.N
+    for i = 1:var.N
         addvar!(p, create_segment_id(var, i), T)
     end
 end
@@ -180,9 +194,9 @@ function setconstants!(p::Prob, var::ElasticDemand)
     balanceid = getid(var.balance)
     horizon = gethorizon(var.balance)
     T = getnumperiods(horizon)
-    for i in 1:var.N
+    for i = 1:var.N
         varid = create_segment_id(var, i)
-        for t in 1:T
+        for t = 1:T
             setconcoeff!(p, balanceid, varid, t, t, 1.0)
             setobjcoeff!(p, varid, t, -var.reserve_prices[i])
             setlb!(p, varid, t, 0.0)
@@ -191,23 +205,23 @@ function setconstants!(p::Prob, var::ElasticDemand)
 
     if !_must_dynamic_update(var.firm_demand, horizon)
         dummytime = ConstantTime()
-        for i in 1:var.N
+        for i = 1:var.N
             varid = create_segment_id(var, i)
-            for t in 1:T
+            for t = 1:T
                 querydelta = gettimedelta(horizon, t)
                 value = getparamvalue(var.firm_demand, dummytime, querydelta)
                 setub!(p, varid, t, value * var.segment_capacities[i])
             end
-        end  
+        end
     end
- end
+end
 
- function update!(p::Prob, var::ElasticDemand, start::ProbTime)
+function update!(p::Prob, var::ElasticDemand, start::ProbTime)
     horizon = gethorizon(var.balance)
     if _must_dynamic_update(var.firm_demand, horizon)
         T = getnumperiods(horizon)
         update_func = isstateful(var.firm_demand) ? stateful_update : non_stateful_update
-        for i in 1:var.N
+        for i = 1:var.N
             varid = create_segment_id(var, i)
             update_func(p, horizon, start, var, varid, T, i)
         end
@@ -222,31 +236,36 @@ function _update_ub(p, horizon, start, var, varid, t, i)
 end
 
 function stateful_update(p, horizon, start, var, varid, T, i)
-    for t in 1:T
+    for t = 1:T
         _update_ub(p, horizon, start, var, varid, t, i)
     end
 end
 
 function non_stateful_update(p, horizon, start, var, varid, T, i)
-    for t in 1:T
+    for t = 1:T
         (future_t, ok) = mayshiftfrom(horizon, t)
         if ok
             value = getub(p, varid, future_t)
             setub!(p, varid, t, value)
         end
     end
-    for t in 1:T
+    for t = 1:T
         if mustupdate(horizon, t)
             _update_ub(p, horizon, start, var, varid, t, i)
         end
     end
 end
 
-function assemble!(var::ElasticDemand)::Bool   
+function assemble!(var::ElasticDemand)::Bool
     return true
 end
 
-function includeElasticDemand!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
+function includeElasticDemand!(
+    toplevel::Dict,
+    lowlevel::Dict,
+    elkey::ElementKey,
+    value::Dict,
+)
     checkkey(toplevel, elkey)
     deps = Id[]
     balancename = getdictvalue(value, BALANCE_CONCEPT, String, elkey)
@@ -266,12 +285,20 @@ function includeElasticDemand!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey
     min_price = getdictvalue(value, "min_price", Real, elkey)
     threshold = getdictvalue(value, "threshold", Real, elkey)
 
-    min_price <= normal_price <= max_price || error("Normal price not between max and min price for $(elkey)")
+    min_price <= normal_price <= max_price ||
+        error("Normal price not between max and min price for $(elkey)")
 
-    toplevel[objkey] = ElasticDemand(objkey, toplevel[balancekey], 
-        firm_demand_param, price_elasticity, normal_price, max_price, min_price, threshold
+    toplevel[objkey] = ElasticDemand(
+        objkey,
+        toplevel[balancekey],
+        firm_demand_param,
+        price_elasticity,
+        normal_price,
+        max_price,
+        min_price,
+        threshold,
     )
-    return (true, deps)    
+    return (true, deps)
 end
 
 INCLUDEELEMENT[TypeKey(DEMAND_CONCEPT, "ElasticDemand")] = includeElasticDemand!

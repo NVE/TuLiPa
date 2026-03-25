@@ -1,9 +1,9 @@
 """
 We implement BaseRHSTerm (see abstracttypes.jl)
 
-# TODO: Implement RoRRHSTerm. A simplification of the run-of-river 
+# TODO: Implement RoRRHSTerm. A simplification of the run-of-river
 hydropower could be to include the inflow (with cutoff at max production)
-as a parameter rather than modelling it as a variable. 
+as a parameter rather than modelling it as a variable.
 Motivation is simplification of the problem or to include the unregulated
 inflow when we make an AdaptiveHorizon based on the residual load
 """
@@ -27,7 +27,8 @@ end
 getid(rhsterm::BaseRHSTerm) = rhsterm.id
 isconstant(rhsterm::BaseRHSTerm) = isconstant(rhsterm.param)
 isstateful(rhsterm::BaseRHSTerm) = isstateful(rhsterm.param)
-getparamvalue(rhsterm::BaseRHSTerm, t::ProbTime, d::TimeDelta) = getparamvalue(rhsterm.param, t, d)
+getparamvalue(rhsterm::BaseRHSTerm, t::ProbTime, d::TimeDelta) =
+    getparamvalue(rhsterm.param, t, d)
 
 # Represents positive or negative contribution to the Balance
 isingoing(rhsterm::BaseRHSTerm) = rhsterm.isingoing
@@ -45,7 +46,7 @@ end
 # ------ Include dataelements -------
 function includeBaseRHSTerm!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     deps = Id[]
-    
+
     balancename = getdictvalue(value, BALANCE_CONCEPT, String, elkey)
     balancekey = Id(BALANCE_CONCEPT, balancename)
     push!(deps, balancekey)
@@ -57,18 +58,18 @@ function includeBaseRHSTerm!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, 
     haskey(toplevel, balancekey) || return (false, deps)
 
     @assert isdurational(param)
-    
+
     isingoing = getdictisingoing(value, elkey)
 
     balance = toplevel[balancekey]
 
     id = getobjkey(elkey)
-    
+
     rhsterm = BaseRHSTerm(id, param, isingoing)
-        
+
     lowlevel[id] = rhsterm # add to lowlevel so that other dataelements can find and update it (for example residualhint)
     addrhsterm!(balance, rhsterm)
-    
+
     return (true, deps)
 end
 

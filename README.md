@@ -37,7 +37,7 @@ The model objects have a complicated nested structure which works well for LP pr
 - There are different types of horizons / time resolutions that can be used in the models. Different model objects can also have different horizons in the same model. We have implemented SequentialHorizon, AdaptiveHorizon and ShrinkableHorizon:
   - SequentialHorizon represents periods with a list of (N, timedelta) pairs. Can represent for example hourly or weekly time resolution.
   - AdaptiveHorizon can include more details with less periods, while still keeping a sequential structure. It has an overlying dimension with sequential periods, while in the second dimension hours (or time periods) are grouped into load blocks based on their characteristics (e.g. hours with similar residual load).
-  - In a ShrinkableHorizon the horizon duration shrinks (to a point, and then resets) between simulation steps, while the number of periods stays the same. This improves the update and solve time of the problem since we can reuse values between simulation steps. 
+  - In a ShrinkableHorizon the horizon duration shrinks (to a point, and then resets) between simulation steps, while the number of periods stays the same. This improves the update and solve time of the problem since we can reuse values between simulation steps.
 - We can use one scenario at the start of the problem, and one at the end. Also with a smooth transition, which can be used to phase in uncertainty.
 - It is possible to build in support for time delays in for example waterways.
 
@@ -74,7 +74,7 @@ https://julialang.org/downloads/
 * Clone repository
 ```console
 git clone https://github.com/NVE/TuLiPa.git
-``` 
+```
 
 Enter the folder with project.toml using a terminal window and run Julia and these commands:
 
@@ -95,7 +95,7 @@ Prompts shows the project is activated, then installs the libraries needed with 
 
 To start running the demos, run jupyter notebook from the terminal while being inside the TuLiPa project folder (make sure the kernel is julia 1.9.2)
 ```console
-jupyter notebook 
+jupyter notebook
 ```
 
 If jupyter is not installed then it can be installed using IJulia
@@ -105,7 +105,7 @@ Julia> IJulia.notebook()
 ```
 
 ### Why Julia:
-Julia is a modern and growing language made for scientific computing. It has a flexible type-hierarchy which is perfect for our modular framework. Together with “multiple dispatch” it is easy to make a general framework that works for different concrete types and methods/functions. It also makes it easy to add new concrete types or methods without having to change much of the existing code. 
+Julia is a modern and growing language made for scientific computing. It has a flexible type-hierarchy which is perfect for our modular framework. Together with “multiple dispatch” it is easy to make a general framework that works for different concrete types and methods/functions. It also makes it easy to add new concrete types or methods without having to change much of the existing code.
 Keywords to Google are “multiple dispatch”, “dynamically typed” and “just-in-time compilation”
 
 ### Contact:
