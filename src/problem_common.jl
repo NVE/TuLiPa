@@ -1,5 +1,5 @@
 """
-Contains functions that are shared among all the problem types 
+Contains functions that are shared among all the problem types
 (problem_cplex, problem_highs, problem_jump)
 """
 

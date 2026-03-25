@@ -5,7 +5,7 @@ PositiveCapacity is a postive upper or lower bound to a variable.
 
 LowerZeroCapacity is a lower bound set to 0 for a variable (i.e. non-negative)
 
-TODO: Support variables that can be positive and negative. Can be useful 
+TODO: Support variables that can be positive and negative. Can be useful
 for net flow on transmission line with no losses.
 """
 
@@ -37,7 +37,8 @@ isnonnegative(::LowerZeroCapacity) = true
 isstateful(capacity::PositiveCapacity) = isstateful(capacity.param)
 isstateful(capacity::LowerZeroCapacity) = false
 
-getparamvalue(capacity::PositiveCapacity, t::ProbTime, d::TimeDelta) = getparamvalue(capacity.param, t, d)
+getparamvalue(capacity::PositiveCapacity, t::ProbTime, d::TimeDelta) =
+    getparamvalue(capacity.param, t, d)
 getparamvalue(capacity::LowerZeroCapacity, t::ProbTime, d::TimeDelta) = 0.0
 
 # -------- build! ---------------
@@ -60,7 +61,7 @@ function setconstants!(p::Prob, var::Any, capacity::PositiveCapacity)
         dummytime = ConstantTime()
         # Q: Why not calculate value only once here?
         # A: Because SequentialHorizon can have two or more sets of (nperiod, duration) pairs
-        for t in 1:T
+        for t = 1:T
             querydelta = gettimedelta(horizon, t)
             value = getparamvalue(capacity, dummytime, querydelta)
             if capacity.isupper
@@ -73,7 +74,7 @@ function setconstants!(p::Prob, var::Any, capacity::PositiveCapacity)
         dummytime = ConstantTime()
         dummydelta = MsTimeDelta(Hour(1))
         value = getparamvalue(capacity, dummytime, dummydelta)
-        for t in 1:T
+        for t = 1:T
             if capacity.isupper
                 setub!(p, varid, t, value)
             else
@@ -89,7 +90,7 @@ function setconstants!(p::Prob, var::Any, ::LowerZeroCapacity)
 
     varid = getid(var)
 
-    for t in 1:T
+    for t = 1:T
         setlb!(p, varid, t, 0.0)
     end
     return
@@ -104,7 +105,7 @@ function update!(p::Prob, var::Any, capacity::PositiveCapacity, start::ProbTime)
     varid = getid(var)
 
     if isstateful(capacity)
-        for t in 1:T
+        for t = 1:T
             querystart = getstarttime(horizon, t, start)
             querydelta = gettimedelta(horizon, t)
             value = getparamvalue(capacity, querystart, querydelta)
@@ -115,7 +116,7 @@ function update!(p::Prob, var::Any, capacity::PositiveCapacity, start::ProbTime)
             end
         end
     else
-        for t in 1:T
+        for t = 1:T
             (future_t, ok) = mayshiftfrom(horizon, t)
             if ok
                 if capacity.isupper
@@ -127,7 +128,7 @@ function update!(p::Prob, var::Any, capacity::PositiveCapacity, start::ProbTime)
                 end
             end
         end
-        for t in 1:T
+        for t = 1:T
             if mustupdate(horizon, t)
                 querystart = getstarttime(horizon, t, start)
                 querydelta = gettimedelta(horizon, t)
@@ -149,24 +150,29 @@ update!(::Prob, ::Any, ::LowerZeroCapacity, ::ProbTime) = nothing
 
 # TODO: Should these be added to lowlevel (similar to BaseRHSTerm) to enable further modifications?
 
-function includePositiveCapacity!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
+function includePositiveCapacity!(
+    toplevel::Dict,
+    lowlevel::Dict,
+    elkey::ElementKey,
+    value::Dict,
+)
     deps = Id[]
 
-    varname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
-    varconcept = getdictvalue(value, WHICHCONCEPT,  String, elkey)
+    varname = getdictvalue(value, WHICHINSTANCE, String, elkey)
+    varconcept = getdictvalue(value, WHICHCONCEPT, String, elkey)
     varkey = Id(varconcept, varname)
     push!(deps, varkey)
 
     (id, param, ok) = getdictparamvalue(lowlevel, elkey, value)
     _update_deps(deps, id, ok)
-    
+
     ok || return (false, deps)
     haskey(toplevel, varkey) || return (false, deps)
 
     var = toplevel[varkey]
 
     isupper = getdictisupper(value, elkey)
-    
+
     id = getobjkey(elkey)
 
     capacity = PositiveCapacity(id, param, isupper)
@@ -176,18 +182,18 @@ function includePositiveCapacity!(toplevel::Dict, lowlevel::Dict, elkey::Element
     else
         setlb!(var, capacity)
     end
-    
-    return (true, deps)    
+
+    return (true, deps)
 end
 
 function includeLowerZeroCapacity!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
     deps = Id[]
 
-    varname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
-    varconcept = getdictvalue(value, WHICHCONCEPT,  String, elkey)
+    varname = getdictvalue(value, WHICHINSTANCE, String, elkey)
+    varconcept = getdictvalue(value, WHICHCONCEPT, String, elkey)
     varkey = Id(varconcept, varname)
     push!(deps, varkey)
-    
+
     haskey(toplevel, varkey) || return (false, deps)
 
     var = toplevel[varkey]
@@ -195,8 +201,8 @@ function includeLowerZeroCapacity!(toplevel::Dict, ::Dict, elkey::ElementKey, va
     capacity = LowerZeroCapacity()
 
     setlb!(var, capacity)
-    
-    return (true, deps)    
+
+    return (true, deps)
 end
 
 INCLUDEELEMENT[TypeKey(CAPACITY_CONCEPT, "PositiveCapacity")] = includePositiveCapacity!

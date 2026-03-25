@@ -30,7 +30,7 @@ end
 function getbreachvarid(trait::BaseSoftBound)
     Id(getconceptname(trait.id), "Breach" * getinstancename(trait.id))
 end
-    
+
 function getsoftcapid(trait::BaseSoftBound)
     Id(getconceptname(trait.id), "SoftCap" * getinstancename(trait.id))
 end
@@ -45,7 +45,7 @@ function build!(p::Prob, trait::BaseSoftBound)
     addle!(p, getleid(trait), T)
 
     if isfixable(trait)
-        for t in 1:T
+        for t = 1:T
             makefixable!(p, getbreachvarid(trait), t)
         end
     end
@@ -64,13 +64,13 @@ function setconstants!(p::Prob, trait::BaseSoftBound)
     else
         sign = -1.0
     end
-        
+
     varid = getid(trait.var)
     leid = getleid(trait)
     breachvarid = getbreachvarid(trait)
     softcapid = getsoftcapid(trait)
 
-    for t in 1:T
+    for t = 1:T
         # Non-negative breachvars
         setlb!(p, breachvarid, t, 0.0)
 
@@ -84,23 +84,23 @@ function setconstants!(p::Prob, trait::BaseSoftBound)
     if !_must_dynamic_update(trait.penalty)
         c = getparamvalue(trait.penalty, ConstantTime(), MsTimeDelta(Hour(1)))
 
-        for t in 1:T
+        for t = 1:T
             setobjcoeff!(p, breachvarid, t, c)
         end
     end
-    
+
     # Set RHS in softbound if it is the same for all scenarios and horizon periods
     if !_must_dynamic_update(trait.softcap, horizon)
         if isdurational(trait.softcap) # SequentialHorizon can have two or more sets of (nperiods, duration) pairs
-            for t in 1:T
+            for t = 1:T
                 querydelta = gettimedelta(horizon, t)
                 value = getparamvalue(trait.softcap, ConstantTime(), querydelta)
-                setrhsterm!(p, leid, softcapid, t, value*sign)
+                setrhsterm!(p, leid, softcapid, t, value * sign)
             end
         else
             value = getparamvalue(trait.softcap, ConstantTime(), MsTimeDelta(Hour(1)))
-            for t in 1:T
-                setrhsterm!(p, leid, softcapid, t, value*sign)
+            for t = 1:T
+                setrhsterm!(p, leid, softcapid, t, value * sign)
             end
         end
     end
@@ -112,33 +112,33 @@ end
 function update!(p::Prob, trait::BaseSoftBound, start::ProbTime)
     horizon = gethorizon(trait.var)
     T = getnumperiods(horizon)
-    
+
     if trait.isupper
         sign = 1.0
     else
         sign = -1.0
     end
-    
+
     if _must_dynamic_update(trait.penalty)
         softcapid = getsoftcapid(trait)
-        for t in 1:T
+        for t = 1:T
             querystart = getstarttime(horizon, t, start)
             querydelta = gettimedelta(horizon, t)
             c = getparamvalue(trait.penalty, querystart, querydelta)
-            
+
             setobjcoeff!(p, breachvarid, t, c)
         end
     end
-    
+
     if _must_dynamic_update(trait.softcap, horizon)
         softcapid = getsoftcapid(trait)
         leid = getleid(trait)
-        for t in 1:T
+        for t = 1:T
             querystart = getstarttime(horizon, t, start)
             querydelta = gettimedelta(horizon, t)
             value = getparamvalue(trait.softcap, querystart, querydelta)
-            
-            setrhsterm!(p, leid, softcapid, t, value*sign)
+
+            setrhsterm!(p, leid, softcapid, t, value * sign)
         end
     end
     return
@@ -150,8 +150,8 @@ function getbreachvars(trait::BaseSoftBound)
         T = getnumperiods(horizon)
         breachvarid = getbreachvarid(trait)
 
-        breachvars = Tuple{Id, Int}[]
-        for t in 1:T
+        breachvars = Tuple{Id,Int}[]
+        for t = 1:T
             push!(breachvars, (breachvarid, t))
         end
 
@@ -159,18 +159,23 @@ function getbreachvars(trait::BaseSoftBound)
     else
         return []
     end
-end 
+end
 
 assemble!(trait::BaseSoftBound) = !isnothing(gethorizon(trait.var))
 
 # ------ Include dataelements -------
-function includeBaseSoftBound!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
+function includeBaseSoftBound!(
+    toplevel::Dict,
+    lowlevel::Dict,
+    elkey::ElementKey,
+    value::Dict,
+)
     deps = Id[]
 
     isupper = getdictisupper(value, elkey)
-    
-    varname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
-    varconcept = getdictvalue(value, WHICHCONCEPT,  String, elkey)
+
+    varname = getdictvalue(value, WHICHINSTANCE, String, elkey)
+    varconcept = getdictvalue(value, WHICHCONCEPT, String, elkey)
     varkey = Id(varconcept, varname)
     push!(deps, varkey)
 
@@ -179,21 +184,20 @@ function includeBaseSoftBound!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey
     (id, softcap, ok) = getdictparamvalue(lowlevel, elkey, value, SOFTCAPKEY)
     all_ok = all_ok && ok
     _update_deps(deps, id, ok)
-    
+
     (id, penalty, ok) = getdictparamvalue(lowlevel, elkey, value, PENALTYKEY)
     all_ok = all_ok && ok
     _update_deps(deps, id, ok)
 
     all_ok || return (false, deps)
     haskey(toplevel, varkey) || return (false, deps)
-    
+
     var = toplevel[varkey]
-        
+
     varkey = getobjkey(elkey)
     toplevel[varkey] = BaseSoftBound(varkey, var, softcap, penalty, isupper, false)
-    
-    return (true, deps)     
+
+    return (true, deps)
 end
 
 INCLUDEELEMENT[TypeKey(SOFTBOUND_CONCEPT, "BaseSoftBound")] = includeBaseSoftBound!
-

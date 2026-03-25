@@ -1,51 +1,51 @@
 """
 In this file we define a system for testing all methods in the
-INCLUDEELEMENT function registry, and a way to catch missing tests 
+INCLUDEELEMENT function registry, and a way to catch missing tests
 for new methods added in the future.
 
-The system has two parts: 
+The system has two parts:
     The function test_all_includeelement_methods, which should
-    test all known methods of each INCLUDEELEMENT function 
+    test all known methods of each INCLUDEELEMENT function
     that is defined in TuLiPa.
-    
+
     The test_is_all_includeelement_methods_covered function, which
     tests that all methods registered as tested in this file
-    (using the registration scheme described below), actually cover 
+    (using the registration scheme described below), actually cover
     all methods stored in the INCLUDEELEMENT registry.
 
-For the system to work well, each INCLUDEELEMENT test function should behave 
+For the system to work well, each INCLUDEELEMENT test function should behave
 a certain way:
     Define one test function for each generic function in INCLUDEELEMENT.
-      
-    The test function should test all methods of the function 
-    (i.e. different implementations for different types for the 
-    "value" argument. E.g. see test_includeVectorTimeIndex! 
+
+    The test function should test all methods of the function
+    (i.e. different implementations for different types for the
+    "value" argument. E.g. see test_includeVectorTimeIndex!
     which tests both value::AbstractVector{DateTime} and value::Dict)
 
-    As a convention, name the test function 
+    As a convention, name the test function
     test_[INCLUDEELEMENT function name]
     (e.g. test_includeVectorTimeIndex!)
 
-    The final line of a test function should call the 
-    register_tested_methods function to register how many 
+    The final line of a test function should call the
+    register_tested_methods function to register how many
     methods the test function tested.
     (e.g. register_tested_methods(includeVectorTimeIndex!, 2))
 
-    Call the test function inside the 
-    test_all_includeelement_methods function 
+    Call the test function inside the
+    test_all_includeelement_methods function
 
-We wrap the tests in a module so that we do not inadvertently 
-overwrite names the global namespace, which could affect other 
+We wrap the tests in a module so that we do not inadvertently
+overwrite names the global namespace, which could affect other
 tests when running runtests.jl
 """
 
-# TODO: Complete empty tests 
+# TODO: Complete empty tests
 
 module Test_INCLUDEELEMENT_Methods
 
 using TuLiPa, Test, Dates
 
-const TESTED_INCLUDE_METHODS = Tuple{Function, Int}[]
+const TESTED_INCLUDE_METHODS = Tuple{Function,Int}[]
 
 function register_tested_methods(include_func::Function, num_methods::Int)
     if !(include_func in values(INCLUDEELEMENT))
@@ -61,11 +61,11 @@ function run_tests()
 end
 
 function test_is_all_includeelement_methods_covered()
-    ACTUAL_INCLUDE_METHODS = Tuple{Function, Int}[]
+    ACTUAL_INCLUDE_METHODS = Tuple{Function,Int}[]
     for f in values(INCLUDEELEMENT)
         push!(ACTUAL_INCLUDE_METHODS, (f, length(methods(f))))
     end
-    
+
     tested = Set(TESTED_INCLUDE_METHODS)
     actual = Set(ACTUAL_INCLUDE_METHODS)
 
@@ -139,15 +139,15 @@ function test_all_includeelement_methods()
     test_includeSimpleStartUpCost!()
     test_includeElasticDemand!()
     test_includeVectorPrice!()
-	test_includeFlowBased!()
+    test_includeFlowBased!()
 end
 
-function _setup_common_variables() 
+function _setup_common_variables()
     return (ElementKey("", "", ""), Dict(), Dict())
 end
 
 function test_includeFlowBased!()
-	# TODO:
+    # TODO:
     register_tested_methods(includeBaseFlowBased!, 1)
 end
 
@@ -155,7 +155,12 @@ function test_includeVectorTimeIndex!()
     # tests method when value::AbstractVector{DateTime}
     (k, TL, LL) = _setup_common_variables()
     @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, DateTime[])
-    @test_throws ErrorException includeVectorTimeIndex!(TL, LL, k, [DateTime(2024, 3, 23), DateTime(1985, 7, 1)]) # not sorted error
+    @test_throws ErrorException includeVectorTimeIndex!(
+        TL,
+        LL,
+        k,
+        [DateTime(2024, 3, 23), DateTime(1985, 7, 1)],
+    ) # not sorted error
     v = [DateTime(1985, 7, 1)]
     ret = includeVectorTimeIndex!(TL, LL, k, v)
     _test_ret(ret)
@@ -176,26 +181,60 @@ function test_includeRangeTimeIndex!()
     # tests when value::Dict
     (k, TL, LL) = _setup_common_variables()
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, Dict())
-    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, Dict("Start" => "DateTime(1985, 7, 1)", "Steps" => 10,"Delta" => Dates.Hour(1))) # wrong type Start error
-    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, Dict("Start" => DateTime(1985, 7, 1), "Steps" => "10","Delta" => Dates.Hour(1))) # wrong type Steps error
-    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, Dict("Start" => DateTime(1985, 7, 1), "Steps" => 10,"Delta" => 10)) # wrong type Delta error
-    d = Dict("Start" => DateTime(1985, 7, 1), "Steps" => 10, "Delta" => Dates.Hour(1)) 
+    @test_throws ErrorException includeRangeTimeIndex!(
+        TL,
+        LL,
+        k,
+        Dict("Start" => "DateTime(1985, 7, 1)", "Steps" => 10, "Delta" => Dates.Hour(1)),
+    ) # wrong type Start error
+    @test_throws ErrorException includeRangeTimeIndex!(
+        TL,
+        LL,
+        k,
+        Dict("Start" => DateTime(1985, 7, 1), "Steps" => "10", "Delta" => Dates.Hour(1)),
+    ) # wrong type Steps error
+    @test_throws ErrorException includeRangeTimeIndex!(
+        TL,
+        LL,
+        k,
+        Dict("Start" => DateTime(1985, 7, 1), "Steps" => 10, "Delta" => 10),
+    ) # wrong type Delta error
+    d = Dict("Start" => DateTime(1985, 7, 1), "Steps" => 10, "Delta" => Dates.Hour(1))
     ret = includeRangeTimeIndex!(TL, LL, k, d)
     _test_ret(ret)
     (TL, LL) = (Dict(), Dict())
     LL[Id(TIMEDELTA_CONCEPT, "MyTimeDelta")] = MsTimeDelta(Hour(1))
-    d = Dict("Start" => DateTime(1985, 7, 1), "Steps" => 10, "Delta" => "MyTimeDelta") 
+    d = Dict("Start" => DateTime(1985, 7, 1), "Steps" => 10, "Delta" => "MyTimeDelta")
     ret = includeRangeTimeIndex!(TL, LL, k, d)
-    _test_ret(ret; n=1)
+    _test_ret(ret; n = 1)
     @test LL[Id(k.conceptname, k.instancename)] isa StepRange
-    @test length(TL) == 0 && length(LL) == 2    
+    @test length(TL) == 0 && length(LL) == 2
     @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, d) # same id already stored in lowlevel error
-    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, Dict("Start" => DateTime(1985, 7, 1), "Steps" => -1, "Delta" => Dates.Hour(1))) # negative step error
-    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, Dict("Start" => DateTime(1985, 7, 1), "Steps" => 10, "Delta" => Dates.Hour(-1)))  # negative Delta error
+    @test_throws ErrorException includeRangeTimeIndex!(
+        TL,
+        LL,
+        k,
+        Dict("Start" => DateTime(1985, 7, 1), "Steps" => -1, "Delta" => Dates.Hour(1)),
+    ) # negative step error
+    @test_throws ErrorException includeRangeTimeIndex!(
+        TL,
+        LL,
+        k,
+        Dict("Start" => DateTime(1985, 7, 1), "Steps" => 10, "Delta" => Dates.Hour(-1)),
+    )  # negative Delta error
     # tests when value::StepRange{DateTime, Millisecond}
     (TL, LL) = (Dict(), Dict())
-    @test_throws ArgumentError StepRange(DateTime(1985, 7, 1), Millisecond(Hour(0)), DateTime(1985, 7, 1))
-    @test_throws ErrorException includeRangeTimeIndex!(TL, LL, k, StepRange(DateTime(1985, 7, 1), Millisecond(Hour(-1)), DateTime(1985, 7, 1))) # negative Millisecond error
+    @test_throws ArgumentError StepRange(
+        DateTime(1985, 7, 1),
+        Millisecond(Hour(0)),
+        DateTime(1985, 7, 1),
+    )
+    @test_throws ErrorException includeRangeTimeIndex!(
+        TL,
+        LL,
+        k,
+        StepRange(DateTime(1985, 7, 1), Millisecond(Hour(-1)), DateTime(1985, 7, 1)),
+    ) # negative Millisecond error
     (TL, LL) = (Dict(), Dict())
     r = StepRange(DateTime(1985, 7, 1), Millisecond(Hour(1)), DateTime(1985, 7, 1) + Day(1))
     ret = includeRangeTimeIndex!(TL, LL, k, r)
@@ -218,7 +257,12 @@ function test_includeVectorTimeValues!()
     @test length(TL) == 0 && length(LL) == 1
     @test_throws ErrorException includeVectorTimeValues!(TL, LL, k, d) # same id already stored in lowlevel error
     (TL, LL) = (Dict(), Dict())
-    @test_throws ErrorException includeVectorTimeValues!(TL, LL, k, Dict("Vector" => Int[1, 2, 3])) # wrong vector eltype error
+    @test_throws ErrorException includeVectorTimeValues!(
+        TL,
+        LL,
+        k,
+        Dict("Vector" => Int[1, 2, 3]),
+    ) # wrong vector eltype error
     register_tested_methods(includeVectorTimeValues!, 1)
 end
 
@@ -226,19 +270,49 @@ function test_includeBaseTable!()
     # tests for value::Dict
     (k, TL, LL) = _setup_common_variables()
     @test_throws ErrorException includeBaseTable!(TL, LL, k, Dict())
-    d = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a", "b"])
+    d = Dict("Matrix" => zeros(Float64, (2, 2)), "Names" => ["a", "b"])
     ret = includeBaseTable!(TL, LL, k, d)
     _test_ret(ret)
     @test LL[Id(k.conceptname, k.instancename)] === d
     @test length(TL) == 0 && length(LL) == 1
     @test_throws ErrorException includeBaseTable!(TL, LL, k, d)  # same id already stored in lowlevel error
     (TL, LL) = (Dict(), Dict())
-    @test_throws ErrorException includeBaseTable!(TL, LL, k, Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a"]))  # missing name error
-    @test_throws ErrorException includeBaseTable!(TL, LL, k, Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a", "b", "c"])) # extra name error
-    @test_throws ErrorException includeBaseTable!(TL, LL, k, Dict("Matrix" => zeros(Int, (2,2)), "Names" => ["a", "b"]))  # wrong matrix eltype error
-    @test_throws ErrorException includeBaseTable!(TL, LL, k, Dict("Matrix" => zeros(Float64, (2,2)), "Names" => [:a, :b])) # wrong names eltype error
-    @test_throws ErrorException includeBaseTable!(TL, LL, k, Dict("Matrix" => zeros(Float64, (2,2)), "Names" => String[]))  # empty names error
-    @test_throws ErrorException includeBaseTable!(TL, LL, k, Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a", "a"]))  # duplicate names error
+    @test_throws ErrorException includeBaseTable!(
+        TL,
+        LL,
+        k,
+        Dict("Matrix" => zeros(Float64, (2, 2)), "Names" => ["a"]),
+    )  # missing name error
+    @test_throws ErrorException includeBaseTable!(
+        TL,
+        LL,
+        k,
+        Dict("Matrix" => zeros(Float64, (2, 2)), "Names" => ["a", "b", "c"]),
+    ) # extra name error
+    @test_throws ErrorException includeBaseTable!(
+        TL,
+        LL,
+        k,
+        Dict("Matrix" => zeros(Int, (2, 2)), "Names" => ["a", "b"]),
+    )  # wrong matrix eltype error
+    @test_throws ErrorException includeBaseTable!(
+        TL,
+        LL,
+        k,
+        Dict("Matrix" => zeros(Float64, (2, 2)), "Names" => [:a, :b]),
+    ) # wrong names eltype error
+    @test_throws ErrorException includeBaseTable!(
+        TL,
+        LL,
+        k,
+        Dict("Matrix" => zeros(Float64, (2, 2)), "Names" => String[]),
+    )  # empty names error
+    @test_throws ErrorException includeBaseTable!(
+        TL,
+        LL,
+        k,
+        Dict("Matrix" => zeros(Float64, (2, 2)), "Names" => ["a", "a"]),
+    )  # duplicate names error
     register_tested_methods(includeBaseTable!, 1)
 end
 
@@ -246,23 +320,23 @@ function test_includeColumnTimeValues!()
     # tests for value::Dict
     (k, TL, LL) = _setup_common_variables()
     @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, Dict())
-    matrix = zeros(Float64, (2,2))
+    matrix = zeros(Float64, (2, 2))
     table = Dict("Matrix" => matrix, "Names" => ["a", "b"])
     table_id = Id(TABLE_CONCEPT, "mytable")
     d = Dict(TABLE_CONCEPT => "mytable", "Name" => "a")
     ret = includeColumnTimeValues!(TL, LL, k, d)
-    _test_ret(ret, n=1, okvalue=false)  # missing table returns ok=false
+    _test_ret(ret, n = 1, okvalue = false)  # missing table returns ok=false
     @test ret[2][1] == table_id
     LL[table_id] = table
     ret = includeColumnTimeValues!(TL, LL, k, d)
-    _test_ret(ret, n=1)
+    _test_ret(ret, n = 1)
     @test ret[2][1] == table_id
     @test length(TL) == 0 && length(LL) == 2
     @test view(matrix, :, 1) === LL[Id(k.conceptname, k.instancename)]
     @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, d) # same id already stored in lowlevel error
-    d = Dict(TABLE_CONCEPT => "mytable", "Name" => :a) 
+    d = Dict(TABLE_CONCEPT => "mytable", "Name" => :a)
     @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, d) # wrong name type error
-    table = Dict("Matrix" => zeros(Float64, (2,2)), "Names" => ["a", "b"])
+    table = Dict("Matrix" => zeros(Float64, (2, 2)), "Names" => ["a", "b"])
     d = Dict(TABLE_CONCEPT => table, "Name" => "c")
     @test_throws ErrorException includeColumnTimeValues!(TL, LL, k, d) # unknown name error
     register_tested_methods(includeColumnTimeValues!, 1)
@@ -281,9 +355,13 @@ function test_includeRotatingTimeVector!()
     LL[index_id] = index
     LL[vals_id] = vals
     LL[period_id] = period
-    d = Dict(TIMEINDEX_CONCEPT => index_id.instancename, TIMEVALUES_CONCEPT => vals_id.instancename, TIMEPERIOD_CONCEPT => period_id.instancename)
+    d = Dict(
+        TIMEINDEX_CONCEPT => index_id.instancename,
+        TIMEVALUES_CONCEPT => vals_id.instancename,
+        TIMEPERIOD_CONCEPT => period_id.instancename,
+    )
     ret = includeRotatingTimeVector!(TL, LL, k, d)
-    _test_ret(ret, n=3)
+    _test_ret(ret, n = 3)
     @test Set(ret[2]) == Set([index_id, vals_id, period_id])
     @test length(TL) == 0 && length(LL) == 4
     @test LL[Id(k.conceptname, k.instancename)] isa RotatingTimeVector
@@ -292,19 +370,19 @@ function test_includeRotatingTimeVector!()
     LL[vals_id] = vals
     LL[period_id] = period
     ret = includeRotatingTimeVector!(TL, LL, k, d)
-    _test_ret(ret, n=3, okvalue=false)  # ret with ok=false due to missing index
+    _test_ret(ret, n = 3, okvalue = false)  # ret with ok=false due to missing index
     @test Set(ret[2]) == Set([index_id, vals_id, period_id])
     (TL, LL) = (Dict(), Dict())
     LL[index_id] = index
     LL[period_id] = period
     ret = includeRotatingTimeVector!(TL, LL, k, d)
-    _test_ret(ret, n=3, okvalue=false)   # ret with ok=false due to missing vals
+    _test_ret(ret, n = 3, okvalue = false)   # ret with ok=false due to missing vals
     @test Set(ret[2]) == Set([index_id, vals_id, period_id])
     (TL, LL) = (Dict(), Dict())
     LL[index_id] = index
     LL[vals_id] = vals
     ret = includeRotatingTimeVector!(TL, LL, k, d)
-    _test_ret(ret, n=3, okvalue=false)   # ret with ok=false due to missing period
+    _test_ret(ret, n = 3, okvalue = false)   # ret with ok=false due to missing period
     @test Set(ret[2]) == Set([index_id, vals_id, period_id])
     (TL, LL) = (Dict(), Dict())
     LL[vals_id] = vals
@@ -323,9 +401,12 @@ function _common_timevector(func::Function, T::Type)
     vals_id = Id(TuLiPa.TIMEVALUES_CONCEPT, "myvals")
     LL[index_id] = index
     LL[vals_id] = vals
-    d = Dict(TIMEINDEX_CONCEPT => index_id.instancename, TIMEVALUES_CONCEPT => vals_id.instancename)
+    d = Dict(
+        TIMEINDEX_CONCEPT => index_id.instancename,
+        TIMEVALUES_CONCEPT => vals_id.instancename,
+    )
     ret = func(TL, LL, k, d)
-    _test_ret(ret, n=2)
+    _test_ret(ret, n = 2)
     @test Set(ret[2]) == Set([index_id, vals_id])
     @test length(TL) == 0 && length(LL) == 3
     @test LL[Id(k.conceptname, k.instancename)] isa T
@@ -333,12 +414,12 @@ function _common_timevector(func::Function, T::Type)
     (TL, LL) = (Dict(), Dict())
     LL[vals_id] = vals
     ret = func(TL, LL, k, d)
-    _test_ret(ret, n=2, okvalue=false)  # ret with ok=false due to missing index
+    _test_ret(ret, n = 2, okvalue = false)  # ret with ok=false due to missing index
     @test Set(ret[2]) == Set([index_id, vals_id])
     (TL, LL) = (Dict(), Dict())
     LL[index_id] = index
     ret = func(TL, LL, k, d)
-    _test_ret(ret, n=2, okvalue=false)  # ret with ok=false due to missing vals
+    _test_ret(ret, n = 2, okvalue = false)  # ret with ok=false due to missing vals
     @test Set(ret[2]) == Set([index_id, vals_id])
     (TL, LL) = (Dict(), Dict())
     LL[index_id] = [DateTime(1985, 7, 1), DateTime(1985, 7, 2)]
@@ -403,12 +484,22 @@ function test_includeStartEqualStop!()
     # tests for value::Dict
     (k, TL, LL) = _setup_common_variables()
     @test_throws ErrorException includeStartEqualStop!(TL, LL, k, Dict())
-    ret = includeStartEqualStop!(TL, LL, k, Dict(WHICHINSTANCE => "myvar", WHICHCONCEPT => FLOW_CONCEPT))
-    _test_ret(ret, n=1, okvalue=false)  # no var in TL
+    ret = includeStartEqualStop!(
+        TL,
+        LL,
+        k,
+        Dict(WHICHINSTANCE => "myvar", WHICHCONCEPT => FLOW_CONCEPT),
+    )
+    _test_ret(ret, n = 1, okvalue = false)  # no var in TL
     @test ret[2] == [Id(FLOW_CONCEPT, "myvar")]
     TL[Id(FLOW_CONCEPT, "myvar")] = BaseFlow(Id(FLOW_CONCEPT, "myvar"))
-    ret = includeStartEqualStop!(TL, LL, k, Dict(WHICHINSTANCE => "myvar", WHICHCONCEPT => FLOW_CONCEPT))
-    _test_ret(ret, n=1)
+    ret = includeStartEqualStop!(
+        TL,
+        LL,
+        k,
+        Dict(WHICHINSTANCE => "myvar", WHICHCONCEPT => FLOW_CONCEPT),
+    )
+    _test_ret(ret, n = 1)
     @test length(TL) == 2 && length(LL) == 0
     @test TL[Id(k.conceptname, k.instancename)] isa StartEqualStop
     register_tested_methods(includeStartEqualStop!, 1)
@@ -419,11 +510,12 @@ function test_includeBaseBalance!()
     (k, TL, LL) = _setup_common_variables()
     @test_throws ErrorException includeBaseBalance!(TL, LL, k, Dict())
     ret = includeBaseBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power")) # not in LL
-    _test_ret(ret, n=1, okvalue=false)
+    _test_ret(ret, n = 1, okvalue = false)
     @test ret[2] == [Id(COMMODITY_CONCEPT, "Power")]
-    LL[Id(COMMODITY_CONCEPT, "Power")] = BaseCommodity(Id(COMMODITY_CONCEPT, "Power"), SequentialHorizon(10, Day(1)))
+    LL[Id(COMMODITY_CONCEPT, "Power")] =
+        BaseCommodity(Id(COMMODITY_CONCEPT, "Power"), SequentialHorizon(10, Day(1)))
     ret = includeBaseBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power"))
-    _test_ret(ret, n=1)
+    _test_ret(ret, n = 1)
     @test ret[2] == [Id(COMMODITY_CONCEPT, "Power")]
     @test length(TL) == 1 && length(LL) == 1
     @test TL[Id(k.conceptname, k.instancename)] isa BaseBalance
@@ -434,43 +526,93 @@ function test_includeExogenBalance!()
     # tests for value::Dict
     (k, TL, LL) = _setup_common_variables()
     @test_throws ErrorException includeExogenBalance!(TL, LL, k, Dict())
-    ret = includeExogenBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => "Price")) # commodity and price not in LL
-    _test_ret(ret, n=3, okvalue=false)
-    @test Set(ret[2]) == Set([Id(COMMODITY_CONCEPT, "Power"), Id(PRICE_CONCEPT, "Price"), Id(PARAM_CONCEPT, "Price")]) # Price could be either PARAM or PRICE when ok=false
-    LL[Id(COMMODITY_CONCEPT, "Power")] = BaseCommodity(Id(COMMODITY_CONCEPT, "Power"), SequentialHorizon(10, Day(1)))
-    ret = includeExogenBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => "Price")) # price not in LL
-    _test_ret(ret, n=3, okvalue=false)
-    @test Set(ret[2]) == Set([Id(COMMODITY_CONCEPT, "Power"), Id(PRICE_CONCEPT, "Price"), Id(PARAM_CONCEPT, "Price")]) # Price could be either PARAM or PRICE when ok=false
+    ret = includeExogenBalance!(
+        TL,
+        LL,
+        k,
+        Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => "Price"),
+    ) # commodity and price not in LL
+    _test_ret(ret, n = 3, okvalue = false)
+    @test Set(ret[2]) == Set([
+        Id(COMMODITY_CONCEPT, "Power"),
+        Id(PRICE_CONCEPT, "Price"),
+        Id(PARAM_CONCEPT, "Price"),
+    ]) # Price could be either PARAM or PRICE when ok=false
+    LL[Id(COMMODITY_CONCEPT, "Power")] =
+        BaseCommodity(Id(COMMODITY_CONCEPT, "Power"), SequentialHorizon(10, Day(1)))
+    ret = includeExogenBalance!(
+        TL,
+        LL,
+        k,
+        Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => "Price"),
+    ) # price not in LL
+    _test_ret(ret, n = 3, okvalue = false)
+    @test Set(ret[2]) == Set([
+        Id(COMMODITY_CONCEPT, "Power"),
+        Id(PRICE_CONCEPT, "Price"),
+        Id(PARAM_CONCEPT, "Price"),
+    ]) # Price could be either PARAM or PRICE when ok=false
     LL[Id(PRICE_CONCEPT, "Price")] = BasePrice(ConstantParam(10.0))
-    ret = includeExogenBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => "Price"))
-    _test_ret(ret, n=2)
+    ret = includeExogenBalance!(
+        TL,
+        LL,
+        k,
+        Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => "Price"),
+    )
+    _test_ret(ret, n = 2)
     @test Set(ret[2]) == Set([Id(COMMODITY_CONCEPT, "Power"), Id(PRICE_CONCEPT, "Price")])
     @test length(TL) == 1 && length(LL) == 2
     @test TL[Id(k.conceptname, k.instancename)] isa ExogenBalance
     (k, TL, LL) = _setup_common_variables()
-    LL[Id(COMMODITY_CONCEPT, "Power")] = BaseCommodity(Id(COMMODITY_CONCEPT, "Power"), SequentialHorizon(10, Day(1)))
-    ret = includeExogenBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => 10.0))
-    _test_ret(ret, n=1)
+    LL[Id(COMMODITY_CONCEPT, "Power")] =
+        BaseCommodity(Id(COMMODITY_CONCEPT, "Power"), SequentialHorizon(10, Day(1)))
+    ret = includeExogenBalance!(
+        TL,
+        LL,
+        k,
+        Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => 10.0),
+    )
+    _test_ret(ret, n = 1)
     @test ret[2] == [Id(COMMODITY_CONCEPT, "Power")]
     @test length(TL) == 1 && length(LL) == 1
     @test TL[Id(k.conceptname, k.instancename)] isa ExogenBalance
     TL = Dict()
-    ret = includeExogenBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => ConstantParam(10.0)))
-    _test_ret(ret, n=1)
+    ret = includeExogenBalance!(
+        TL,
+        LL,
+        k,
+        Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => ConstantParam(10.0)),
+    )
+    _test_ret(ret, n = 1)
     @test ret[2] == [Id(COMMODITY_CONCEPT, "Power")]
     @test length(TL) == 1 && length(LL) == 1
     @test TL[Id(k.conceptname, k.instancename)] isa ExogenBalance
     TL = Dict()
-    ret = includeExogenBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => BasePrice(ConstantParam(10.0))))
-    _test_ret(ret, n=1)
+    ret = includeExogenBalance!(
+        TL,
+        LL,
+        k,
+        Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => BasePrice(ConstantParam(10.0))),
+    )
+    _test_ret(ret, n = 1)
     @test ret[2] == [Id(COMMODITY_CONCEPT, "Power")]
     @test length(TL) == 1 && length(LL) == 1
     @test TL[Id(k.conceptname, k.instancename)] isa ExogenBalance
     LL[Id(PARAM_CONCEPT, "Price")] = ConstantParam(10.0)
-    @test_throws ErrorException includeExogenBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => "Price")) # id already exists in TL
+    @test_throws ErrorException includeExogenBalance!(
+        TL,
+        LL,
+        k,
+        Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => "Price"),
+    ) # id already exists in TL
     TL = Dict()
-    ret = includeExogenBalance!(TL, LL, k, Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => "Price"))
-    _test_ret(ret, n=2)
+    ret = includeExogenBalance!(
+        TL,
+        LL,
+        k,
+        Dict(COMMODITY_CONCEPT => "Power", PRICE_CONCEPT => "Price"),
+    )
+    _test_ret(ret, n = 2)
     @test Set(ret[2]) == Set([Id(COMMODITY_CONCEPT, "Power"), Id(PARAM_CONCEPT, "Price")])
     @test length(TL) == 1 && length(LL) == 2
     @test TL[Id(k.conceptname, k.instancename)] isa ExogenBalance
@@ -493,24 +635,32 @@ function test_includeBaseStorage!()
     (k, TL, LL) = _setup_common_variables()
     @test_throws ErrorException includeBaseStorage!(TL, LL, k, Dict())
     ret = includeBaseStorage!(TL, LL, k, Dict(BALANCE_CONCEPT => "HydroBalance"))
-    _test_ret(ret, n=1, okvalue=false)
-    TL[Id(BALANCE_CONCEPT, "HydroBalance")] = BaseBalance(Id(BALANCE_CONCEPT, "HydroBalance"), BaseCommodity(Id(COMMODITY_CONCEPT, "Hydro"), SequentialHorizon(10, Day(1))))
+    _test_ret(ret, n = 1, okvalue = false)
+    TL[Id(BALANCE_CONCEPT, "HydroBalance")] = BaseBalance(
+        Id(BALANCE_CONCEPT, "HydroBalance"),
+        BaseCommodity(Id(COMMODITY_CONCEPT, "Hydro"), SequentialHorizon(10, Day(1))),
+    )
     ret = includeBaseStorage!(TL, LL, k, Dict(BALANCE_CONCEPT => "HydroBalance"))
-    _test_ret(ret, n=1)
+    _test_ret(ret, n = 1)
     @test length(TL) == 2 && length(LL) == 0
     @test ret[2] == [Id(BALANCE_CONCEPT, "HydroBalance")]
     @test TL[Id(k.conceptname, k.instancename)] isa BaseStorage
-    @test_throws ErrorException includeBaseStorage!(TL, LL, k, Dict(BALANCE_CONCEPT => "HydroBalance")) # already exists in TL
+    @test_throws ErrorException includeBaseStorage!(
+        TL,
+        LL,
+        k,
+        Dict(BALANCE_CONCEPT => "HydroBalance"),
+    ) # already exists in TL
     register_tested_methods(includeBaseStorage!, 1)
 end
 
-function _common_tvs_param(tvnames, func, obj; steps=false)
+function _common_tvs_param(tvnames, func, obj; steps = false)
     (k, TL, LL) = _setup_common_variables()
     @test_throws ErrorException func(TL, LL, k, Dict())
     for name in tvnames
         (k, TL, LL) = _setup_common_variables()
         id_list = [s for s in tvnames if s != name]
-        d = Dict{String, Any}(s => s for s in id_list)
+        d = Dict{String,Any}(s => s for s in id_list)
         d[name] = InfiniteTimeVector([DateTime(1985, 7, 1)], [1.0])
         if steps
             d["Steps"] = 1
@@ -518,12 +668,13 @@ function _common_tvs_param(tvnames, func, obj; steps=false)
         expected_deps = Set([Id(TIMEVECTOR_CONCEPT, s) for s in id_list])
         for s in id_list
             ret = func(TL, LL, k, d)
-            _test_ret(ret, n=(length(tvnames) - 1), okvalue=false)
-            LL[Id(TIMEVECTOR_CONCEPT, s)] = InfiniteTimeVector([DateTime(1985, 7, 1)], [1.0])
+            _test_ret(ret, n = (length(tvnames) - 1), okvalue = false)
+            LL[Id(TIMEVECTOR_CONCEPT, s)] =
+                InfiniteTimeVector([DateTime(1985, 7, 1)], [1.0])
             @test expected_deps == Set(ret[2])
         end
         ret = func(TL, LL, k, d)
-        _test_ret(ret, n=(length(tvnames) - 1))
+        _test_ret(ret, n = (length(tvnames) - 1))
         @test expected_deps == Set(ret[2])
         @test length(TL) == 0 && length(LL) == length(tvnames)
         @test LL[Id(k.conceptname, k.instancename)] isa obj
@@ -531,7 +682,9 @@ function _common_tvs_param(tvnames, func, obj; steps=false)
     end
     if steps
         (k, TL, LL) = _setup_common_variables()
-        d = Dict{String, Any}(s => InfiniteTimeVector([DateTime(1985, 7, 1)], [1.0]) for s in tvnames)
+        d = Dict{String,Any}(
+            s => InfiniteTimeVector([DateTime(1985, 7, 1)], [1.0]) for s in tvnames
+        )
         d["Steps"] = -1
         @test_throws ErrorException func(TL, LL, k, d)
         d["Steps"] = 0
@@ -539,7 +692,7 @@ function _common_tvs_param(tvnames, func, obj; steps=false)
     end
 end
 
-function _common_level_profile_param(func, obj; meanseries=false)
+function _common_level_profile_param(func, obj; meanseries = false)
     (k, TL, LL) = _setup_common_variables()
     if meanseries
         inp = obj(MeanSeriesParam(ConstantTimeVector(1.0), ConstantTimeVector(1.0)))
@@ -563,11 +716,11 @@ function _common_test_wrapper_param(func, obj)
     @test_throws ErrorException func(TL, LL, k, Dict(PARAM_CONCEPT => ConstantParam(1.0))) # already in LL
     (k, TL, LL) = _setup_common_variables()
     ret = func(TL, LL, k, Dict(PARAM_CONCEPT => "myparam"))
-    _test_ret(ret, n=1, okvalue=false)
+    _test_ret(ret, n = 1, okvalue = false)
     @test ret[2] == [Id(PARAM_CONCEPT, "myparam")]
     LL[Id(PARAM_CONCEPT, "myparam")] = ConstantParam(1.0)
     ret = func(TL, LL, k, Dict(PARAM_CONCEPT => "myparam"))
-    _test_ret(ret, n=1)
+    _test_ret(ret, n = 1)
     @test length(TL) == 0 && length(LL) == 2
     @test LL[Id(k.conceptname, k.instancename)] isa obj
 end
@@ -583,14 +736,26 @@ end
 
 function test_includeFossilMCParam!()
     # tests for value::Dict
-    tvnames = ["FuelLevel", "FuelProfile", "CO2Factor", "CO2Level", "CO2Profile", "Efficiency", "VOC"]
+    tvnames = [
+        "FuelLevel",
+        "FuelProfile",
+        "CO2Factor",
+        "CO2Level",
+        "CO2Profile",
+        "Efficiency",
+        "VOC",
+    ]
     _common_tvs_param(tvnames, includeFossilMCParam!, FossilMCParam)
     register_tested_methods(includeFossilMCParam!, 1)
 end
 
 function test_includeM3SToMM3SeriesParam!()
     # tests for value::Dict
-    _common_tvs_param(["Level", "Profile"], includeM3SToMM3SeriesParam!, M3SToMM3SeriesParam)
+    _common_tvs_param(
+        ["Level", "Profile"],
+        includeM3SToMM3SeriesParam!,
+        M3SToMM3SeriesParam,
+    )
     # tests for value::M3SToMM3SeriesParam
     _common_level_profile_param(includeM3SToMM3SeriesParam!, M3SToMM3SeriesParam)
     # tests for value::AbstractFloat
@@ -622,9 +787,17 @@ end
 
 function test_includeCostPerMWToGWhParam!()
     # tests for value::Dict
-    _common_tvs_param(["Level", "Profile"], includeCostPerMWToGWhParam!, CostPerMWToGWhParam)
+    _common_tvs_param(
+        ["Level", "Profile"],
+        includeCostPerMWToGWhParam!,
+        CostPerMWToGWhParam,
+    )
     # tests for value::CostPerMWToGWhParam
-    _common_level_profile_param(includeCostPerMWToGWhParam!, CostPerMWToGWhParam; meanseries=true)
+    _common_level_profile_param(
+        includeCostPerMWToGWhParam!,
+        CostPerMWToGWhParam;
+        meanseries = true,
+    )
     # tests for value::AbstractFloat
     _common_float_param(includeCostPerMWToGWhParam!, CostPerMWToGWhParam)
     register_tested_methods(includeCostPerMWToGWhParam!, 3)
@@ -640,21 +813,37 @@ end
 
 function test_includeMeanSeriesIgnorePhaseinParam!()
     # tests for value::Dict
-    _common_tvs_param(["Level", "Profile"], includeMeanSeriesIgnorePhaseinParam!, MeanSeriesIgnorePhaseinParam)
+    _common_tvs_param(
+        ["Level", "Profile"],
+        includeMeanSeriesIgnorePhaseinParam!,
+        MeanSeriesIgnorePhaseinParam,
+    )
     # tests for value::MeanSeriesIgnorePhaseinParam
-    _common_level_profile_param(includeMeanSeriesIgnorePhaseinParam!, MeanSeriesIgnorePhaseinParam)
+    _common_level_profile_param(
+        includeMeanSeriesIgnorePhaseinParam!,
+        MeanSeriesIgnorePhaseinParam,
+    )
     register_tested_methods(includeMeanSeriesIgnorePhaseinParam!, 2)
 end
 
 function test_includePrognosisSeriesParam!()
     # tests for value::Dict
-    _common_tvs_param(["Level", "Profile", "Prognosis"], includePrognosisSeriesParam!, PrognosisSeriesParam; steps=true)
+    _common_tvs_param(
+        ["Level", "Profile", "Prognosis"],
+        includePrognosisSeriesParam!,
+        PrognosisSeriesParam;
+        steps = true,
+    )
     register_tested_methods(includePrognosisSeriesParam!, 1)
 end
 
 function test_includeUMMSeriesParam!()
     # tests for value::Dict
-    _common_tvs_param(["Level", "Profile", "Ummprofile"], includeUMMSeriesParam!, UMMSeriesParam)
+    _common_tvs_param(
+        ["Level", "Profile", "Ummprofile"],
+        includeUMMSeriesParam!,
+        UMMSeriesParam,
+    )
     register_tested_methods(includeUMMSeriesParam!, 1)
 end
 
@@ -668,13 +857,28 @@ function test_includeMsTimeDelta!()
     # tests for value::Dict
     (k, TL, LL) = _setup_common_variables()
     @test_throws ErrorException includeMsTimeDelta!(TL, LL, k, Dict())
-    @test_throws ErrorException includeMsTimeDelta!(TL, LL, k, Dict("Period" => Dates.Nanosecond(1)))
-    @test_throws ErrorException includeMsTimeDelta!(TL, LL, k, Dict("Period" => Dates.Millisecond(0)))
+    @test_throws ErrorException includeMsTimeDelta!(
+        TL,
+        LL,
+        k,
+        Dict("Period" => Dates.Nanosecond(1)),
+    )
+    @test_throws ErrorException includeMsTimeDelta!(
+        TL,
+        LL,
+        k,
+        Dict("Period" => Dates.Millisecond(0)),
+    )
     ret = includeMsTimeDelta!(TL, LL, k, Dict("Period" => Dates.Hour(1)))
     _test_ret(ret)
     @test length(TL) == 0 && length(LL) == 1
     @test LL[Id(k.conceptname, k.instancename)] isa MsTimeDelta
-    @test_throws ErrorException includeMsTimeDelta!(TL, LL, k, Dict("Period" => Dates.Hour(1))) # already in LL
+    @test_throws ErrorException includeMsTimeDelta!(
+        TL,
+        LL,
+        k,
+        Dict("Period" => Dates.Hour(1)),
+    ) # already in LL
     (k, TL, LL) = _setup_common_variables()
     ret = includeMsTimeDelta!(TL, LL, k, Dict("Period" => 1))
     _test_ret(ret)
@@ -811,34 +1015,31 @@ end
 function test_includeElasticDemand!()
     # tests for value::Dict
     (k, TL, LL) = _setup_common_variables()
-    
-    d = Dict("Balance" => "PowerBalance_NO2", 
-             "Param" => "FirmDemand",
-             "price_elasticity" => 1.0, 
-             "normal_price" => 1.0 , 
-             "max_price" => 2.0, 
-             "min_price" => 1.0,
-             "threshold" => 0.15
-            )
-    
-    bal = BaseBalance(
-            Id("a", "a"),
-            BaseCommodity(
-                Id("a", "a"), SequentialHorizon(1, Day(1))
-            )
-          )
+
+    d = Dict(
+        "Balance" => "PowerBalance_NO2",
+        "Param" => "FirmDemand",
+        "price_elasticity" => 1.0,
+        "normal_price" => 1.0,
+        "max_price" => 2.0,
+        "min_price" => 1.0,
+        "threshold" => 0.15,
+    )
+
+    bal =
+        BaseBalance(Id("a", "a"), BaseCommodity(Id("a", "a"), SequentialHorizon(1, Day(1))))
     par = MeanSeriesParam(ConstantTimeVector(1), ConstantTimeVector(1))
     TL[Id("Balance", "PowerBalance_NO2")] = bal
     LL[Id("Param", "FirmDemand")] = par
-    
+
     ret = includeElasticDemand!(TL, LL, k, d)
-    _test_ret(ret, n=2, okvalue=true)
+    _test_ret(ret, n = 2, okvalue = true)
     @test TL[Id(k.conceptname, k.instancename)] isa ElasticDemand
     register_tested_methods(includeElasticDemand!, 1)
 end
 
-function _test_ret(ret; n=0, okvalue=true, depstype=Vector{Id})
-    @test ret isa Tuple{Bool, Any}
+function _test_ret(ret; n = 0, okvalue = true, depstype = Vector{Id})
+    @test ret isa Tuple{Bool,Any}
     (ok, deps) = ret
     @test ok == okvalue
     @test deps isa depstype

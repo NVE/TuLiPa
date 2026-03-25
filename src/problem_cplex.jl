@@ -1,4 +1,4 @@
-""" 
+"""
 Implementation of CPLEX_Prob <: Prob
 with non-allocating update functions
 """
@@ -24,7 +24,7 @@ mutable struct _CPLEXVectorUpdater
         ind = Vector{Cint}(undef, num_objects)
         val = Vector{Cdouble}(undef, num_objects)
         return new(0, upd, ind, val)
-    end    
+    end
 end
 
 function _postsolve_reset!(x::_CPLEXVectorUpdater)
@@ -35,22 +35,22 @@ end
 
 function _update!(x::_CPLEXVectorUpdater, object_index::Int, value::Float64)
     @assert 1 <= object_index <= length(x.updates)
-    
+
     updated = @inbounds x.updates[object_index]
 
     if updated == _CPLEX_NOT_UPDATED
         x.count += 1
-        
+
         # Check bounds in case caller have forgotten to reset between solves
         @assert 1 <= x.count <= length(x.indices)
-        
+
         @inbounds x.updates[object_index] = x.count
         @inbounds x.indices[x.count] = object_index - 1
         @inbounds x.values[x.count] = value
     else
         @inbounds x.values[updated] = value
     end
-    
+
     return
 end
 
@@ -62,7 +62,7 @@ mutable struct _CPLEXRHSUpdater
         mask = Vector{Bool}(undef, num_objects)
         fill!(mask, false)
         return new(_CPLEXVectorUpdater(num_objects), mask)
-    end    
+    end
 end
 
 function _postsolve_reset!(x::_CPLEXRHSUpdater)
@@ -84,7 +84,7 @@ mutable struct _CPLEXBoundsUpdater
         @assert num_objects <= length(lu)
         # TODO: @assert lu is all U or all L?
         return new(_CPLEXVectorUpdater(num_objects), lu)
-    end    
+    end
 end
 
 function _postsolve_reset!(x::_CPLEXBoundsUpdater)
@@ -99,14 +99,14 @@ end
 
 mutable struct _CPLEXMatrixUpdater
     numcoefs::Cint
-    updates::Dict{Tuple{Int, Int}, Int}
+    updates::Dict{Tuple{Int,Int},Int}
     rowlist::Vector{Cint}
     collist::Vector{Cint}
     vallist::Vector{Cdouble}
 
     function _CPLEXMatrixUpdater()
-        return new(0, Dict{Tuple{Int, Int}, Int}(), Cint[], Cint[], Cdouble[])
-    end    
+        return new(0, Dict{Tuple{Int,Int},Int}(), Cint[], Cint[], Cdouble[])
+    end
 end
 
 function _postsolve_reset!(x::_CPLEXMatrixUpdater)
@@ -123,7 +123,7 @@ function _update!(x::_CPLEXMatrixUpdater, rowix::Int, colix::Int, value::Float64
 
     if haskey(x.updates, k)
         updated = x.updates[k]
-        
+
         if updated == _CPLEX_NOT_UPDATED
             # Key seen before, but not in this update cycle, then just store the value.
             x.numcoefs += 1
@@ -149,7 +149,7 @@ function _update!(x::_CPLEXMatrixUpdater, rowix::Int, colix::Int, value::Float64
             @inbounds x.vallist[x.numcoefs] = value
         end
     end
-    
+
     return
 end
 
@@ -166,7 +166,7 @@ mutable struct _CPLEXConInfo
     start::Int
     num::Int
     contype::Cchar
-    rhsterms::Vector{Dict{Id, Float64}}
+    rhsterms::Vector{Dict{Id,Float64}}
     function _CPLEXConInfo()
         new(0, 0, 'A', [])
     end
@@ -179,18 +179,18 @@ mutable struct _CPLEXEnv
     function _CPLEXEnv()
         status_p = Ref{Cint}()
         ptr = CPLEX.CPXopenCPLEX(status_p)
-        
+
         if status_p[] != 0
             error("CPLEX Error $(status_p[]): Unable to create CPLEX environment.")
         end
-        
+
         env = new(ptr)
-        
+
         # finalizer(env) do e
         #     CPLEX.CPXcloseCPLEX(Ref(e.ptr))
         #     e.ptr = C_NULL
         # end
-        
+
         return env
     end
 
@@ -244,32 +244,32 @@ end
         return -Inf
     end
     return f
- end
+end
 
 # ---- Definition of CPLEX_Prob (the exported object of this file) -----------
 
 mutable struct CPLEX_Prob <: Prob
     objects::Vector{Any}
-    
+
     horizons::Vector{Horizon}
-    
+
     env::_CPLEXEnv
     lp::Ptr{Cvoid} # (same as CPLEX.CPXLPptr)
 
     num_row::Int
     num_col::Int
-    
-    vars::Dict{Id, _CPLEXVarInfo}
-    cons::Dict{Id, _CPLEXConInfo}
-    fixable_vars::Dict{Tuple{Id, Int}, Tuple{Id, Id}}
-    
-    lb_updater::Union{Nothing, _CPLEXBoundsUpdater}
-    ub_updater::Union{Nothing, _CPLEXBoundsUpdater}
 
-    obj_updater::Union{Nothing, _CPLEXVectorUpdater}
-    rhs_updater::Union{Nothing, _CPLEXRHSUpdater}
-    
-    A_updater::Union{Nothing, _CPLEXMatrixUpdater}
+    vars::Dict{Id,_CPLEXVarInfo}
+    cons::Dict{Id,_CPLEXConInfo}
+    fixable_vars::Dict{Tuple{Id,Int},Tuple{Id,Id}}
+
+    lb_updater::Union{Nothing,_CPLEXBoundsUpdater}
+    ub_updater::Union{Nothing,_CPLEXBoundsUpdater}
+
+    obj_updater::Union{Nothing,_CPLEXVectorUpdater}
+    rhs_updater::Union{Nothing,_CPLEXRHSUpdater}
+
+    A_updater::Union{Nothing,_CPLEXMatrixUpdater}
 
     varvalues::Vector{Float64}
     conduals::Vector{Float64}
@@ -280,20 +280,38 @@ mutable struct CPLEX_Prob <: Prob
     function CPLEX_Prob(modelobjects::Dict)
         return CPLEX_Prob(collect(values(modelobjects)))
     end
-    
+
     function CPLEX_Prob(modelobjects::Vector{Any})
         # Create CPLEX objects
         env = _CPLEXEnv()
         lp = _cplex_create_lp(env)
 
         # Create data structures
-        vars = Dict{Id, _CPLEXVarInfo}()
-        cons = Dict{Id, _CPLEXConInfo}()
-        fixable_vars = Dict{Tuple{Id, Int}, Tuple{Id, Id}}()
+        vars = Dict{Id,_CPLEXVarInfo}()
+        cons = Dict{Id,_CPLEXConInfo}()
+        fixable_vars = Dict{Tuple{Id,Int},Tuple{Id,Id}}()
 
         # Create CPLEX_Prob instance
-        prob = new(modelobjects, [], env, lp, 0, 0, vars, cons, fixable_vars, 
-                   nothing, nothing, nothing, nothing, nothing, [], [], false, false)
+        prob = new(
+            modelobjects,
+            [],
+            env,
+            lp,
+            0,
+            0,
+            vars,
+            cons,
+            fixable_vars,
+            nothing,
+            nothing,
+            nothing,
+            nothing,
+            nothing,
+            [],
+            [],
+            false,
+            false,
+        )
 
         # --- Initialize data in the prob object -----
         CPLEX.CPXchgobjsen(prob.env, prob.lp, CPLEX.CPX_MIN)
@@ -315,7 +333,7 @@ mutable struct CPLEX_Prob <: Prob
 
         prob.obj_updater = _CPLEXVectorUpdater(prob.num_col)
         prob.rhs_updater = _CPLEXRHSUpdater(prob.num_row)
-        
+
         prob.A_updater = _CPLEXMatrixUpdater()
 
         prob.varvalues = zeros(Float64, prob.num_col)
@@ -328,8 +346,8 @@ mutable struct CPLEX_Prob <: Prob
             setconcoeff!(prob, leid, varid, 1, varix, 1.0)
             setconcoeff!(prob, geid, varid, 1, varix, 1.0)
             _update!(prob.rhs_updater, ix_le, CPLEX.CPX_INFBOUND)
-            _update!(prob.rhs_updater, ix_ge, -CPLEX.CPX_INFBOUND)  
-         end
+            _update!(prob.rhs_updater, ix_ge, -CPLEX.CPX_INFBOUND)
+        end
 
         _cplex_add_vars!(prob)
         _cplex_add_cons!(prob)
@@ -338,24 +356,42 @@ mutable struct CPLEX_Prob <: Prob
 
         _cplex_presolve_update!(prob)
         _cplex_postsolve_reset_updaters!(prob)
-        
+
         finalizer(prob) do p
             ret = CPLEX.CPXfreeprob(p.env, Ref(p.lp))
             _cplex_check_ret(p.env, ret)
             CPLEX.CPXcloseCPLEX(Ref(p.env.ptr))
             p.env.ptr = C_NULL
-        end        
-        
+        end
+
         return prob
     end
     function CPLEX_Prob()
         env = _CPLEXEnv(C_NULL)
-        vars = Dict{Id, _CPLEXVarInfo}()
-        cons = Dict{Id, _CPLEXConInfo}()
-        fixable_vars = Dict{Tuple{Id, Int}, Tuple{Id, Id}}()
+        vars = Dict{Id,_CPLEXVarInfo}()
+        cons = Dict{Id,_CPLEXConInfo}()
+        fixable_vars = Dict{Tuple{Id,Int},Tuple{Id,Id}}()
 
-        prob = new([], [], env, C_NULL, 0, 0, vars, cons, fixable_vars, 
-            nothing, nothing, nothing, nothing, nothing, [], [], false, false)     
+        prob = new(
+            [],
+            [],
+            env,
+            C_NULL,
+            0,
+            0,
+            vars,
+            cons,
+            fixable_vars,
+            nothing,
+            nothing,
+            nothing,
+            nothing,
+            nothing,
+            [],
+            [],
+            false,
+            false,
+        )
         return prob
     end
 end
@@ -452,7 +488,7 @@ function _cplex_addcon!(p::CPLEX_Prob, id::Id, N::Int, contype::Char)
 end
 
 function addeq!(p::CPLEX_Prob, id::Id, N::Int)
-     _cplex_addcon!(p, id, N, 'E')
+    _cplex_addcon!(p, id, N, 'E')
 end
 
 function addge!(p::CPLEX_Prob, id::Id, N::Int)
@@ -466,7 +502,7 @@ end
 function solve!(p::CPLEX_Prob)
     _cplex_presolve_update!(p)
     _cplex_solve_lp!(p)
-    _cplex_postsolve_reset_updaters!(p)    
+    _cplex_postsolve_reset_updaters!(p)
     p.isvarvaluesupdated = false
     p.iscondualsupdated = false
     return
@@ -500,7 +536,7 @@ end
 function setrhsterm!(p::CPLEX_Prob, con::Id, trait::Id, i::Int, value::Float64)
     info = p.cons[con]
     if length(info.rhsterms) == 0
-        info.rhsterms = [Dict() for __ in 1:info.num]
+        info.rhsterms = [Dict() for __ = 1:info.num]
     end
     info.rhsterms[i][trait] = value
 
@@ -519,7 +555,7 @@ end
 # Not part of Prob interface (only helper)
 function setvarvalues!(p::CPLEX_Prob)
     ret = CPLEX.CPXgetx(p.env, p.lp, p.varvalues, 0, length(p.varvalues) - 1)
-    for i in 1:length(p.varvalues)
+    for i = 1:length(p.varvalues)
         p.varvalues[i] = _cplex_returnfloat(p.varvalues[i])
     end
     _cplex_check_ret(p.env, ret)
@@ -529,7 +565,7 @@ end
 # Not part of Prob interface (only helper)
 function setconduals!(p::CPLEX_Prob)
     ret = CPLEX.CPXgetpi(p.env, p.lp, p.conduals, 0, length(p.conduals) - 1)
-    for i in 1:length(p.conduals)
+    for i = 1:length(p.conduals)
         p.conduals[i] = _cplex_returnfloat(p.conduals[i])
     end
     _cplex_check_ret(p.env, ret)
@@ -563,7 +599,7 @@ function getrhsterm(p::CPLEX_Prob, con::Id, trait::Id, i::Int)
 end
 
 function hasrhsterm(p::CPLEX_Prob, con::Id, trait::Id, i::Int)
-    return haskey(p.cons[con].rhsterms[i],trait)
+    return haskey(p.cons[con].rhsterms[i], trait)
 end
 
 function getlb(p::CPLEX_Prob, var::Id, i::Int)
@@ -616,7 +652,7 @@ end
 function getfixvardual(p::CPLEX_Prob, varid::Id, varix::Int)
     (leid, __) = p.fixable_vars[(varid, varix)]
     return getcondual(p, leid, 1)
- end
+end
 
 function makefixable!(p::CPLEX_Prob, varid::Id, varix::Int)
     concept = getconceptname(varid)
@@ -683,7 +719,14 @@ end
 
 function _cplex_update_bds!(p::CPLEX_Prob, u::_CPLEXBoundsUpdater)
     if u.updater.count > 0
-        ret = CPLEX.CPXchgbds(p.env, p.lp, u.updater.count, u.updater.indices, u.lu, u.updater.values)
+        ret = CPLEX.CPXchgbds(
+            p.env,
+            p.lp,
+            u.updater.count,
+            u.updater.indices,
+            u.lu,
+            u.updater.values,
+        )
         _cplex_check_ret(p.env, ret)
     end
     return
@@ -700,14 +743,20 @@ end
 function _cplex_update_rhs!(p::CPLEX_Prob, u::_CPLEXRHSUpdater)
     for info in values(p.cons)
         length(info.rhsterms) > 0 || continue
-        for (t, rowix) in enumerate((info.start + 1):(info.start + info.num))
+        for (t, rowix) in enumerate((info.start+1):(info.start+info.num))
             if u.updated_rhs_mask[rowix] == true
                 _update!(u, rowix, sum(values(info.rhsterms[t])))
             end
         end
     end
     if u.updater.count > 0
-        ret = CPLEX.CPXchgrhs(p.env, p.lp, u.updater.count, u.updater.indices, u.updater.values)
+        ret = CPLEX.CPXchgrhs(
+            p.env,
+            p.lp,
+            u.updater.count,
+            u.updater.indices,
+            u.updater.values,
+        )
         _cplex_check_ret(p.env, ret)
     end
     return
@@ -715,19 +764,24 @@ end
 
 function _cplex_update_A!(p::CPLEX_Prob, u::_CPLEXMatrixUpdater)
     if u.numcoefs > 0
-        ret = CPLEX.CPXchgcoeflist(p.env, p.lp, u.numcoefs, u.rowlist, u.collist, u.vallist)    
+        ret = CPLEX.CPXchgcoeflist(p.env, p.lp, u.numcoefs, u.rowlist, u.collist, u.vallist)
         _cplex_check_ret(p.env, ret)
     end
     return
 end
 
-function _cplex_non_optimal_try_param!(p::CPLEX_Prob, paramname::String, newparam::Any, message::String)
+function _cplex_non_optimal_try_param!(
+    p::CPLEX_Prob,
+    paramname::String,
+    newparam::Any,
+    message::String,
+)
     if CPLEX.CPXgetstat(p.env, p.lp) != CPLEX.CPX_STAT_OPTIMAL
         oldparam = getparam(p, paramname)
         if oldparam != newparam
             println(message)
             setparam!(p, paramname, newparam)
-            ret = CPLEX.CPXlpopt(p.env, p.lp) 
+            ret = CPLEX.CPXlpopt(p.env, p.lp)
             _cplex_check_ret(p.env, ret)
             setparam!(p, paramname, oldparam)
         end
@@ -735,7 +789,12 @@ function _cplex_non_optimal_try_param!(p::CPLEX_Prob, paramname::String, newpara
     return
 end
 
-function _cplex_non_optimal_try_barrier!(p::CPLEX_Prob, paramname::String, newparam::Any, message::String) # avoids CPX_STAT_OPTIMAL_INFEAS 
+function _cplex_non_optimal_try_barrier!(
+    p::CPLEX_Prob,
+    paramname::String,
+    newparam::Any,
+    message::String,
+) # avoids CPX_STAT_OPTIMAL_INFEAS
     if CPLEX.CPXgetstat(p.env, p.lp) != CPLEX.CPX_STAT_OPTIMAL
         oldparam = getparam(p, paramname)
         if oldparam != newparam
@@ -755,10 +814,15 @@ end
 function _cplex_solve_lp!(p::CPLEX_Prob)
     prob_type = CPLEX.CPXgetprobtype(p.env, p.lp)
     @assert prob_type == CPLEX.CPXPROB_LP
-    ret = CPLEX.CPXlpopt(p.env, p.lp)    
+    ret = CPLEX.CPXlpopt(p.env, p.lp)
     _cplex_check_ret(p.env, ret)
 
-    _cplex_non_optimal_try_param!(p, "CPXPARAM_Read_Scale", 1, "Trying with more aggressive scaling")
+    _cplex_non_optimal_try_param!(
+        p,
+        "CPXPARAM_Read_Scale",
+        1,
+        "Trying with more aggressive scaling",
+    )
     _cplex_non_optimal_try_param!(p, "CPXPARAM_LPMethod", 2, "Solving with dual simplex")
     _cplex_non_optimal_try_param!(p, "CPXPARAM_LPMethod", 1, "Solving with primal simplex")
     _cplex_non_optimal_try_barrier!(p, "CPXPARAM_LPMethod", 4, "Solving with IPM/Barrier")
@@ -777,7 +841,7 @@ function _cplex_solve_lp!(p::CPLEX_Prob)
         # lp = _cplex_create_lp(env)
         # CPLEX.CPXreadcopyprob(env, lp, "failed_model.mps", "MPS")
         # CPLEX.CPXsetintparam(env, CPLEX.CPXPARAM_ScreenOutput , 1) # unset silent
-        # CPLEX.CPXlpopt(env, lp)  
+        # CPLEX.CPXlpopt(env, lp)
     end
     return
 end
@@ -792,7 +856,16 @@ function _cplex_postsolve_reset_updaters!(p::CPLEX_Prob)
 end
 
 function _cplex_add_vars!(p::CPLEX_Prob)
-    ret = CPLEX.CPXnewcols(p.env, p.lp, p.num_col, C_NULL,  fill(-CPLEX.CPX_INFBOUND, p.num_col), C_NULL, C_NULL, C_NULL)
+    ret = CPLEX.CPXnewcols(
+        p.env,
+        p.lp,
+        p.num_col,
+        C_NULL,
+        fill(-CPLEX.CPX_INFBOUND, p.num_col),
+        C_NULL,
+        C_NULL,
+        C_NULL,
+    )
     _cplex_check_ret(p.env, ret)
     return
 end
@@ -802,11 +875,24 @@ function _cplex_add_cons!(p::CPLEX_Prob)
     rhs = Vector{Cdouble}(undef, p.num_row)
     fill!(rhs, 0.0)
     for info in values(p.cons)
-        for j in (info.start + 1):(info.start + info.num)
+        for j = (info.start+1):(info.start+info.num)
             senses[j] = info.contype
         end
     end
-    ret = CPLEX.CPXaddrows(p.env, p.lp, 0, p.num_row, 0, rhs, senses, C_NULL, C_NULL, C_NULL, C_NULL, C_NULL)
+    ret = CPLEX.CPXaddrows(
+        p.env,
+        p.lp,
+        0,
+        p.num_row,
+        0,
+        rhs,
+        senses,
+        C_NULL,
+        C_NULL,
+        C_NULL,
+        C_NULL,
+        C_NULL,
+    )
     _cplex_check_ret(p.env, ret)
     return
 end

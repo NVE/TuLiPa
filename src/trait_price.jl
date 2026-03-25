@@ -29,15 +29,16 @@ isdurational(price::VectorPrice) = false
 isstateful(cost::BasePrice) = isstateful(cost.param)
 isstateful(cost::VectorPrice) = true
 
-getparamvalue(price::BasePrice, t::ProbTime, d::TimeDelta; ix=0) = getparamvalue(price.param, t, d)
-getparamvalue(price::VectorPrice, t::ProbTime, d::TimeDelta; ix=0) = price.values[ix]
+getparamvalue(price::BasePrice, t::ProbTime, d::TimeDelta; ix = 0) =
+    getparamvalue(price.param, t, d)
+getparamvalue(price::VectorPrice, t::ProbTime, d::TimeDelta; ix = 0) = price.values[ix]
 
 # ------ Include dataelements -------
 function includeBasePrice!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
 
     deps = Id[]
-    
+
     (id, param, ok) = getdictparamvalue(lowlevel, elkey, value)
     _update_deps(deps, id, ok)
 

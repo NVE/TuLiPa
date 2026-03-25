@@ -12,7 +12,7 @@ to remove short-term storage systems from the model, if the model is
 run for a coarse horizon
 
 We include Residualhint, which says if the RHSTerm should be included
-when calculating the residual load. See AdaptiveHorizon for how the 
+when calculating the residual load. See AdaptiveHorizon for how the
 residual load is used to make a Horizon.
 
 We include ReservoirCurve, which holds information about the relationship
@@ -23,11 +23,11 @@ We include ProductionInfo, which holds the nominal head and outlet level
 of a hydropower plant. Only has data for plants with a upper reservoir
 that has a reservoir curve. Else nominal head = 0 and outlet level = -1.
 
-We include HydraulicHint, which tells if a hydrobalance is behind and 
+We include HydraulicHint, which tells if a hydrobalance is behind and
 restricting two production units as a hydraulic coupling.
 
 We include GlobalEneq, which holds the global energy equivalent of a
-hydrobalance. Can be used to find the global energy equivalent of 
+hydrobalance. Can be used to find the global energy equivalent of
 inflow (RHSTerm to Balance) or for a reservoir that belongs to the balance.
 
 TODO: Add metadata for all objects?
@@ -44,15 +44,15 @@ function includeStoragehint!(toplevel::Dict, ::Dict, elkey::ElementKey, value::D
 
     storage = toplevel[storagekey]
 
-    period = getdictvalue(value, "Period", Union{Period, Int}, elkey)
+    period = getdictvalue(value, "Period", Union{Period,Int}, elkey)
     period isa Nanosecond && error("Nanosecond not allowed for $elkey")
     period = Millisecond(period)
     period > Millisecond(0) || error("Period <= Millisecond(0) for $elkey")
     period = MsTimeDelta(period)
 
     setmetadata!(storage, STORAGEHINTKEY, period)
-    
-    return (true, deps)    
+
+    return (true, deps)
 end
 
 function includeResidualhint!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
@@ -68,8 +68,8 @@ function includeResidualhint!(::Dict, lowlevel::Dict, elkey::ElementKey, value::
     residual = getdictisresidual(value, elkey)
 
     setmetadata!(rhsterm, RESIDUALHINTKEY, residual)
-    
-    return (true, deps)    
+
+    return (true, deps)
 end
 
 function includeReservoirCurve!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
@@ -81,11 +81,11 @@ function includeReservoirCurve!(toplevel::Dict, ::Dict, elkey::ElementKey, value
     haskey(toplevel, storagekey) || return (false, deps)
 
     storage = toplevel[storagekey]
-    
+
     res = getdictvalue(value, "Res", Vector{Float64}, elkey)
     head = getdictvalue(value, "Head", Vector{Float64}, elkey)
 
-    rescurve = XYCurve(res,head)
+    rescurve = XYCurve(res, head)
     setmetadata!(storage, RESERVOIRCURVEKEY, rescurve)
 
     return (true, deps)
@@ -100,7 +100,7 @@ function includeProductionInfo!(toplevel::Dict, ::Dict, elkey::ElementKey, value
     haskey(toplevel, flowkey) || return (false, deps)
 
     flow = toplevel[flowkey]
-    
+
     outlet = getdictvalue(value, OUTLETLEVELKEY, Float64, elkey) # better word than outlet level?
     head = getdictvalue(value, NOMINALHEADKEY, Float64, elkey)
 
@@ -119,8 +119,8 @@ function includeHydraulichint!(toplevel::Dict, ::Dict, elkey::ElementKey, value:
     haskey(toplevel, balancekey) || return (false, deps)
 
     balance = toplevel[balancekey]
-    
-    code = getdictvalue(value, "Code", Float64, elkey) 
+
+    code = getdictvalue(value, "Code", Float64, elkey)
 
     setmetadata!(balance, HYDRAULICHINTKEY, code)
 
@@ -136,7 +136,7 @@ function includeGlobalEneq!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Di
     haskey(toplevel, balancekey) || return (false, deps)
 
     balance = toplevel[balancekey]
-    
+
     globaleneq = getdictvalue(value, "Value", Float64, elkey) # TODO: Shold be a Param
 
     setmetadata!(balance, GLOBALENEQKEY, globaleneq)

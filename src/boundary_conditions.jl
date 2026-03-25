@@ -1,37 +1,37 @@
 """
-We want to have a modular system for boundary conditions that work 
-with different types of model objects that have one or more state variables. 
- 
-Different objects could be 
+We want to have a modular system for boundary conditions that work
+with different types of model objects that have one or more state variables.
+
+Different objects could be
    Storage       - One state variable representing storage content at end of period
    RampUp        - One state variable representing flow in previous period
    TimeDelayFlow - Many state variables representing flow in previous periods
 
-We assume that if an object that have state variables support a 
-few functions, which can give sufficient information about variables 
-and constraints related to its states, then we should be able to 
+We assume that if an object that have state variables support a
+few functions, which can give sufficient information about variables
+and constraints related to its states, then we should be able to
 use this interface to define general boundary conditions.
 
 We want to implement different types of boundary conditions
    StartEqualStop - Ingoing state equal to outgoing state for each state variable
-   SingleCuts     - Future cost variable constrained by optimality cuts 
+   SingleCuts     - Future cost variable constrained by optimality cuts
    MultiCuts      - Future cost variables for scenarios with probability weights constrained by optimality cuts
-   ValueTerms     - sum vi * xi where xi are segments of state space of outgoing state variable x, 
+   ValueTerms     - sum vi * xi where xi are segments of state space of outgoing state variable x,
                      and vi is marginal value at each segment
 
 Simplifying assumptions:
    We always use variables for incoming states, even though we sometimes could have used constant rhs terms.
-   We always represent problems as minimization problems. 
+   We always represent problems as minimization problems.
 
 Possible challenges:
-   What to do if time delay and hourly master problem and 2-hourly subproblem? 
-   Then time indexes for state variables does not have the same meaning in the two problems. 
+   What to do if time delay and hourly master problem and 2-hourly subproblem?
+   Then time indexes for state variables does not have the same meaning in the two problems.
    Similar issue if subproblem use non-sequential horizon.
 
 We implement NoInitialCondition, NoTerminalCondition, NoBoundaryCondition, StartEqualStop,
 ConnectTwoObjects and SimpleSingleCuts
 
-NoInitialCondition, NoTerminalCondition, NoBoundaryCondition are simple types for turning off requirement 
+NoInitialCondition, NoTerminalCondition, NoBoundaryCondition are simple types for turning off requirement
 that all objects with state variables should have boundary conditions
 
 StartEqualStop adds an equation to set the start and end state variables equal to each other
@@ -55,7 +55,7 @@ isinitialcondition(::Any) = false
 isterminalcondition(::Any) = false
 
 # So we can find which objects have boundary conditions
-# E.g. we want to be able to group all objects not already having a 
+# E.g. we want to be able to group all objects not already having a
 # boundary condition and use optimality cuts for these
 getobjects(::BoundaryCondition) = error("Must implement")
 
@@ -76,7 +76,8 @@ struct NoBoundaryCondition <: BoundaryCondition
     object::Any
 end
 
-const _NoBoundaryConditionTypes = Union{NoInitialCondition, NoTerminalCondition, NoBoundaryCondition}
+const _NoBoundaryConditionTypes =
+    Union{NoInitialCondition,NoTerminalCondition,NoBoundaryCondition}
 
 getid(x::_NoBoundaryConditionTypes) = x.id
 getobjects(x::_NoBoundaryConditionTypes) = [x.object]
@@ -84,9 +85,9 @@ build!(::Prob, ::_NoBoundaryConditionTypes) = nothing
 setconstants!(::Prob, ::_NoBoundaryConditionTypes) = nothing
 update!(::Prob, ::_NoBoundaryConditionTypes, ::ProbTime) = nothing
 
-isinitialcondition(::NoInitialCondition)  = true
+isinitialcondition(::NoInitialCondition) = true
 isterminalcondition(::NoTerminalCondition) = true
-isinitialcondition(::NoBoundaryCondition)  = true
+isinitialcondition(::NoBoundaryCondition) = true
 isterminalcondition(::NoBoundaryCondition) = true
 
 # ---- StartEqualStop <: BoundaryCondition ---
@@ -105,12 +106,13 @@ struct StartEqualStop <: BoundaryCondition
 end
 
 getid(x::StartEqualStop) = x.id
-geteqid(x::StartEqualStop) = Id(BOUNDARYCONDITION_CONCEPT, string("Eq", getinstancename(getid(x))))
+geteqid(x::StartEqualStop) =
+    Id(BOUNDARYCONDITION_CONCEPT, string("Eq", getinstancename(getid(x))))
 
 getobjects(x::StartEqualStop) = [x.object]
 getparent(x::StartEqualStop) = x.object
 
-isinitialcondition(::StartEqualStop)  = true
+isinitialcondition(::StartEqualStop) = true
 isterminalcondition(::StartEqualStop) = true
 
 function build!(p::Prob, x::StartEqualStop)
@@ -123,10 +125,10 @@ function setconstants!(p::Prob, x::StartEqualStop)
     for (eq_ix, var) in enumerate(getstatevariables(x.object))
         (id_out, ix_out) = getvarout(var)
         (id_in, ix_in) = getvarin(var)
-        setconcoeff!(p, geteqid(x), id_out, eq_ix, ix_out,  1.0)
-        setconcoeff!(p, geteqid(x),  id_in, eq_ix,  ix_in, -1.0)
+        setconcoeff!(p, geteqid(x), id_out, eq_ix, ix_out, 1.0)
+        setconcoeff!(p, geteqid(x), id_in, eq_ix, ix_in, -1.0)
     end
-    return 
+    return
 end
 
 update!(::Prob, ::StartEqualStop, ::ProbTime) = nothing
@@ -147,22 +149,31 @@ struct ConnectTwoObjects <: BoundaryCondition
         @assert length(getstatevariables(outobject)) > 0
         @assert length(getstatevariables(outobject)) == length(getstatevariables(inobject))
 
-        id = Id(BOUNDARYCONDITION_CONCEPT, string("Connect_", getinstancename(getid(outobject)), "_", getinstancename(getid(inobject))))
+        id = Id(
+            BOUNDARYCONDITION_CONCEPT,
+            string(
+                "Connect_",
+                getinstancename(getid(outobject)),
+                "_",
+                getinstancename(getid(inobject)),
+            ),
+        )
         return new(id, outobject, inobject)
     end
 end
 
 getid(x::ConnectTwoObjects) = x.id
-geteqid(x::ConnectTwoObjects) = Id(BOUNDARYCONDITION_CONCEPT, string("Eq", getinstancename(getid(x))))
+geteqid(x::ConnectTwoObjects) =
+    Id(BOUNDARYCONDITION_CONCEPT, string("Eq", getinstancename(getid(x))))
 
 getobjects(x::ConnectTwoObjects) = [x.inobject, x.outobject]
 getparent(::ConnectTwoObjects) = nothing # this framework is not compatible with ConnectTwoObjects
 
-isinitialcondition(::ConnectTwoObjects)  = false # this framework is not compatible with ConnectTwoObjects
+isinitialcondition(::ConnectTwoObjects) = false # this framework is not compatible with ConnectTwoObjects
 isterminalcondition(::ConnectTwoObjects) = false # this framework is not compatible with ConnectTwoObjects
 
 function build!(p::Prob, x::ConnectTwoObjects) # assumes same amount of state variables for both
-    N = length(getstatevariables(x.inobject)) 
+    N = length(getstatevariables(x.inobject))
     addeq!(p, geteqid(x), N)
     return
 end
@@ -174,10 +185,10 @@ function setconstants!(p::Prob, x::ConnectTwoObjects) # assumes same amount of s
     for eq_ix in eachindex(outstate)
         (id_out, ix_out) = getvarout(outstate[eq_ix])
         (id_in, ix_in) = getvarin(instate[eq_ix])
-        setconcoeff!(p, geteqid(x), id_out, eq_ix, ix_out,  1.0)
-        setconcoeff!(p, geteqid(x),  id_in, eq_ix,  ix_in, -1.0)
+        setconcoeff!(p, geteqid(x), id_out, eq_ix, ix_out, 1.0)
+        setconcoeff!(p, geteqid(x), id_in, eq_ix, ix_in, -1.0)
     end
-    return 
+    return
 end
 
 update!(::Prob, ::ConnectTwoObjects, ::ProbTime) = nothing
@@ -202,7 +213,7 @@ mutable struct EndValues <: BoundaryCondition
         new(id, objects, zeros(Float64, length(objects)))
     end
     function EndValues()
-        new(Id("Empty","Empty"),[],[])
+        new(Id("Empty", "Empty"), [], [])
     end
 end
 
@@ -210,7 +221,7 @@ getid(x::EndValues) = x.id
 getobjects(x::EndValues) = [x.objects]
 getparent(::EndValues) = nothing # this framework is not compatible with EndValues
 
-isinitialcondition(::EndValues)  = false
+isinitialcondition(::EndValues) = false
 isterminalcondition(::EndValues) = true
 
 build!(::Prob, ::EndValues) = nothing
@@ -253,12 +264,18 @@ mutable struct SimpleSingleCuts <: BoundaryCondition
     cutix::Int
     lower_bound::Float64
 
-    function SimpleSingleCuts(id::Id, objects::Vector{Any}, probabilities::Vector{Float64}, maxcuts::Int, lower_bound::Float64)
+    function SimpleSingleCuts(
+        id::Id,
+        objects::Vector{Any},
+        probabilities::Vector{Float64},
+        maxcuts::Int,
+        lower_bound::Float64,
+    )
         # sanity checks
         @assert maxcuts > 0
         @assert length(objects) > 0
         for object in objects
-            @assert length(getstatevariables(object)) > 0 
+            @assert length(getstatevariables(object)) > 0
         end
         numscen = length(probabilities)
         @assert numscen > 0
@@ -266,27 +283,66 @@ mutable struct SimpleSingleCuts <: BoundaryCondition
         for probability in probabilities
             @assert probability >= 0.0
         end
-        
+
         # allocate internal storage
         statevars = [var for obj in objects for var in getstatevariables(obj)]
 
-        constants = Float64[-Inf for __ in 1:maxcuts]
+        constants = Float64[-Inf for __ = 1:maxcuts]
         scenconstants = fill(-Inf, numscen, maxcuts)
 
         slopes = zeros(Float64, maxcuts, length(statevars))
-        scenslopes = zeros(Float64, numscen, maxcuts, length(statevars))   
+        scenslopes = zeros(Float64, numscen, maxcuts, length(statevars))
 
         # set initial counters
         numcuts = 0
         cutix = 0
 
-        return new(id, objects, statevars, probabilities, constants, scenconstants, slopes, scenslopes, maxcuts, numcuts, cutix, lower_bound)
+        return new(
+            id,
+            objects,
+            statevars,
+            probabilities,
+            constants,
+            scenconstants,
+            slopes,
+            scenslopes,
+            maxcuts,
+            numcuts,
+            cutix,
+            lower_bound,
+        )
     end
     function SimpleSingleCuts()
-        return new(Id("Empty","Empty"), [], [], [], [], [], [], [], 0, 0, 0, 0.0)
+        return new(Id("Empty", "Empty"), [], [], [], [], [], [], [], 0, 0, 0, 0.0)
     end
-    function SimpleSingleCuts(id, objects, statevars, probabilities, constants, scenconstants, slopes, scenslopes, maxcuts, numcuts, cutix, lower_bound)
-        return new(id, objects, statevars, probabilities, constants, scenconstants, slopes, scenslopes, maxcuts, numcuts, cutix, lower_bound)
+    function SimpleSingleCuts(
+        id,
+        objects,
+        statevars,
+        probabilities,
+        constants,
+        scenconstants,
+        slopes,
+        scenslopes,
+        maxcuts,
+        numcuts,
+        cutix,
+        lower_bound,
+    )
+        return new(
+            id,
+            objects,
+            statevars,
+            probabilities,
+            constants,
+            scenconstants,
+            slopes,
+            scenslopes,
+            maxcuts,
+            numcuts,
+            cutix,
+            lower_bound,
+        )
     end
 end
 
@@ -303,13 +359,13 @@ function getlightweightself(x::SimpleSingleCuts)
         x.maxcuts,
         -1,
         -1,
-        x.lower_bound
+        x.lower_bound,
     )
 end
 
 getid(x::SimpleSingleCuts) = x.id
 
-isinitialcondition(::SimpleSingleCuts)  = false
+isinitialcondition(::SimpleSingleCuts) = false
 isterminalcondition(::SimpleSingleCuts) = true
 
 setnumcuts!(x::SimpleSingleCuts, n::Int) = x.numcuts = n
@@ -327,13 +383,16 @@ getcutix(x::SimpleSingleCuts) = x.cutix
 
 getparent(::SimpleSingleCuts) = nothing
 
-getfuturecostvarid(x::SimpleSingleCuts) = Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "FutureCost"))
+getfuturecostvarid(x::SimpleSingleCuts) =
+    Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "FutureCost"))
 
-getcutconid(x::SimpleSingleCuts) = Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "CutConstraint"))
+getcutconid(x::SimpleSingleCuts) =
+    Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "CutConstraint"))
 
 # Needed to use setrhsterm! in setconstants!
 # TODO: Extend Prob interface to allow setrhs!(prob, conid, value) instead of setrhsterms!
-getcutconstantid(x::SimpleSingleCuts) = Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "CutConstant"))
+getcutconstantid(x::SimpleSingleCuts) =
+    Id(getconceptname(getid(x)), string(getinstancename(getid(x)), "CutConstant"))
 
 function build!(p::Prob, x::SimpleSingleCuts)
     # add single future cost variable
@@ -349,7 +408,7 @@ function setconstants!(p::Prob, x::SimpleSingleCuts)
     # set future cost variable objective function
     setobjcoeff!(p, getfuturecostvarid(x), 1, 1.0)
 
-    for cutix in 1:getmaxcuts(x)
+    for cutix = 1:getmaxcuts(x)
         # set future cost variable in lhs of cut constraints
         setconcoeff!(p, getcutconid(x), getfuturecostvarid(x), cutix, 1, 1.0)
 
@@ -370,7 +429,7 @@ function setconstants!(p::Prob, x::SimpleSingleCuts, varendperiod::Dict) # TODO:
     # set future cost variable objective function
     setobjcoeff!(p, getfuturecostvarid(x), 1, 1.0)
 
-    for cutix in 1:getmaxcuts(x)
+    for cutix = 1:getmaxcuts(x)
         # set future cost variable in lhs of cut constraints
         setconcoeff!(p, getcutconid(x), getfuturecostvarid(x), cutix, 1, 1.0)
 
@@ -389,14 +448,19 @@ end
 update!(::Prob, ::SimpleSingleCuts, ::ProbTime) = nothing
 
 # Updates scenariocutparameters for new cut
-function getscencutparameters!(p::Prob, x::SimpleSingleCuts, states::Dict{StateVariableInfo, Float64}, scenario::Int64)
+function getscencutparameters!(
+    p::Prob,
+    x::SimpleSingleCuts,
+    states::Dict{StateVariableInfo,Float64},
+    scenario::Int64,
+)
     cutix = getcutix(x) + 1
     if cutix > getmaxcuts(x)
         cutix = 1
     end
 
     constant = getobjectivevalue(p)
-    
+
     for (i, statevar) in enumerate(x.statevars)
         (id, ix) = getvarin(statevar)
         slope = getfixvardual(p, id, ix)
@@ -408,7 +472,7 @@ end
 
 # Updates cutparameters for new cut
 function updatecutparameters!(p::Prob, x::SimpleSingleCuts) # TODO: Remove Prob as input
-    # get cutix    
+    # get cutix
     cutix = getcutix(x) + 1
     if cutix > getmaxcuts(x)
         cutix = 1
@@ -419,7 +483,7 @@ function updatecutparameters!(p::Prob, x::SimpleSingleCuts) # TODO: Remove Prob 
         setcutix!(x, cutix)
         setnumcuts!(x, cutix)
     end
-    
+
     # get internal storage for cut parameters
     avgconstants = getconstants(x)
     avgslopes = getslopes(x)
@@ -473,7 +537,14 @@ function updatecuts!(p::Prob, x::SimpleSingleCuts, varendperiod::Dict) # TODO: N
         setrhsterm!(p, getcutconid(x), getcutconstantid(x), cutix, avgconstants[cutix])
         for (j, statevar) in enumerate(x.statevars)
             (varid, varix) = getvarout(statevar)
-            setconcoeff!(p, getcutconid(x), varid, cutix, varendperiod[varid], -avgslopes[cutix, j])
+            setconcoeff!(
+                p,
+                getcutconid(x),
+                varid,
+                cutix,
+                varendperiod[varid],
+                -avgslopes[cutix, j],
+            )
         end
     end
     return
@@ -499,7 +570,7 @@ function clearcuts!(p::Prob, x::SimpleSingleCuts)
     # get internal storage for cut parameters
     avgconstants = getconstants(x)
     avgslopes = getslopes(x)
-    
+
     # inactivate cut parameters in internal storage
     fill!(avgconstants, x.lower_bound)
     fill!(x.scenconstants, x.lower_bound)
@@ -525,7 +596,7 @@ function clearcuts!(x::SimpleSingleCuts)
     # get internal storage for cut parameters
     avgconstants = getconstants(x)
     avgslopes = getslopes(x)
-    
+
     # inactivate cut parameters in internal storage
     fill!(avgconstants, x.lower_bound)
     fill!(x.scenconstants, x.lower_bound)
@@ -545,8 +616,8 @@ function includeStartEqualStop!(toplevel::Dict, ::Dict, elkey::ElementKey, value
 
     deps = Id[]
 
-    varname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
-    varconcept = getdictvalue(value, WHICHCONCEPT,  String, elkey)
+    varname = getdictvalue(value, WHICHINSTANCE, String, elkey)
+    varconcept = getdictvalue(value, WHICHCONCEPT, String, elkey)
     varkey = Id(varconcept, varname)
 
     push!(deps, varkey)
@@ -558,11 +629,9 @@ function includeStartEqualStop!(toplevel::Dict, ::Dict, elkey::ElementKey, value
     id = getobjkey(elkey)
 
     toplevel[id] = StartEqualStop(id, var)
-    
-    return (true, deps)    
+
+    return (true, deps)
 end
 
-INCLUDEELEMENT[TypeKey(BOUNDARYCONDITION_CONCEPT, "StartEqualStop")] = includeStartEqualStop!
-
-
-
+INCLUDEELEMENT[TypeKey(BOUNDARYCONDITION_CONCEPT, "StartEqualStop")] =
+    includeStartEqualStop!

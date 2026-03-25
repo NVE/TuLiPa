@@ -3,19 +3,19 @@ Flow based constraints for power transfer between price areas
 """
 
 
-struct BaseFlowBased{T <: Real} <: FlowBased
+struct BaseFlowBased{T<:Real} <: FlowBased
     id::Id
     flow::Flow
     max_cap::Int64
     ptdfs::Array{T}
     ptdfs_names::Vector{Id}
     function BaseFlowBased(
-            id::Id,
-            flow::Flow,
-            max_cap::Int64,
-            ptdfs::Array{T},
-            ptdfs_names::Vector{Id}
-        ) where {T <: Real}
+        id::Id,
+        flow::Flow,
+        max_cap::Int64,
+        ptdfs::Array{T},
+        ptdfs_names::Vector{Id},
+    ) where {T<:Real}
         new{T}(id, flow, max_cap, ptdfs, ptdfs_names)
     end
 end
@@ -33,14 +33,20 @@ end
 
 function setrhs_from_ptdf(p::Prob, T::Int64, line_id::Id, max_cap::Int64)
     p.rhs[line_id] = []
-    for t in 1:T
+    for t = 1:T
         push!(p.rhs[line_id], max_cap)
     end
     p.isrhsupdated = true
 end
 
-function setconcoeff_from_ptdf(p::Prob, T::Int64, line_id::Id, ptdfs::Array{<:Real,1}, ptdfs_names::Vector{Id})
-    for t in 1:T
+function setconcoeff_from_ptdf(
+    p::Prob,
+    T::Int64,
+    line_id::Id,
+    ptdfs::Array{<:Real,1},
+    ptdfs_names::Vector{Id},
+)
+    for t = 1:T
         for (transfer_flow_id, ptdf) in zip(ptdfs_names, ptdfs)
             setconcoeff!(p, line_id, transfer_flow_id, t, t, ptdf)
         end
@@ -82,11 +88,16 @@ function get_values_from_ptdf_df(ptdfs, ptdfs_names)
 end
 
 
-function includeBaseFlowBased!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
+function includeBaseFlowBased!(
+    toplevel::Dict,
+    lowlevel::Dict,
+    elkey::ElementKey,
+    value::Dict,
+)
     checkkey(toplevel, elkey)
     deps = Id[]
-    
-    varname = getdictvalue(value, FLOW_CONCEPT, String, elkey) 
+
+    varname = getdictvalue(value, FLOW_CONCEPT, String, elkey)
     varkey = Id(FLOW_CONCEPT, varname)
     push!(deps, varkey)
     haskey(toplevel, varkey) || return (false, deps)
@@ -104,12 +115,12 @@ function includeBaseFlowBased!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey
     end
 
     objkey = getobjkey(elkey)
-    toplevel[objkey] = BaseFlowBased(objkey, toplevel[varkey], max_cap, ptdfs, transfer_flow_ids) # can be lowlevel?
-    
+    toplevel[objkey] =
+        BaseFlowBased(objkey, toplevel[varkey], max_cap, ptdfs, transfer_flow_ids) # can be lowlevel?
+
     return (true, deps)
 end
 
 FLOW_BASED_CONCEPT = "FlowBased" # TODO: move
 
 INCLUDEELEMENT[TypeKey(FLOW_BASED_CONCEPT, "BaseFlowBased")] = includeBaseFlowBased!
-

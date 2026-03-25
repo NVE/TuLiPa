@@ -1,6 +1,6 @@
 """
 We implement SimpleStartUpCost (also see abstracttypes.jl)
-This is a linearized cost of increasing a Flow 
+This is a linearized cost of increasing a Flow
 from 0 up to minimal stable load.
 - startupcost is cost per unit (GWh for thermal) increase of online capacity
 - msl is the minimal stable load as a percentage of capacity
@@ -98,14 +98,14 @@ function setconstants!(p::Prob, trait::StartUpCost)
     lbconid = getlbconid(trait)
     ubconid = getubconid(trait)
 
-    for t in 1:T
+    for t = 1:T
         # Non-negative vars
         setlb!(p, onlinevarid, t, 0.0)
-        setlb!(p, startvarid,  t, 0.0)
+        setlb!(p, startvarid, t, 0.0)
 
         # Include variables in equations
         # flow[t] >= online[t] * msl
-        setconcoeff!(p, lbconid, flowid,   t, t, 1.0)
+        setconcoeff!(p, lbconid, flowid, t, t, 1.0)
         setconcoeff!(p, lbconid, onlinevarid, t, t, -trait.msl)
 
         # flow[t] <= online[t]
@@ -114,9 +114,9 @@ function setconstants!(p::Prob, trait::StartUpCost)
 
         # startvar[t] >= (d/dt) online[t] * msl for t > 1
         setconcoeff!(p, startconid, startvarid, t, t, 1.0)
-        setconcoeff!(p, startconid, onlinevarid, t, t, -trait.msl) 
+        setconcoeff!(p, startconid, onlinevarid, t, t, -trait.msl)
         if t > 1
-            setconcoeff!(p, startconid, onlinevarid, t, t-1, trait.msl) 
+            setconcoeff!(p, startconid, onlinevarid, t, t - 1, trait.msl)
         end
     end
 
@@ -128,7 +128,7 @@ function setconstants!(p::Prob, trait::StartUpCost)
     if !_must_dynamic_update(trait.startcost, h)
         value = getparamvalue(trait.startcost, ConstantTime(), MsTimeDelta(Hour(1))) # cost of full startup
 
-        for t in 1:T
+        for t = 1:T
             setobjcoeff!(p, startvarid, t, value)
         end
     end
@@ -141,8 +141,8 @@ function update!(p::Prob, trait::StartUpCost, start::ProbTime)
     startvarid = getstartvarid(trait)
     h = gethorizon(trait.flow)
 
-    if _must_dynamic_update(trait.startcost, h)   
-        for t in 1:getnumperiods(h)
+    if _must_dynamic_update(trait.startcost, h)
+        for t = 1:getnumperiods(h)
             querystart = getstarttime(h, t, start)
             querydelta = gettimedelta(h, t)
             value = getparamvalue(trait.startcost, querystart, querydelta)
@@ -159,7 +159,12 @@ function assemble!(trait::SimpleStartUpCost)
 end
 
 # ------ Include dataelements -------
-function includeSimpleStartUpCost!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
+function includeSimpleStartUpCost!(
+    toplevel::Dict,
+    lowlevel::Dict,
+    elkey::ElementKey,
+    value::Dict,
+)
     checkkey(toplevel, elkey)
 
     deps = Id[]
@@ -179,8 +184,9 @@ function includeSimpleStartUpCost!(toplevel::Dict, lowlevel::Dict, elkey::Elemen
     objkey = getobjkey(elkey)
 
     toplevel[objkey] = SimpleStartUpCost(objkey, toplevel[flowkey], startcost, msl)
-    
-    return (true, deps)
- end
 
-INCLUDEELEMENT[TypeKey(STARTUPCOST_CONCEPT, "SimpleStartUpCost")] = includeSimpleStartUpCost!
+    return (true, deps)
+end
+
+INCLUDEELEMENT[TypeKey(STARTUPCOST_CONCEPT, "SimpleStartUpCost")] =
+    includeSimpleStartUpCost!

@@ -4,22 +4,22 @@ Here we use the JuMP modelling framework
 https://github.com/jump-dev/JuMP.jl
 
 JuMP_Prob consist of:
-- JuMP Model object with solver, solver settings and problem 
+- JuMP Model object with solver, solver settings and problem
 formulation built incrementally from model objects
-- Model objects that represent concepts 
+- Model objects that represent concepts
 (e.g. power plants, power markets, water balances etc...)
 They know how they are connected to other model objects
 and how to interact with the optimization model
 (e.g. add variables and constraints, and update parameters wrt. time input)
-- An interface to build, update and solve the problem, add solver 
-settings and query results from the solution 
-- Horizons can similar to model objects be built and updated 
-(needed for more complex horizons). They are therefore collected from 
-the model objects and stored in a list to make the updating more efficient. 
-- The right hand side (rhs) of constraints can consist of multiple 
-parameters. When these parameters are updated they are first put into 
-JuMP_Prob. Right before the problem is solved, if any parameters have 
-been updated, the rhs (sum of the parameters) is added to the JuMP Model. 
+- An interface to build, update and solve the problem, add solver
+settings and query results from the solution
+- Horizons can similar to model objects be built and updated
+(needed for more complex horizons). They are therefore collected from
+the model objects and stored in a list to make the updating more efficient.
+- The right hand side (rhs) of constraints can consist of multiple
+parameters. When these parameters are updated they are first put into
+JuMP_Prob. Right before the problem is solved, if any parameters have
+been updated, the rhs (sum of the parameters) is added to the JuMP Model.
 """
 
 using JuMP
@@ -61,33 +61,39 @@ gethorizons(p::JuMP_Prob) = p.horizons
 # Functions used by objects or traits to update the problem -------------
 function addvar!(p::JuMP_Prob, id::Id, N::Int)
     name = getname(id)
-    p.model[Symbol(name)] = @variable(p.model, [1:N], base_name=name)    
+    p.model[Symbol(name)] = @variable(p.model, [1:N], base_name = name)
     return
 end
 
 function addeq!(p::JuMP_Prob, id::Id, N::Int)
     name = getname(id)
-    p.model[Symbol(name)] = @constraint(p.model, [t in 1:N], 0 == 0, base_name=name)
-    p.rhs[id] = [Dict{Any, Float64}() for __ in 1:N]
+    p.model[Symbol(name)] = @constraint(p.model, [t in 1:N], 0 == 0, base_name = name)
+    p.rhs[id] = [Dict{Any,Float64}() for __ = 1:N]
     return
 end
 
 function addle!(p::JuMP_Prob, id::Id, N::Int)
     name = getname(id)
-    p.model[Symbol(name)] = @constraint(p.model, [t in 1:N], 0 <= 0, base_name=name)
-    p.rhs[id] = [Dict{Any, Float64}() for __ in 1:N]
+    p.model[Symbol(name)] = @constraint(p.model, [t in 1:N], 0 <= 0, base_name = name)
+    p.rhs[id] = [Dict{Any,Float64}() for __ = 1:N]
     return
 end
 
 function addge!(p::JuMP_Prob, id::Id, N::Int)
     name = getname(id)
-    p.model[Symbol(name)] = @constraint(p.model, [t in 1:N], 0 >= 0, base_name=name)
-    p.rhs[id] = [Dict{Any, Float64}() for __ in 1:N]
+    p.model[Symbol(name)] = @constraint(p.model, [t in 1:N], 0 >= 0, base_name = name)
+    p.rhs[id] = [Dict{Any,Float64}() for __ = 1:N]
     return
 end
 
-function setconcoeff!(p::JuMP_Prob, conid::Id, 
-        varid::Id, conix::Int, varix::Int, value::Float64)
+function setconcoeff!(
+    p::JuMP_Prob,
+    conid::Id,
+    varid::Id,
+    conix::Int,
+    varix::Int,
+    value::Float64,
+)
     con = p.model[Symbol(getname(conid))]
     var = p.model[Symbol(getname(varid))]
     set_normalized_coefficient(con[conix], var[varix], value)
@@ -152,7 +158,10 @@ function solve!(p::JuMP_Prob)
         modelid = rand(1:999)
         try
             threadid = myid()
-            write_to_file(p.model, "failed_model_status_$(status)_thread_$(threadid)_$(modelid).mps")
+            write_to_file(
+                p.model,
+                "failed_model_status_$(status)_thread_$(threadid)_$(modelid).mps",
+            )
         catch
             write_to_file(p.model, "failed_model_status_$(status)_$(modelid).mps")
         end
@@ -174,11 +183,15 @@ end
 
 function unsetsilent!(p::JuMP_Prob)
     unset_silent(p.model)
-    return 
+    return
 end
 
 # https://jump.dev/JuMP.jl/stable/tutorials/getting_started/debugging/#Debugging-an-infeasible-model
-function debug_infeasible_jump_model(model::JuMP.Model , modelid::Int, status::MOI.TerminationStatusCode)
+function debug_infeasible_jump_model(
+    model::JuMP.Model,
+    modelid::Int,
+    status::MOI.TerminationStatusCode,
+)
     messages = ["Model $(modelid) failed with status $(status)"]
 
     JuMP.compute_conflict!(model)
@@ -186,7 +199,8 @@ function debug_infeasible_jump_model(model::JuMP.Model , modelid::Int, status::M
         push!(messages, "\nFound conflicting constraints from JuMP.compute_conflicts():")
         for (F, S) in JuMP.list_of_constraint_types(model)
             for con in JuMP.all_constraints(model, F, S)
-                if JuMP.get_attribute(con, MOI.ConstraintConflictStatus()) == MOI.IN_CONFLICT
+                if JuMP.get_attribute(con, MOI.ConstraintConflictStatus()) ==
+                   MOI.IN_CONFLICT
                     push!(messages, string(con))
                 end
             end
@@ -195,7 +209,10 @@ function debug_infeasible_jump_model(model::JuMP.Model , modelid::Int, status::M
 
     infeasible_bounds = get_infeasible_bounds(model)
     if !isempty(infeasible_bounds)
-        push!(messages, "\nFound infeasible variable bounds when checking lower and upper bounds:")
+        push!(
+            messages,
+            "\nFound infeasible variable bounds when checking lower and upper bounds:",
+        )
         push!(messages, infeasible_bounds...)
     end
 
@@ -203,11 +220,17 @@ function debug_infeasible_jump_model(model::JuMP.Model , modelid::Int, status::M
     map = TuLiPa.JuMP.relax_with_penalty!(model)
     TuLiPa.JuMP.optimize!(model)
     if termination_status(model) == MOI.OPTIMAL
-        push!(messages, "\nRelaxed model is optimal, with the following violated constraints:")
+        push!(
+            messages,
+            "\nRelaxed model is optimal, with the following violated constraints:",
+        )
         for (con, penalty) in map
             violation = TuLiPa.JuMP.value(penalty)
             if violation > 0
-                push!(messages, "Constraint `$(TuLiPa.JuMP.name(con))` is violated by $violation")
+                push!(
+                    messages,
+                    "Constraint `$(TuLiPa.JuMP.name(con))` is violated by $violation",
+                )
                 count += 1
                 if count >= 50
                     push!(messages, "...")
@@ -230,15 +253,17 @@ function get_infeasible_bounds(model::JuMP.Model)
         JuMP.has_upper_bound(var) || continue
         upper_bound = JuMP.upper_bound(var)
         if upper_bound < lower_bound
-            push!(infeasible_bounds, "$(JuMP.name(var)) has higher lb=$lower_bound than ub=$upper_bound]")
+            push!(
+                infeasible_bounds,
+                "$(JuMP.name(var)) has higher lb=$lower_bound than ub=$upper_bound]",
+            )
         end
     end
     return infeasible_bounds
 end
 
 # --------- Query results from problem ---------------
-function getconcoeff(p::JuMP_Prob, conid::Id, 
-        varid::Id, conix::Int, varix::Int)
+function getconcoeff(p::JuMP_Prob, conid::Id, varid::Id, conix::Int, varix::Int)
     con = p.model[Symbol(getname(conid))]
     var = p.model[Symbol(getname(varid))]
     return normalized_coefficient(con[conix], var[varix])
@@ -263,13 +288,14 @@ function getrhsterm(p::JuMP_Prob, conid::Id, traitid::Id, i::Int)
     return p.rhs[conid][i][traitid]
 end
 
-getobjectivevalue(p::JuMP_Prob) = objective_value(p.model) 
+getobjectivevalue(p::JuMP_Prob) = objective_value(p.model)
 
 getvarvalue(p::JuMP_Prob, id::Id, i::Int) = value(p.model[Symbol(getname(id))][i])
 
-getcondual(p::JuMP_Prob, id::Id, i::Int)  = dual(p.model[Symbol(getname(id))][i])
+getcondual(p::JuMP_Prob, id::Id, i::Int) = dual(p.model[Symbol(getname(id))][i])
 
-getfixvardual(p::JuMP_Prob, varid::Id, varix::Int)  = dual(FixRef(p.model[Symbol(getname(varid))][varix]))
+getfixvardual(p::JuMP_Prob, varid::Id, varix::Int) =
+    dual(FixRef(p.model[Symbol(getname(varid))][varix]))
 
 # TODO: Implement
 setwarmstart!(::JuMP_Prob, ::Bool) = nothing
@@ -282,7 +308,7 @@ function makefixable!(::JuMP_Prob, ::Id, ::Int)
 end
 
 function fix!(p::JuMP_Prob, varid::Id, varix::Int, value::Float64)
-    fix(p.model[Symbol(getname(varid))][varix], value, force=true)
+    fix(p.model[Symbol(getname(varid))][varix], value, force = true)
     return
 end
 
@@ -290,6 +316,3 @@ function unfix!(p::JuMP_Prob, varid::Id, varix::Int)
     unfix(p.model[Symbol(getname(varid))][varix])
     return
 end
-
-
-

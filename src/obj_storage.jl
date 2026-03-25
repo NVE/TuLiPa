@@ -10,10 +10,10 @@ mutable struct BaseStorage <: Storage
     id::Id
     balance::Balance
     lb::Capacity
-    ub::Union{Nothing, Capacity}
-    loss::Union{Nothing, Loss}
+    ub::Union{Nothing,Capacity}
+    loss::Union{Nothing,Loss}
     costs::Vector{Cost}
-    sumcost::Union{Nothing, SumCost}
+    sumcost::Union{Nothing,SumCost}
     metadata::Dict
 
     function BaseStorage(id, balance)
@@ -56,14 +56,15 @@ function getstatevariables(x::Storage)
     info = StateVariableInfo((var_in_id, 1), (var_out_id, var_out_ix))
     return [info]
 end
-getstartvarid(var::BaseStorage) = Id(getconceptname(var.id), string("Start", getinstancename(var.id)))
+getstartvarid(var::BaseStorage) =
+    Id(getconceptname(var.id), string("Start", getinstancename(var.id)))
 
 # Build the variable for each time period in the horizon,
 # and build the start variable x[0]. Also make state variables fixable
 # Set upper and lower bounds (capacities)
 # Include costs in the objective function (sumcost)
 # Include variables in the balances
-function build!(p::Prob, var::BaseStorage)    
+function build!(p::Prob, var::BaseStorage)
     build!(p, var, var.lb)
     build!(p, var, var.ub)
 
@@ -86,7 +87,7 @@ function setconstants!(p::Prob, var::BaseStorage)
     !isnothing(var.sumcost) && setconstants!(p, var, var.sumcost)
 
     T = getnumperiods(gethorizon(var))
-    for t in 1:T
+    for t = 1:T
         setconcoeff!(p, getid(getbalance(var)), getid(var), t, t, 1.0)
     end
 
@@ -99,8 +100,8 @@ function setconstants!(p::Prob, var::BaseStorage)
             coeff = 1.0
         end
 
-        for t in 2:T
-            setconcoeff!(p, getid(getbalance(var)), getid(var), t, t-1, -coeff)
+        for t = 2:T
+            setconcoeff!(p, getid(getbalance(var)), getid(var), t, t - 1, -coeff)
         end
 
         # set start storage variable in first balance equation
@@ -125,12 +126,12 @@ function update!(p::Prob, var::BaseStorage, start::ProbTime)
         setconcoeff!(p, getid(getbalance(var)), getstartvarid(var), t, 1, -coeff)
 
         T = getnumperiods(horizon)
-        for t in 2:T
+        for t = 2:T
             querystart = getstarttime(horizon, t, start)
             querydelta = gettimedelta(horizon, t)
             coeff = 1.0 - getparamvalue(var.loss, querystart, querydelta)
-            setconcoeff!(p, getid(getbalance(var)), getid(var), t, t-1, -coeff)
-        end    
+            setconcoeff!(p, getid(getbalance(var)), getid(var), t, t - 1, -coeff)
+        end
     end
 
     return
@@ -146,7 +147,7 @@ function assemble!(var::BaseStorage)::Bool
 
     # return if balance not assembled yet
     isnothing(gethorizon(balance)) && return false
-    
+
     horizon = gethorizon(balance)
     T = getnumperiods(horizon)
 
@@ -168,12 +169,12 @@ function includeBaseStorage!(toplevel::Dict, ::Dict, elkey::ElementKey, value::D
 
     push!(deps, balancekey)
     haskey(toplevel, balancekey) || return (false, deps)
-    
+
     objkey = getobjkey(elkey)
 
     toplevel[objkey] = BaseStorage(objkey, toplevel[balancekey])
-    
-    return (true, deps)    
+
+    return (true, deps)
 end
 
 INCLUDEELEMENT[TypeKey(STORAGE_CONCEPT, "BaseStorage")] = includeBaseStorage!

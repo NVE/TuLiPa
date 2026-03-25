@@ -1,9 +1,9 @@
 """
 We implement BaseAggSupplyCurve
 
-This type takes a list of "simple" Flows that are connected to the 
+This type takes a list of "simple" Flows that are connected to the
 same balance ("simple" as they are only connected to one balance).
-The parameter numclusters is the number of equivalent flows 
+The parameter numclusters is the number of equivalent flows
 (or variables) that should represent the list of Flows
 This object only considers the cost, upper capacity and lower capacity
 when aggregating the flows to equivalent flows
@@ -35,13 +35,13 @@ struct BaseAggSupplyCurve <: AggSupplyCurve
     function BaseAggSupplyCurve(id, balance, flows, numclusters)
         horizon = gethorizon(getcommodity(balance))
         T = getnumperiods(horizon)
-        
-        numflows = length(flows)
-        mcs = zeros(Float64,T,numflows)
-        lbs = zeros(Float64,T,numflows)
-        ubs = zeros(Float64,T,numflows)
 
-        new(id,balance,flows,numclusters,mcs,lbs,ubs)
+        numflows = length(flows)
+        mcs = zeros(Float64, T, numflows)
+        lbs = zeros(Float64, T, numflows)
+        ubs = zeros(Float64, T, numflows)
+
+        new(id, balance, flows, numclusters, mcs, lbs, ubs)
     end
 end
 
@@ -58,10 +58,10 @@ function build!(p::Prob, var::AggSupplyCurve)
     varname = getinstancename(var.id)
     eqperiods = getnumperiods(gethorizon(getcommodity(var.balance)))
 
-    for c in 1:var.numclusters
-        newname = string(varname,"_",c)
-        addvar!(p, Id(AGGSUPPLYCURVE_CONCEPT,newname), eqperiods)
-    end  
+    for c = 1:var.numclusters
+        newname = string(varname, "_", c)
+        addvar!(p, Id(AGGSUPPLYCURVE_CONCEPT, newname), eqperiods)
+    end
 end
 
 # Include the equivalent Flows in the endogenous Balance
@@ -69,11 +69,18 @@ function setconstants!(p::Prob, var::AggSupplyCurve)
     varname = getinstancename(var.id)
     eqinstance = split(varname, "PlantAgg_")[2]
     eqperiods = getnumperiods(gethorizon(getcommodity(var.balance)))
-    
-    for c in 1:var.numclusters
-        newname = string(varname,"_",c)
-        for t in 1:eqperiods
-            setconcoeff!(p, Id(BALANCE_CONCEPT, eqinstance), Id(AGGSUPPLYCURVE_CONCEPT, newname), t, t, -1.0)
+
+    for c = 1:var.numclusters
+        newname = string(varname, "_", c)
+        for t = 1:eqperiods
+            setconcoeff!(
+                p,
+                Id(BALANCE_CONCEPT, eqinstance),
+                Id(AGGSUPPLYCURVE_CONCEPT, newname),
+                t,
+                t,
+                -1.0,
+            )
         end
     end
 
@@ -82,14 +89,14 @@ function setconstants!(p::Prob, var::AggSupplyCurve)
     dummytime = ConstantTime()
     dummydelta = MsTimeDelta(Hour(1))
 
-    for i in 1:length(var.flows)
+    for i = 1:length(var.flows)
         flow = var.flows[i]
 
         cost = getcost(flow)
         if isconstant(cost)
             paramvalue = getparamvalue(cost, dummytime, dummydelta)
-            for t in 1:T
-                var.mcs[t,i] = paramvalue::Float64 # pq not supported
+            for t = 1:T
+                var.mcs[t, i] = paramvalue::Float64 # pq not supported
             end
         end
 
@@ -97,16 +104,16 @@ function setconstants!(p::Prob, var::AggSupplyCurve)
         if isconstant(lb) && !isdurational(lb)
             # Why? SequentialHorizon can have two or more sets of (nperiods, duration) pairs
             paramvalue = getparamvalue(lb, dummytime, dummydelta)
-            for t in 1:T
-                var.lbs[t,i] = paramvalue::Float64
+            for t = 1:T
+                var.lbs[t, i] = paramvalue::Float64
             end
         end
 
         ub = getub(flow)
         if isconstant(ub) && !isdurational(ub)
             paramvalue = getparamvalue(ub, dummytime, dummydelta)
-            for t in 1:T
-                var.ubs[t,i] = paramvalue::Float64
+            for t = 1:T
+                var.ubs[t, i] = paramvalue::Float64
             end
         end
     end
@@ -117,51 +124,54 @@ function update!(p::Prob, var::AggSupplyCurve, start::ProbTime)
     # Fill
     horizon = gethorizon(getcommodity(var.balance))
     T = getnumperiods(horizon)
-    
+
     varname = getinstancename(var.id)
     numflows = length(var.flows)
 
-    querystarts = [getstarttime(horizon, t, start) for t in 1:T]
-    querydeltas = [gettimedelta(horizon, t) for t in 1:T]
+    querystarts = [getstarttime(horizon, t, start) for t = 1:T]
+    querydeltas = [gettimedelta(horizon, t) for t = 1:T]
 
     # Calculate costs and upper/lower bound for each flow and timeperiod
-    for i in 1:numflows
+    for i = 1:numflows
         flow = var.flows[i]
 
         cost = getcost(flow)
         if !isconstant(cost)
-            for t in 1:T
+            for t = 1:T
                 if mustupdate(horizon, t)
-                    var.mcs[t,i] = getparamvalue(cost, querystarts[t], querydeltas[t])::Float64 # pq not supported
+                    var.mcs[t, i] =
+                        getparamvalue(cost, querystarts[t], querydeltas[t])::Float64 # pq not supported
                 end
             end
-        end   
+        end
 
         lb = getlb(flow)
         if !isconstant(lb) || isdurational(lb)
-            for t in 1:T
+            for t = 1:T
                 if mustupdate(horizon, t)
-                    var.lbs[t,i] = getparamvalue(lb, querystarts[t], querydeltas[t])::Float64
+                    var.lbs[t, i] =
+                        getparamvalue(lb, querystarts[t], querydeltas[t])::Float64
                 end
             end
         end
 
         ub = getub(flow)
         if !isconstant(ub) || isdurational(ub)
-            for t in 1:T
+            for t = 1:T
                 if mustupdate(horizon, t)
-                    var.ubs[t,i] = getparamvalue(ub, querystarts[t], querydeltas[t])::Float64
+                    var.ubs[t, i] =
+                        getparamvalue(ub, querystarts[t], querydeltas[t])::Float64
                 end
             end
         end
     end
 
     # For each timeperiod cluster flows by costs
-    for t in 1:T
+    for t = 1:T
         (future_t, ok) = mayshiftfrom(horizon, t)
         if ok
-            for assignment in 1:var.numclusters
-                newname = string(varname,"_",assignment)
+            for assignment = 1:var.numclusters
+                newname = string(varname, "_", assignment)
                 newid = Id(AGGSUPPLYCURVE_CONCEPT, newname)
 
                 value = getobjcoeff(p, newid, future_t)
@@ -179,21 +189,21 @@ function update!(p::Prob, var::AggSupplyCurve, start::ProbTime)
     # Constant seed for reproducability of clustering
     Random.seed!(1000)
 
-    for t in 1:T
+    for t = 1:T
         if mustupdate(horizon, t)
-            r = kmeans(reshape(var.mcs[t,:],1,numflows), var.numclusters)
+            r = kmeans(reshape(var.mcs[t, :], 1, numflows), var.numclusters)
             assignments = r.assignments
 
             # For each cluster aggregate costs and upper/lower bounds
-            for assignment in 1:var.numclusters
+            for assignment = 1:var.numclusters
                 mc = float(0)
                 lb = float(0)
                 ub = float(0)
-                for j in 1:numflows
+                for j = 1:numflows
                     if assignments[j] == assignment
-                        mc += var.mcs[t,j]*(var.ubs[t,j]-var.lbs[t,j])
-                        lb += var.lbs[t,j]
-                        ub += var.ubs[t,j]
+                        mc += var.mcs[t, j] * (var.ubs[t, j] - var.lbs[t, j])
+                        lb += var.lbs[t, j]
+                        ub += var.ubs[t, j]
                     end
                 end
 
@@ -203,7 +213,7 @@ function update!(p::Prob, var::AggSupplyCurve, start::ProbTime)
                     mc /= (ub - lb)
                 end
 
-                newname = string(varname,"_",assignment)
+                newname = string(varname, "_", assignment)
                 newid = Id(AGGSUPPLYCURVE_CONCEPT, newname)
 
                 # Set costs and upper/lower bounds for timeperiod and cluster

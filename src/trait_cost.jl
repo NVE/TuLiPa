@@ -12,7 +12,7 @@ isdurational(::Cost) = false
 # --------- Concrete types
 mutable struct CostTerm <: Cost
     id::Id
-    param::Union{Param, Price}
+    param::Union{Param,Price}
     isingoing::Bool
 end
 
@@ -58,8 +58,8 @@ getid(cost::CostTerm) = cost.id
 isingoing(cost::CostTerm) = cost.isingoing
 isingoing(cost::SumCost) = true
 
-function getparamvalue(cost::CostTerm, t::ProbTime, d::TimeDelta; ix=0)
-    value = getparamvalue(cost.param, t, d, ix=ix)
+function getparamvalue(cost::CostTerm, t::ProbTime, d::TimeDelta; ix = 0)
+    value = getparamvalue(cost.param, t, d, ix = ix)
     if !isingoing(cost)
         return -value
     else
@@ -79,16 +79,17 @@ function setconstants!(p::Prob, var::Any, sumcost::SumCost)
     for (col, term) in enumerate(sumcost.terms)
         if !_must_dynamic_update(term)
             dummytime = ConstantTime()
-            for t in 1:T
+            for t = 1:T
                 querydelta = gettimedelta(var.horizon, t)
-                sumcost.values[t, col] = getparamvalue(term, dummytime, querydelta, ix=t)::Float64
+                sumcost.values[t, col] =
+                    getparamvalue(term, dummytime, querydelta, ix = t)::Float64
                 sumcost.isupdated[t] = true
             end
         end
     end
 
     if !_must_dynamic_update(sumcost)
-        for t in 1:T
+        for t = 1:T
             if sumcost.isupdated[t] == true
                 value = sum(sumcost.values[t, :])
                 setobjcoeff!(p, var.id, t, value)
@@ -105,18 +106,19 @@ function update!(p::Prob, var::Any, sumcost::SumCost, start::ProbTime)
     T = getnumperiods(var.horizon)
     for (col, term) in enumerate(sumcost.terms)
         if _must_dynamic_update(term)
-            for t in 1:T
+            for t = 1:T
                 if mustupdate(var.horizon, t) || isstateful_sumcost
                     querystart = getstarttime(var.horizon, t, start)
                     querydelta = gettimedelta(var.horizon, t)
-                    sumcost.values[t, col] = getparamvalue(term, querystart, querydelta, ix=t)::Float64
+                    sumcost.values[t, col] =
+                        getparamvalue(term, querystart, querydelta, ix = t)::Float64
                     sumcost.isupdated[t] = true
                 end
             end
         end
     end
 
-    for t in 1:T
+    for t = 1:T
         (future_t, ok) = mayshiftfrom(var.horizon, t)
         if ok && (sumcost.isupdated[t] == false)
             value = getobjcoeff(p, var.id, future_t)
@@ -132,8 +134,8 @@ end
 function includeCostTerm!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     deps = Id[]
 
-    varname    = getdictvalue(value, WHICHINSTANCE, String, elkey)
-    varconcept = getdictvalue(value, WHICHCONCEPT,  String, elkey)
+    varname = getdictvalue(value, WHICHINSTANCE, String, elkey)
+    varconcept = getdictvalue(value, WHICHCONCEPT, String, elkey)
     varkey = Id(varconcept, varname)
     push!(deps, varkey)
 
@@ -148,14 +150,14 @@ function includeCostTerm!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, val
     var = toplevel[varkey]
 
     isingoing = getdictisingoing(value, elkey)
-    
+
     id = getobjkey(elkey)
 
     cost = CostTerm(id, param, isingoing)
 
     addcost!(var, cost)
-    
-    return (true, deps)    
+
+    return (true, deps)
 end
 
 INCLUDEELEMENT[TypeKey(COST_CONCEPT, "CostTerm")] = includeCostTerm!

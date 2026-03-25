@@ -10,7 +10,7 @@ ConstantTimeVector contains a single value
 RotatingTimeVector contains a time-series. When we get to the end of the
 time-series we reuse it (therefore rotating)
 Start and stop indicates which part of the timeseries should be used
-Uses getsimilardatetime() to find values for a problem time which is 
+Uses getsimilardatetime() to find values for a problem time which is
 not necessarily inside the range of the time-series
 Must have at least one year of data
 Used for profile i.e wind profile from 1981-2010
@@ -23,7 +23,7 @@ Building blocks of the TimeVectors above are also included from the DataElements
 These are commented at the end. These are also stored in lowlevel.
 
 TODO: We can use the time-series more efficiently
-- If data points have constant distance between them, we can make a more 
+- If data points have constant distance between them, we can make a more
 efficient getweightedaverage that takes advantage of this
 - Many objects can get data from the same time-series. Instead of the same calculations
 being done several times, we could store the results in a intermediate storage
@@ -36,17 +36,17 @@ struct ConstantTimeVector <: TimeVector
     value::Float64
 end
 
-struct InfiniteTimeVector{I, V} <: TimeVector
+struct InfiniteTimeVector{I,V} <: TimeVector
     index::I
     values::V
 end
 
-mutable struct MutableInfiniteTimeVector{I, V} <: TimeVector
+mutable struct MutableInfiniteTimeVector{I,V} <: TimeVector
     index::I
     values::V
 end
 
-struct RotatingTimeVector{I, V} <: TimeVector
+struct RotatingTimeVector{I,V} <: TimeVector
     index::I
     values::V
     start::DateTime
@@ -59,14 +59,14 @@ struct RotatingTimeVector{I, V} <: TimeVector
 
         # Only keep indexes and values inside of [start, stop]
         istart = searchsortedfirst(index, start)
-        istop  = searchsortedlast(index, stop)
+        istop = searchsortedlast(index, stop)
         i = @view index[istart:istop]
         v = @view values[istart:istop]
-        new{typeof(i), typeof(v)}(i, v, start, stop)
+        new{typeof(i),typeof(v)}(i, v, start, stop)
     end
 end
 
-const InfiniteTimeVectors = Union{InfiniteTimeVector, MutableInfiniteTimeVector}
+const InfiniteTimeVectors = Union{InfiniteTimeVector,MutableInfiniteTimeVector}
 
 # ---- General functions -----------
 isconstant(::ConstantTimeVector) = true
@@ -96,16 +96,16 @@ function getweightedaverage(x::InfiniteTimeVectors, t::DateTime, delta::MsTimeDe
     T = eltype(values)
 
     qstart = t
-    qstop  = t + getduration(delta)
-    
-    istart = searchsortedlast(index, qstart)
-    istop  = searchsortedlastlo(index, qstop, max(istart, 1))
+    qstop = t + getduration(delta)
 
-    (istart == istop == 0             ) && return first(values)
+    istart = searchsortedlast(index, qstart)
+    istop = searchsortedlastlo(index, qstop, max(istart, 1))
+
+    (istart == istop == 0) && return first(values)
     (istart == istop == length(values)) && return last(values)
-    (istart == istop)                   && return values[istop]
-    ((istart == 0) && (istop == 1))     && return values[istop]
-        
+    (istart == istop) && return values[istop]
+    ((istart == 0) && (istop == 1)) && return values[istop]
+
     if istart == 0
         istart = 1
         tstart = first(index)
@@ -117,29 +117,29 @@ function getweightedaverage(x::InfiniteTimeVectors, t::DateTime, delta::MsTimeDe
         x = zero(T)
         n = zero(T)
     end
-    
+
     tstop = index[istop]
 
-    @inbounds for i in istart:(istop-1)
+    @inbounds for i = istart:(istop-1)
         d = T((index[i+1] - index[i]).value)
         x += values[i] * d
         n += d
-    end 
-    
+    end
+
     if qstart > tstart
         d = T((qstart - tstart).value)
         x -= @inbounds values[istart] * d
         n -= d
     end
-    
+
     if qstop > tstop
         d = T((qstop - tstop).value)
         x += @inbounds values[istop] * d
-        n += d    
+        n += d
     end
-    
+
     avg = x / n
-    
+
     return avg
 end
 
@@ -172,9 +172,9 @@ function getweightedaverage(x::RotatingTimeVector, t::DateTime, delta::MsTimeDel
         tininterval = getsimilardatetime(t, getisoyear(tininterval))    # can result in tininterval > ub
         if tininterval > ub
             tininterval = tininterval - interval
-            tininterval = getsimilardatetime(t, getisoyear(tininterval)) 
+            tininterval = getsimilardatetime(t, getisoyear(tininterval))
         end
-    
+
     else
         tininterval = t
     end
@@ -186,51 +186,51 @@ function getweightedaverage(x::RotatingTimeVector, t::DateTime, delta::MsTimeDel
 
     # Start alg
     qstart = tininterval
-    qstop  = tininterval + getduration(delta)
+    qstop = tininterval + getduration(delta)
 
     istart = searchsortedlast(index, qstart)
-    istop  = searchsortedlastlo(index, qstop, istart) # Can cause stability issues? Solution?: searchsortedlastlo(index, qstop, max(istart, 1)) like for getweightedaverage(::InfiniteTimeVector)
-    
+    istop = searchsortedlastlo(index, qstop, istart) # Can cause stability issues? Solution?: searchsortedlastlo(index, qstop, max(istart, 1)) like for getweightedaverage(::InfiniteTimeVector)
+
     # Return early if possible
-    (istart == istop == 0)            && return xN # use xN for [lb, t0] and [tN, ub]
-    (istart == istop)                 && return values[istop]
-    
+    (istart == istop == 0) && return xN # use xN for [lb, t0] and [tN, ub]
+    (istart == istop) && return values[istop]
+
     # correct for qstart and ensure inbounds
     if istart == 0
         istart = 1
         tstart = t0
         d = T((tstart - qstart).value)
-        x = xN * d # use xN for [lb, t0] and [tN, ub]   
+        x = xN * d # use xN for [lb, t0] and [tN, ub]
         n = d
     else
         tstart = index[istart]
         x = zero(T)
-        n = zero(T)       
+        n = zero(T)
         if qstart > tstart
             d = T((qstart - tstart).value)
             x -= @inbounds values[istart] * d
             n -= d
         end
     end
-    
+
     tstop = index[istop]
 
     # No rotation (usually the case)
     if qstop <= ub + (t0 - lb)
         # Add chunk
-        @inbounds for i in istart:(istop-1)
+        @inbounds for i = istart:(istop-1)
             d = T((index[i+1] - index[i]).value)
             x += values[i] * d
             n += d
-        end         
+        end
 
         # Add remainder
         if qstop > tstop
             d = T((qstop - tstop).value)
             x += @inbounds values[istop] * d
-            n += d    
+            n += d
         end
-        
+
         return x / n
     end
 
@@ -240,16 +240,16 @@ function getweightedaverage(x::RotatingTimeVector, t::DateTime, delta::MsTimeDel
         # @assert length(index) == istop
 
         # Add chunk to tN
-        @inbounds for i in istart:(istop-1)
+        @inbounds for i = istart:(istop-1)
             d = T((index[i+1] - index[i]).value)
             x += values[i] * d
             n += d
-        end    
+        end
 
         # Use xN for intervals # use xN for [lb, t0] and [tN, ub]
         d = T((ub - tstop).value + (t0 - lb).value)
         x += xN * d
-        n += d    
+        n += d
 
         # We rotate by updating so that we start at t0
         # Update tstop by subtracting already covered intervals
@@ -258,54 +258,54 @@ function getweightedaverage(x::RotatingTimeVector, t::DateTime, delta::MsTimeDel
 
         tstop = qstop - (ub - qstart) + (t0 - lb)
         istop = searchsortedlast(index, tstop)
-        
+
         # Add remainding chunk
-        @inbounds for i in istart:(istop-1)
+        @inbounds for i = istart:(istop-1)
             d = T((index[i+1] - index[i]).value)
             x += values[i] * d
             n += d
-        end    
+        end
 
         # Add remainder
         if qstop > tstop
             d = T((qstop - tstop).value)
             x += @inbounds values[istop] * d
-            n += d    
+            n += d
         end
-        
+
         return x / n
     end
 
     # Rotate many (teoretical corner case)
     numintervals::T = floor((qstop - ub + lb - t0).value / (ub - lb).value)
-    
+
     # Calculate values for whole interval once
     intervalx = zero(T)
     intervaln = zero(T)
-    @inbounds for i in 1:(length(index)-1)
+    @inbounds for i = 1:(length(index)-1)
         d = T((index[i+1] - index[i]).value)
         intervalx += values[i] * d
         intervaln += d
     end
     d = T((ub - tN).value + (t0 - lb).value)
     intervalx += xN * d
-    intervaln += d    
+    intervaln += d
 
     # Since we are here we know qstop > tN
     # @assert length(index) == istop
 
     # Add chunk to tN
-    @inbounds for i in istart:(istop-1)
+    @inbounds for i = istart:(istop-1)
         d = T((index[i+1] - index[i]).value)
         x += values[i] * d
         n += d
-    end    
+    end
 
     # Use xN for intervals [lb, t0] and [tN, ub]
     d = T((ub - tstop).value + (t0 - lb).value)
     x += xN * d
-    n += d   
-    
+    n += d
+
     # Add whole intervals
     x += (intervalx * numintervals)
     n += (intervaln * numintervals)
@@ -317,23 +317,23 @@ function getweightedaverage(x::RotatingTimeVector, t::DateTime, delta::MsTimeDel
     tstart = t0
     istart = 1
 
-    tstop = qstop - (ub - qstart) - (t0 - lb) - (Int(numintervals) * (ub - lb)) 
+    tstop = qstop - (ub - qstart) - (t0 - lb) - (Int(numintervals) * (ub - lb))
     istop = searchsortedlast(index, tstop)
-    
+
     # Add remainding chunk
-    @inbounds for i in istart:(istop-1)
+    @inbounds for i = istart:(istop-1)
         d = T((index[i+1] - index[i]).value)
         x += values[i] * d
         n += d
-    end    
+    end
 
     # Add remainder
     if qstop > tstop
         d = T((qstop - tstop).value)
         x += @inbounds values[istop] * d
-        n += d    
+        n += d
     end
-    
+
     return x / n
 end
 
@@ -354,7 +354,13 @@ end
 using Base.Order
 import Base.searchsortedlast
 
-function searchsortedlastlo(v::AbstractVector, x, lo::T, hi::T, o::Ordering)::keytype(v) where T<:Integer
+function searchsortedlastlo(
+    v::AbstractVector,
+    x,
+    lo::T,
+    hi::T,
+    o::Ordering,
+)::keytype(v) where {T<:Integer}
     u = T(1)
     lo = lo - u
     hi = hi + u
@@ -369,24 +375,32 @@ function searchsortedlastlo(v::AbstractVector, x, lo::T, hi::T, o::Ordering)::ke
     return lo
 end
 
-midpoint(lo::T, hi::T) where T<:Integer = lo + ((hi - lo) >>> 0x01)
-searchsortedlastlo(v::AbstractVector, x, lo, o::Ordering) = searchsortedlastlo(v,x,lo,lastindex(v),o)
-searchsortedlastlo(v::AbstractVector, x, lo;
-    lt=isless, by=identity, rev::Union{Bool,Nothing}=nothing, order::Ordering=Forward) = searchsortedlastlo(v,x,lo,ord(lt,by,rev,order))
+midpoint(lo::T, hi::T) where {T<:Integer} = lo + ((hi - lo) >>> 0x01)
+searchsortedlastlo(v::AbstractVector, x, lo, o::Ordering) =
+    searchsortedlastlo(v, x, lo, lastindex(v), o)
+searchsortedlastlo(
+    v::AbstractVector,
+    x,
+    lo;
+    lt = isless,
+    by = identity,
+    rev::Union{Bool,Nothing} = nothing,
+    order::Ordering = Forward,
+) = searchsortedlastlo(v, x, lo, ord(lt, by, rev, order))
 
 function searchsortedlastlo(v::StepRange, x, lo)::keytype(v)
     if x > last(v)
         return lastindex(v)
     else
-        return max(floor((x-v.start)/v.step) + 1, 0)
+        return max(floor((x - v.start) / v.step) + 1, 0)
     end
 end
 
 function searchsortedlast(v::StepRange, x)::keytype(v)
     if x > last(v)
         return lastindex(v)
-    else   
-        return max(floor((x-v.start)/v.step) + 1, 0)
+    else
+        return max(floor((x - v.start) / v.step) + 1, 0)
     end
 end
 
@@ -396,16 +410,26 @@ Here we register functions to include data elements relating to TimeVector
 
 # --- VectorTimeIndex ---
 # TimeIndex described by a Vector
-function includeVectorTimeIndex!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractVector{DateTime})
+function includeVectorTimeIndex!(
+    ::Dict,
+    lowlevel::Dict,
+    elkey::ElementKey,
+    value::AbstractVector{DateTime},
+)
     checkkey(lowlevel, elkey)
     deps = Id[]
-    length(value) > 0  || error("Vector has no elements for $elkey")
-    issorted(value)    || error(     "Vector not sorted for $elkey")
+    length(value) > 0 || error("Vector has no elements for $elkey")
+    issorted(value) || error("Vector not sorted for $elkey")
     lowlevel[getobjkey(elkey)] = value
     return (true, deps)
 end
 
-function includeVectorTimeIndex!(toplevel::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
+function includeVectorTimeIndex!(
+    toplevel::Dict,
+    lowlevel::Dict,
+    elkey::ElementKey,
+    value::Dict,
+)
     vector = getdictvalue(value, "Vector", AbstractVector{DateTime}, elkey)
     includeVectorTimeIndex!(toplevel, lowlevel, elkey, vector)
 end
@@ -416,29 +440,34 @@ function includeRangeTimeIndex!(::Dict, lowlevel::Dict, elkey::ElementKey, value
     checkkey(lowlevel, elkey)
 
     deps = Id[]
-    
-    start  = getdictvalue(value, "Start", DateTime, elkey)
-    steps  = getdictvalue(value, "Steps", Int,      elkey) 
-    delta  = getdictvalue(value, "Delta", Union{Period, String},   elkey)
 
-    if delta isa String 
+    start = getdictvalue(value, "Start", DateTime, elkey)
+    steps = getdictvalue(value, "Steps", Int, elkey)
+    delta = getdictvalue(value, "Delta", Union{Period,String}, elkey)
+
+    if delta isa String
         deltakey = Id(TIMEDELTA_CONCEPT, delta)
         push!(deps, deltakey)
         haskey(lowlevel, deltakey) || return (false, deps)
         delta = getduration(lowlevel[deltakey])
     end
-    
+
     delta = Millisecond(delta)
-    
-    steps > 0              || error(             "Steps <= 0 for $elkey")
+
+    steps > 0 || error("Steps <= 0 for $elkey")
     delta > Millisecond(0) || error("Delta <= Millisecond(0) for $elkey")
-    
-    lowlevel[getobjkey(elkey)] = StepRange(start, delta, start + delta * (steps-1))
+
+    lowlevel[getobjkey(elkey)] = StepRange(start, delta, start + delta * (steps - 1))
 
     return (true, deps)
 end
 
-function includeRangeTimeIndex!(::Dict, lowlevel::Dict, elkey::ElementKey, value::StepRange{DateTime, Millisecond})
+function includeRangeTimeIndex!(
+    ::Dict,
+    lowlevel::Dict,
+    elkey::ElementKey,
+    value::StepRange{DateTime,Millisecond},
+)
     checkkey(lowlevel, elkey)
     deps = Id[]
     value.step > Millisecond(0) || error("Delta <= Millisecond(0) for $elkey")
@@ -452,11 +481,11 @@ function includeVectorTimeValues!(::Dict, lowlevel::Dict, elkey::ElementKey, val
     checkkey(lowlevel, elkey)
 
     deps = Id[]
-    
+
     vector = getdictvalue(value, "Vector", AbstractVector{<:AbstractFloat}, elkey)
-    
-    length(vector) > 0  || error("Vector has no elements for $elkey")
-    
+
+    length(vector) > 0 || error("Vector has no elements for $elkey")
+
     lowlevel[getobjkey(elkey)] = vector
     return (true, deps)
 end
@@ -464,21 +493,23 @@ end
 # ----- BaseTable -----
 # Stores multiple VectorTimeValues together
 # Dictionary with a matrix and a list of column names
-# Rows in the matrix represents a TimeIndex and the columns are connected 
+# Rows in the matrix represents a TimeIndex and the columns are connected
 # to the name list (each representing a VectorTimeValues)
 function includeBaseTable!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
 
     deps = Id[]
-    
+
     matrix = getdictvalue(value, "Matrix", AbstractMatrix{<:AbstractFloat}, elkey)
-    names  = getdictvalue(value, "Names",  Vector{String},                  elkey)
-    
-    length(names) > 0                  || error(                         "No names for $elkey")
-    length(names) > last(size(matrix)) && error("More names than columns in matrix for $elkey")
-    length(names) < last(size(matrix)) && error("More columns in matrix than names for $elkey")
-    length(names) > length(Set(names)) && error(                  "Duplicate names for $elkey")
-    
+    names = getdictvalue(value, "Names", Vector{String}, elkey)
+
+    length(names) > 0 || error("No names for $elkey")
+    length(names) > last(size(matrix)) &&
+        error("More names than columns in matrix for $elkey")
+    length(names) < last(size(matrix)) &&
+        error("More columns in matrix than names for $elkey")
+    length(names) > length(Set(names)) && error("Duplicate names for $elkey")
+
     lowlevel[getobjkey(elkey)] = value
     return (true, deps)
 end
@@ -489,23 +520,23 @@ function includeColumnTimeValues!(::Dict, lowlevel::Dict, elkey::ElementKey, val
     checkkey(lowlevel, elkey)
 
     deps = Id[]
-    
-    columnname = getdictvalue(value, "Name",        String, elkey)
-    tablename  = getdictvalue(value, TABLE_CONCEPT, String, elkey)
-    
+
+    columnname = getdictvalue(value, "Name", String, elkey)
+    tablename = getdictvalue(value, TABLE_CONCEPT, String, elkey)
+
     tablekey = Id(TABLE_CONCEPT, tablename)
     push!(deps, tablekey)
     haskey(lowlevel, tablekey) || return (false, deps)
-    
+
     table = lowlevel[tablekey]
-    
+
     matrix = table["Matrix"]
-    names  = table["Names"]
-    
+    names = table["Names"]
+
     columnname in names || error("Name $columnname not in table $table for $elkey")
-    
+
     columnindex = findfirst(x -> x == columnname, names)
-    
+
     lowlevel[getobjkey(elkey)] = view(matrix, :, columnindex)
 
     return (true, deps)
@@ -517,11 +548,11 @@ function includeRotatingTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, v
     checkkey(lowlevel, elkey)
 
     deps = Id[]
-    
-    indexname  = getdictvalue(value, TIMEINDEX_CONCEPT,  String, elkey)
+
+    indexname = getdictvalue(value, TIMEINDEX_CONCEPT, String, elkey)
     valuesname = getdictvalue(value, TIMEVALUES_CONCEPT, String, elkey)
-    
-    indexkey  = Id(TIMEINDEX_CONCEPT,  indexname)
+
+    indexkey = Id(TIMEINDEX_CONCEPT, indexname)
     valueskey = Id(TIMEVALUES_CONCEPT, valuesname)
 
     # Assumes typename == instancename
@@ -530,23 +561,23 @@ function includeRotatingTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, v
     push!(deps, indexkey)
     push!(deps, valueskey)
     push!(deps, periodkey)
-    
-    haskey(lowlevel, indexkey)   || return (false, deps)
-    haskey(lowlevel, valueskey)  || return (false, deps)
-    haskey(lowlevel, periodkey)  || return (false, deps)
-    
-    index  = lowlevel[indexkey]
+
+    haskey(lowlevel, indexkey) || return (false, deps)
+    haskey(lowlevel, valueskey) || return (false, deps)
+    haskey(lowlevel, periodkey) || return (false, deps)
+
+    index = lowlevel[indexkey]
     values = lowlevel[valueskey]
     period = lowlevel[periodkey]
 
     _isdifferent(index, values) || error("Different length for index and values for $elkey")
-    
+
     start = period["Start"]
-    stop  = period["Stop"]
-    
+    stop = period["Stop"]
+
     # TODO: Use view into values and index if first(ix) < Start or last(ix) > Stop
     # TODO: Validate that index cover the period
-    
+
     lowlevel[getobjkey(elkey)] = RotatingTimeVector(index, values, start, stop)
     return (true, deps)
 end
@@ -557,32 +588,34 @@ function includeOneYearTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, va
     checkkey(lowlevel, elkey)
 
     deps = Id[]
-    
-    indexname  = getdictvalue(value, TIMEINDEX_CONCEPT,  String, elkey)
+
+    indexname = getdictvalue(value, TIMEINDEX_CONCEPT, String, elkey)
     valuesname = getdictvalue(value, TIMEVALUES_CONCEPT, String, elkey)
-    
-    indexkey  = Id(TIMEINDEX_CONCEPT,  indexname)
+
+    indexkey = Id(TIMEINDEX_CONCEPT, indexname)
     valueskey = Id(TIMEVALUES_CONCEPT, valuesname)
 
     push!(deps, indexkey)
     push!(deps, valueskey)
 
-    haskey(lowlevel, indexkey)   || return (false, deps)
-    haskey(lowlevel, valueskey)  || return (false, deps)
-    
-    index  = lowlevel[indexkey]
+    haskey(lowlevel, indexkey) || return (false, deps)
+    haskey(lowlevel, valueskey) || return (false, deps)
+
+    index = lowlevel[indexkey]
     values = lowlevel[valueskey]
 
     isoyear = getisoyear(first(index))
 
     issameisoyear = isoyear == getisoyear(last(index))
-    issameisoyear || error("More than one year in index for $elkey. First and last indexes: $(first(index)) and $(last(index)) with isoyears $(getisoyear(first(index))) and $(getisoyear(last(index)))")
-    
+    issameisoyear || error(
+        "More than one year in index for $elkey. First and last indexes: $(first(index)) and $(last(index)) with isoyears $(getisoyear(first(index))) and $(getisoyear(last(index)))",
+    )
+
     _isdifferent(index, values) || error("Different length for index and values for $elkey")
 
     start = getisoyearstart(isoyear)
-    stop  = getisoyearstart(isoyear + 1)
-    
+    stop = getisoyearstart(isoyear + 1)
+
     lowlevel[getobjkey(elkey)] = RotatingTimeVector(index, values, start, stop)
     return (true, deps)
 end
@@ -592,53 +625,58 @@ function includeInfiniteTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, v
     checkkey(lowlevel, elkey)
 
     deps = Id[]
-    
-    indexname  = getdictvalue(value, TIMEINDEX_CONCEPT,  String, elkey)
+
+    indexname = getdictvalue(value, TIMEINDEX_CONCEPT, String, elkey)
     valuesname = getdictvalue(value, TIMEVALUES_CONCEPT, String, elkey)
-    
-    indexkey  = Id(TIMEINDEX_CONCEPT,  indexname)
+
+    indexkey = Id(TIMEINDEX_CONCEPT, indexname)
     valueskey = Id(TIMEVALUES_CONCEPT, valuesname)
-    
+
     push!(deps, indexkey)
     push!(deps, valueskey)
 
-    haskey(lowlevel, indexkey)   || return (false, deps)
-    haskey(lowlevel, valueskey)  || return (false, deps)
-    
-    index  = lowlevel[indexkey]
+    haskey(lowlevel, indexkey) || return (false, deps)
+    haskey(lowlevel, valueskey) || return (false, deps)
+
+    index = lowlevel[indexkey]
     values = lowlevel[valueskey]
 
     _isdifferent(index, values) || error("Different length for index and values for $elkey")
-    
+
     lowlevel[getobjkey(elkey)] = InfiniteTimeVector(index, values)
-    
+
     return (true, deps)
 end
 
-function includeMutableInfiniteTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
+function includeMutableInfiniteTimeVector!(
+    ::Dict,
+    lowlevel::Dict,
+    elkey::ElementKey,
+    value::Dict,
+)
     checkkey(lowlevel, elkey)
 
     deps = Id[]
-    
-    indexname  = getdictvalue(value, TIMEINDEX_CONCEPT,  String, elkey)
+
+    indexname = getdictvalue(value, TIMEINDEX_CONCEPT, String, elkey)
     valuesname = getdictvalue(value, TIMEVALUES_CONCEPT, String, elkey)
-    
-    indexkey  = Id(TIMEINDEX_CONCEPT,  indexname)
+
+    indexkey = Id(TIMEINDEX_CONCEPT, indexname)
     valueskey = Id(TIMEVALUES_CONCEPT, valuesname)
-    
+
     push!(deps, indexkey)
     push!(deps, valueskey)
 
-    haskey(lowlevel, indexkey)   || return (false, deps)
-    haskey(lowlevel, valueskey)  || return (false, deps)
-    
-    index  = lowlevel[indexkey]
+    haskey(lowlevel, indexkey) || return (false, deps)
+    haskey(lowlevel, valueskey) || return (false, deps)
+
+    index = lowlevel[indexkey]
     values = lowlevel[valueskey]
 
     _isdifferent(index, values) || error("Different length for index and values for $elkey")
-    
+
     lowlevel[getobjkey(elkey)] = MutableInfiniteTimeVector(index, values)
-    
+
     return (true, deps)
 end
 
@@ -646,19 +684,29 @@ end
 function includeConstantTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
     deps = Id[]
-    constant = getdictvalue(value, "Value",  AbstractFloat, elkey)
+    constant = getdictvalue(value, "Value", AbstractFloat, elkey)
     lowlevel[getobjkey(elkey)] = ConstantTimeVector(constant)
     return (true, deps)
 end
 
-function includeConstantTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::AbstractFloat)
+function includeConstantTimeVector!(
+    ::Dict,
+    lowlevel::Dict,
+    elkey::ElementKey,
+    value::AbstractFloat,
+)
     checkkey(lowlevel, elkey)
     deps = Id[]
     lowlevel[getobjkey(elkey)] = ConstantTimeVector(value)
     return (true, deps)
 end
 
-function includeConstantTimeVector!(::Dict, lowlevel::Dict, elkey::ElementKey, value::ConstantTimeVector)
+function includeConstantTimeVector!(
+    ::Dict,
+    lowlevel::Dict,
+    elkey::ElementKey,
+    value::ConstantTimeVector,
+)
     checkkey(lowlevel, elkey)
     deps = Id[]
     lowlevel[getobjkey(elkey)] = value
@@ -673,9 +721,12 @@ INCLUDEELEMENT[TypeKey(TABLE_CONCEPT, "BaseTable")] = includeBaseTable!
 INCLUDEELEMENT[TypeKey(TIMEVALUES_CONCEPT, "VectorTimeValues")] = includeVectorTimeValues!
 INCLUDEELEMENT[TypeKey(TIMEVALUES_CONCEPT, "ColumnTimeValues")] = includeColumnTimeValues!
 
-INCLUDEELEMENT[TypeKey(TIMEVECTOR_CONCEPT, "RotatingTimeVector")] = includeRotatingTimeVector!
-INCLUDEELEMENT[TypeKey(TIMEVECTOR_CONCEPT, "InfiniteTimeVector")] = includeInfiniteTimeVector!
-INCLUDEELEMENT[TypeKey(TIMEVECTOR_CONCEPT, "MutableInfiniteTimeVector")] = includeMutableInfiniteTimeVector!
-INCLUDEELEMENT[TypeKey(TIMEVECTOR_CONCEPT, "ConstantTimeVector")] = includeConstantTimeVector!
-INCLUDEELEMENT[TypeKey(TIMEVECTOR_CONCEPT, "OneYearTimeVector")]  = includeOneYearTimeVector!
-
+INCLUDEELEMENT[TypeKey(TIMEVECTOR_CONCEPT, "RotatingTimeVector")] =
+    includeRotatingTimeVector!
+INCLUDEELEMENT[TypeKey(TIMEVECTOR_CONCEPT, "InfiniteTimeVector")] =
+    includeInfiniteTimeVector!
+INCLUDEELEMENT[TypeKey(TIMEVECTOR_CONCEPT, "MutableInfiniteTimeVector")] =
+    includeMutableInfiniteTimeVector!
+INCLUDEELEMENT[TypeKey(TIMEVECTOR_CONCEPT, "ConstantTimeVector")] =
+    includeConstantTimeVector!
+INCLUDEELEMENT[TypeKey(TIMEVECTOR_CONCEPT, "OneYearTimeVector")] = includeOneYearTimeVector!

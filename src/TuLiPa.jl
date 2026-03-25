@@ -22,7 +22,7 @@ include("utils_datetime.jl") # functions for datetime
 include("timedeltas.jl") # time-periods in horizons
 include("timevectors.jl") # time-series data
 include("times.jl") # problem times
-include("timeperiods.jl") # start and stop of simulation/scenario 
+include("timeperiods.jl") # start and stop of simulation/scenario
 include("timeoffset.jl") # to offset problem times
 include("horizons.jl")
 include("horizons_shrinkable_shiftable.jl") # shrink or shift horizon periods
@@ -81,7 +81,7 @@ for sym in names(@__MODULE__; all = true)
     )
         continue
     end
-        
+
     @eval export $sym
 end
 
@@ -90,29 +90,41 @@ include("../test/utils_dummy_data.jl")
 using PrecompileTools, JuMP, HiGHS
 
 @compile_workload begin
-	elements = gettestdataset();
-	scenarioyearstart = 1981
-	scenarioyearstop = 1983
-	addscenariotimeperiod!(elements, "ScenarioTimePeriod", getisoyearstart(scenarioyearstart), getisoyearstart(scenarioyearstop));
-	power_horizon = SequentialHorizon(364 * 3, Day(1))
-	hydro_horizon = SequentialHorizon(52 * 3, Week(1))
-	set_horizon!(elements, "Power", power_horizon)
-	set_horizon!(elements, "Hydro", hydro_horizon);
-	push!(elements, getelement(BOUNDARYCONDITION_CONCEPT, "StartEqualStop", "StartEqualStop_StorageResNO2",
-			(WHICHINSTANCE, "StorageResNO2"),
-			(WHICHCONCEPT, STORAGE_CONCEPT)));
-	modelobjects = getmodelobjects(elements);
+    elements = gettestdataset()
+    scenarioyearstart = 1981
+    scenarioyearstop = 1983
+    addscenariotimeperiod!(
+        elements,
+        "ScenarioTimePeriod",
+        getisoyearstart(scenarioyearstart),
+        getisoyearstart(scenarioyearstop),
+    )
+    power_horizon = SequentialHorizon(364 * 3, Day(1))
+    hydro_horizon = SequentialHorizon(52 * 3, Week(1))
+    set_horizon!(elements, "Power", power_horizon)
+    set_horizon!(elements, "Hydro", hydro_horizon)
+    push!(
+        elements,
+        getelement(
+            BOUNDARYCONDITION_CONCEPT,
+            "StartEqualStop",
+            "StartEqualStop_StorageResNO2",
+            (WHICHINSTANCE, "StorageResNO2"),
+            (WHICHCONCEPT, STORAGE_CONCEPT),
+        ),
+    )
+    modelobjects = getmodelobjects(elements)
 
-	mymodel = JuMP.Model(HiGHS.Optimizer)
-	set_silent(mymodel)
-	prob = JuMP_Prob(modelobjects, mymodel)
-	prob.model
+    mymodel = JuMP.Model(HiGHS.Optimizer)
+    set_silent(mymodel)
+    prob = JuMP_Prob(modelobjects, mymodel)
+    prob.model
 
-	t = TwoTime(getisoyearstart(2021), getisoyearstart(1981))
-	update!(prob, t)
+    t = TwoTime(getisoyearstart(2021), getisoyearstart(1981))
+    update!(prob, t)
 
-	solve!(prob)
-	prob1 = getobjectivevalue(prob)
+    solve!(prob)
+    prob1 = getobjectivevalue(prob)
 end
 
 

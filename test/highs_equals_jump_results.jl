@@ -1,21 +1,33 @@
 module TestHighsEqualsJuMP
 
 using TuLiPa, JuMP, HiGHS, Test
-include("utils_dummy_data.jl");
+include("utils_dummy_data.jl")
 
 function run_tests()
-    elements = gettestdataset();
+    elements = gettestdataset()
     scenarioyearstart = 1981
     scenarioyearstop = 1983
-    addscenariotimeperiod!(elements, "ScenarioTimePeriod", getisoyearstart(scenarioyearstart), getisoyearstart(scenarioyearstop));
+    addscenariotimeperiod!(
+        elements,
+        "ScenarioTimePeriod",
+        getisoyearstart(scenarioyearstart),
+        getisoyearstart(scenarioyearstop),
+    )
     power_horizon = SequentialHorizon(364 * 3, Day(1))
     hydro_horizon = SequentialHorizon(52 * 3, Week(1))
     set_horizon!(elements, "Power", power_horizon)
-    set_horizon!(elements, "Hydro", hydro_horizon);
-    push!(elements, getelement(BOUNDARYCONDITION_CONCEPT, "StartEqualStop", "StartEqualStop_StorageResNO2",
+    set_horizon!(elements, "Hydro", hydro_horizon)
+    push!(
+        elements,
+        getelement(
+            BOUNDARYCONDITION_CONCEPT,
+            "StartEqualStop",
+            "StartEqualStop_StorageResNO2",
             (WHICHINSTANCE, "StorageResNO2"),
-            (WHICHCONCEPT, STORAGE_CONCEPT)));
-    modelobjects = getmodelobjects(elements);
+            (WHICHCONCEPT, STORAGE_CONCEPT),
+        ),
+    )
+    modelobjects = getmodelobjects(elements)
 
     # Setup jump model
     mymodel = JuMP.Model(HiGHS.Optimizer)
@@ -43,8 +55,8 @@ function run_tests()
     solve!(prob)
     prob2_highs = getobjectivevalue(prob)
 
-    @test round(prob1_highs, sigdigits=10) == round(prob1_jump, sigdigits=10)
-    @test round(prob2_highs, sigdigits=10) == round(prob2_jump, sigdigits=10)
+    @test round(prob1_highs, sigdigits = 10) == round(prob1_jump, sigdigits = 10)
+    @test round(prob2_highs, sigdigits = 10) == round(prob2_jump, sigdigits = 10)
 end
 
 testset_name = Main.get_testset_name("highs == jump")
