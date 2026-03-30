@@ -272,12 +272,12 @@ end
 function addbalance!(elements, name, commodity)
     push!(elements, getelement(BALANCE_CONCEPT, "BaseBalance", name, 
             (COMMODITY_CONCEPT, commodity)))
-    if commodity == "Power"
-        slackname = "SlackVar" * name
-        addflow!(elements, slackname)
-        slackarrowname = "SlackArrow" * name
-        addarrow!(elements, slackarrowname, 1.0, slackname, name, DIRECTIONOUT)
-    end
+    # if commodity == "Power"
+    #     slackname = "SlackVar" * name
+    #     addflow!(elements, slackname)
+    #     slackarrowname = "SlackArrow" * name
+    #     addarrow!(elements, slackarrowname, 1.0, slackname, name, DIRECTIONOUT)
+    # end
 end
 
 function addexogenbalance!(elements, name, commodity, price)
