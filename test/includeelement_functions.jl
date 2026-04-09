@@ -78,7 +78,7 @@ function test_is_all_includeelement_methods_covered()
         for (f, n) in untested
             diff = n - get(ns, f, 0)
             s = diff > 1 ? "s" : ""
-            println("Missing test$s for $diff method$s for $f")
+            @info "Missing test$s for $diff method$s for $f"
         end
     end
 
