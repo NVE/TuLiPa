@@ -485,7 +485,7 @@ function solve!(p::HiGHS_Prob)
                 scale_strategy = 4
                 while (scale_strategy > 2) && (kHighsModelStatusOptimal != Highs_getScaledModelStatus(p))
                     scale_strategy -= 1
-                    @debug string("Rescaling LP with scale strategy ", scale_strategy)
+                    @warn string("Rescaling LP with scale strategy ", scale_strategy)
                     Highs_setIntOptionValue(p, "simplex_scale_strategy", scale_strategy)
                     ret = _Highs_run_reset_clock!(p)
                 end
@@ -497,12 +497,12 @@ function solve!(p::HiGHS_Prob)
                     simplex_strategy = Ref{Int32}(0)
                     Highs_getIntOptionValue(p, "simplex_strategy", simplex_strategy)
                     if simplex_strategy[] != Int32(1)
-                        @debug "Solving with dual simplex"
+                        @warn "Solving with dual simplex"
                         Highs_setIntOptionValue(p, "simplex_strategy", 1)
                         ret = _Highs_run_reset_clock!(p)
                     end
                     if simplex_strategy[] != Int32(4) && (kHighsModelStatusOptimal != Highs_getScaledModelStatus(p))
-                        @debug "Solving with primal simplex"
+                        @warn "Solving with primal simplex"
                         Highs_setIntOptionValue(p, "simplex_strategy", 4)
                         ret = _Highs_run_reset_clock!(p)
                     end
@@ -510,7 +510,7 @@ function solve!(p::HiGHS_Prob)
 
                     # Try barrier algorithm
                     if kHighsModelStatusOptimal != Highs_getScaledModelStatus(p)
-                        @debug "Solving with barrier"
+                        @warn "Solving with barrier"
                         # _passLP_reset!(p) # not necessary, but would like to reset if kHighsStatusError from solves above
                         Highs_setStringOptionValue(p, "solver", "ipm") # interior point method
                         Highs_setStringOptionValue(p, "run_crossover", "off") # without crossover
@@ -533,8 +533,6 @@ function solve!(p::HiGHS_Prob)
         jump_prob = _build_JuMP_Prob_from_HiGHS_Prob(p)
         solve!(jump_prob)
     end
-
-    @info "HiGHS solve outcome" optimal=p.isoptimal model_status=final_model_status used_fallback=used_fallback
 
     return
 end

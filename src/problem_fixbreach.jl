@@ -64,7 +64,7 @@ function solve!(p::FixBreach_Prob)
     mainwarmstart == false && setwarmstart!(p, true)
 
     secondtime = @elapsed solve!(p.prob)
-    @debug "$count breaches. First and second solves $firsttime / $secondtime"
+    @info "$count breaches. First and second solves $firsttime / $secondtime"
 
     mainwarmstart == false && setwarmstart!(p, false)
 
