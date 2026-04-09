@@ -51,7 +51,7 @@ function run_tests()
 
 	value = Ref{Int32}(0)
 	status = Highs_getIntOptionValue(prob, "simplex_scale_strategy", value)
-	@test value[] == 1
+	@test value[] == 2
 
 	buffer = Vector{UInt8}(undef, 100)
 	status = Highs_getStringOptionValue(prob, "solver", buffer)
