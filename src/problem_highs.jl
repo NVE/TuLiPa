@@ -415,10 +415,7 @@ function _changeRowsBoundsByMask!(p::HiGHS_Prob)
 end
 
 function _is_mask_updated(masks::Vector{T}) where {T <: Integer}
-    for value in eachindex(masks)
-        value == one(T) && return true
-    end
-    return false
+    return any(x -> !Base.iszero(x), masks)
 end
 
 function _Highs_run_reset_clock!(p::HiGHS_Prob)
