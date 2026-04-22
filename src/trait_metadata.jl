@@ -127,6 +127,23 @@ function includeHydraulichint!(toplevel::Dict, ::Dict, elkey::ElementKey, value:
     return (true, deps)
 end
 
+function includeHydraulicFlowHint!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
+    deps = Id[]
+
+    flowname = getdictvalue(value, FLOW_CONCEPT, String, elkey)
+    flowkey = Id(FLOW_CONCEPT, flowname)
+    push!(deps, flowkey)
+    haskey(toplevel, flowkey) || return (false, deps)
+
+    flow = toplevel[flowkey]
+    
+    code = getdictvalue(value, "Code", Float64, elkey) 
+
+    setmetadata!(flow, HYDRAULICFLOWHINTKEY, code)
+
+    return (true, deps)
+end
+
 function includeGlobalEneq!(toplevel::Dict, ::Dict, elkey::ElementKey, value::Dict)
     deps = Id[]
 
@@ -149,4 +166,5 @@ INCLUDEELEMENT[TypeKey(METADATA_CONCEPT, STORAGEHINTKEY)] = includeStoragehint!
 INCLUDEELEMENT[TypeKey(METADATA_CONCEPT, RESERVOIRCURVEKEY)] = includeReservoirCurve!
 INCLUDEELEMENT[TypeKey(METADATA_CONCEPT, PRODUCTIONINFOKEY)] = includeProductionInfo!
 INCLUDEELEMENT[TypeKey(METADATA_CONCEPT, HYDRAULICHINTKEY)] = includeHydraulichint!
+INCLUDEELEMENT[TypeKey(METADATA_CONCEPT, HYDRAULICFLOWHINTKEY)] = includeHydraulicFlowHint!
 INCLUDEELEMENT[TypeKey(METADATA_CONCEPT, GLOBALENEQKEY)] = includeGlobalEneq!

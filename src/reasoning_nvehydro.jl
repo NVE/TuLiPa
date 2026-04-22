@@ -461,3 +461,110 @@ function resetheadlosscosts!(problem::Prob)
         end
     end
 end
+
+# ------------------ State dependent hydraulic leveling  ----------------------
+"""
+Update hydraulic leveling flows based on storage states and reservoir curves.
+
+For each Flow with `HydraulicFlowHint`:
+- Find ingoing and outgoing Hydro balances and their connected storages.
+- Compute reservoir elevations from the reservoir curves and current storage states.
+- If outgoing elevation is higher than ingoing, enable leveling with capacity limited by
+    `min(original_capacity, 0.5 * levelingvolume)` where `levelingvolume` is computed from
+    current storage levels.
+- Set the flow upper bound as `StatefulParam(TwoProductParam(base_capacity, factor))` where
+    `factor ∈ [0, 1]`.
+
+The function throws an error if required storages, reservoir curves, start states,
+or compatible flow capacity parameters are missing.
+"""
+
+function _get_storage_for_balance(balance::Balance, storages::Vector)
+    for storage in storages
+        if getbalance(storage) == balance
+            return storage
+        end
+    end
+    return nothing
+end
+
+function statedependentleveling!(problem::Prob, startstates::Dict{String, Float64}; t::ProbTime=ConstantTime())
+    objects = getobjects(problem)
+    storages = getstorages(objects)
+
+    for obj in objects
+        obj isa Flow || continue
+
+        hasflowhint = haskey(obj.metadata, HYDRAULICFLOWHINTKEY)
+        hasflowhint || continue
+
+        isnothing(getub(obj)) && error("Hydraulic leveling flow ", getinstancename(getid(obj)), " is missing upper bound")
+
+        outbalance = nothing
+        inbalance = nothing
+        for arrow in getarrows(obj)
+            commodityname = getinstancename(getid(getcommodity(getbalance(arrow))))
+            commodityname == "Hydro" || continue
+
+            if isingoing(arrow)
+                inbalance = getbalance(arrow)
+            else
+                outbalance = getbalance(arrow)
+            end
+        end
+
+        (inbalance isa Balance && outbalance isa Balance) || error("Hydraulic leveling flow ", getinstancename(getid(obj)), " must have one ingoing and one outgoing Hydro arrow")
+
+        outstorage_obj = _get_storage_for_balance(outbalance, storages)
+        instorage_obj = _get_storage_for_balance(inbalance, storages)
+
+        outstorage_obj isa Storage || error("No outgoing storage found for hydraulic leveling flow ", getinstancename(getid(obj)))
+        instorage_obj isa Storage || error("No ingoing storage found for hydraulic leveling flow ", getinstancename(getid(obj)))
+        haskey(outstorage_obj.metadata, RESERVOIRCURVEKEY) || error("Outgoing storage ", getinstancename(getid(outstorage_obj)), " for hydraulic leveling flow ", getinstancename(getid(obj)), " is missing reservoir curve")
+        haskey(instorage_obj.metadata, RESERVOIRCURVEKEY) || error("Ingoing storage ", getinstancename(getid(instorage_obj)), " for hydraulic leveling flow ", getinstancename(getid(obj)), " is missing reservoir curve")
+
+        outstoragename = getinstancename(getid(outstorage_obj))
+        instoragename = getinstancename(getid(instorage_obj))
+        haskey(startstates, outstoragename) || error("Missing start state for outgoing storage ", outstoragename, " in hydraulic leveling flow ", getinstancename(getid(obj)))
+        haskey(startstates, instoragename) || error("Missing start state for ingoing storage ", instoragename, " in hydraulic leveling flow ", getinstancename(getid(obj)))
+
+        outstorage = startstates[outstoragename]
+        instorage = startstates[instoragename]
+
+        outcurve = outstorage_obj.metadata[RESERVOIRCURVEKEY]
+        incurve = instorage_obj.metadata[RESERVOIRCURVEKEY]
+
+        outheight = yvalue(outcurve, outstorage)
+        inheight = yvalue(incurve, instorage)
+
+        baseubparam = getub(obj).param
+        baseubparam = baseubparam isa StatefulParam ? baseubparam.param : baseubparam
+        baseubparam isa TwoProductParam || error("Flow capacity in hydraulic leveling must be a TwoProductParam for flow ", getinstancename(getid(obj)))
+        flowcap = baseubparam.param1
+        flowcap isa M3SToMM3Param || error("Flow capacity in hydraulic leveling must have M3SToMM3Param as base capacity for flow ", getinstancename(getid(obj)))
+
+        capdelta = MsTimeDelta(getduration(gethorizon(obj)))
+        originalcapacity_mm3 = getparamvalue(flowcap, t, capdelta)
+
+        levelingvolume = 0.0
+        targetcapacity_mm3 = 0.0
+        if outheight > inheight
+            outstorage_at_inheight = xvalue(outcurve, inheight)
+            transfer_from_out = max(outstorage - outstorage_at_inheight, 0.0)
+
+            instorage_at_outheight = xvalue(incurve, outheight)
+            transfer_to_in = max(instorage_at_outheight - instorage, 0.0)
+
+            levelingvolume = (transfer_from_out + transfer_to_in) * 0.25
+            targetcapacity_mm3 = min(originalcapacity_mm3, levelingvolume)
+        end
+
+        factor = targetcapacity_mm3 / originalcapacity_mm3
+
+        @debug "Hydraulic leveling factor for $(getinstancename(getid(obj))) with factor=$factor, outheight=$outheight, inheight=$inheight, levelingvolume=$levelingvolume, originalcapacity_mm3=$originalcapacity_mm3, targetcapacity_mm3=$targetcapacity_mm3"
+
+        getub(obj).param = StatefulParam(TwoProductParam(flowcap, ConstantParam(factor)))
+    end
+
+    return
+end

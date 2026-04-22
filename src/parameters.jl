@@ -180,17 +180,27 @@ end
 # Other concrete types
 struct XYCurve <: Param
     interpolator
+    inverseinterpolator
 
     function XYCurve(x::T, y::T) where {T <: AbstractVector{Float64}}
         @assert length(x) == length(y)
         @assert length(y) > 1
         @assert issorted(x)
         @assert issorted(y) || issorted(y, rev=true)
-        new(LinearInterpolation(x, y; extrapolation_bc=Flat()))
+        interpolator = LinearInterpolation(x, y; extrapolation_bc=Flat())
+
+        if issorted(y)
+            inverseinterpolator = LinearInterpolation(y, x; extrapolation_bc=Flat())
+        else
+            inverseinterpolator = LinearInterpolation(reverse(y), reverse(x); extrapolation_bc=Flat())
+        end
+
+        new(interpolator, inverseinterpolator)
     end
 end
 
 yvalue(xycurve::XYCurve, x::Float64) = xycurve.interpolator(x)
+xvalue(xycurve::XYCurve, y::Float64) = xycurve.inverseinterpolator(y)
 
 # ------ Interface functions ---------
 iszero(param::FlipSignParam) = iszero(param.param)
@@ -962,6 +972,24 @@ function includeUMMSeriesParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value
     return (true, deps)
 end
 
+function includeTwoProductParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
+    checkkey(lowlevel, elkey)
+
+    deps = Id[]
+
+    (id1, param1, ok1) = getdictparamvalue(lowlevel, elkey, value, "Param1")
+    _update_deps(deps, id1, ok1)
+
+    (id2, param2, ok2) = getdictparamvalue(lowlevel, elkey, value, "Param2")
+    _update_deps(deps, id2, ok2)
+
+    (ok1 && ok2) || return (false, deps)
+
+    lowlevel[getobjkey(elkey)] = TwoProductParam(param1, param2)
+
+    return (true, deps)
+end
+
 function includeStatefulParam!(::Dict, lowlevel::Dict, elkey::ElementKey, value::Dict)
     checkkey(lowlevel, elkey)
 
@@ -987,4 +1015,5 @@ INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MeanSeriesParam")] = includeMeanSeriesPar
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "MeanSeriesIgnorePhaseinParam")] = includeMeanSeriesIgnorePhaseinParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "PrognosisSeriesParam")] = includePrognosisSeriesParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "UMMSeriesParam")] = includeUMMSeriesParam!
+INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "TwoProductParam")] = includeTwoProductParam!
 INCLUDEELEMENT[TypeKey(PARAM_CONCEPT, "StatefulParam")] = includeStatefulParam!
