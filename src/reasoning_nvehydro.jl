@@ -88,7 +88,7 @@ function getupperreservoirplant(plant::Flow, balanceflows::Dict, storages::Vecto
 
             # plants with unregulated and regulated inflow have one storage two waterbalances up (dependant on dataset)
             for flow in balanceflows[prodbalance]
-                if split(getinstancename(getid(flow)),"r")[1] == split(getinstancename(getid(plant)),"u")[1] # only difference in instancename is "r" and "u"
+                if split(getinstancename(getid(flow)),"upper")[1] == split(getinstancename(getid(plant)),"lower")[1] # only difference in instancename is "r" and "u"
                     for arrow in getarrows(flow)
                         if isingoing(arrow) & (getbalance(arrow) == prodbalance)
                             for arrow1 in getarrows(flow)
