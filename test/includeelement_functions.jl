@@ -112,6 +112,7 @@ function test_all_includeelement_methods()
     test_includePrognosisSeriesParam!()
     test_includeUMMSeriesParam!()
     test_includeStatefulParam!()
+    test_includeTwoProductParam!()
     test_includeMsTimeDelta!()
     test_includeScenarioTimePeriod!()
     test_includeSimulationTimePeriod!()
@@ -129,6 +130,7 @@ function test_all_includeelement_methods()
     test_includeReservoirCurve!()
     test_includeProductionInfo!()
     test_includeHydraulichint!()
+    test_includeHydraulicFlowHint!()
     test_includeGlobalEneq!()
     test_includeBasePrice!()
     test_includeTransmissionRamping!()
@@ -664,6 +666,30 @@ function test_includeStatefulParam!()
     register_tested_methods(includeStatefulParam!, 1)
 end
 
+function test_includeTwoProductParam!()
+    # tests for value::Dict
+    (k, TL, LL) = _setup_common_variables()
+    @test_throws ErrorException includeTwoProductParam!(TL, LL, k, Dict())
+    d = Dict("Param1" => ConstantParam(1.0), "Param2" => ConstantParam(2.0))
+    ret = includeTwoProductParam!(TL, LL, k, d)
+    _test_ret(ret)
+    @test length(TL) == 0 && length(LL) == 1
+    @test LL[Id(k.conceptname, k.instancename)] isa TwoProductParam
+    @test_throws ErrorException includeTwoProductParam!(TL, LL, k, d) # already in LL
+    (k, TL, LL) = _setup_common_variables()
+    d = Dict("Param1" => "myparam1", "Param2" => "myparam2")
+    ret = includeTwoProductParam!(TL, LL, k, d)
+    _test_ret(ret, n=2, okvalue=false)
+    @test Set(ret[2]) == Set([Id(PARAM_CONCEPT, "myparam1"), Id(PARAM_CONCEPT, "myparam2")])
+    LL[Id(PARAM_CONCEPT, "myparam1")] = ConstantParam(1.0)
+    LL[Id(PARAM_CONCEPT, "myparam2")] = ConstantParam(2.0)
+    ret = includeTwoProductParam!(TL, LL, k, d)
+    _test_ret(ret, n=2)
+    @test length(TL) == 0 && length(LL) == 3
+    @test LL[Id(k.conceptname, k.instancename)] isa TwoProductParam
+    register_tested_methods(includeTwoProductParam!, 1)
+end
+
 function test_includeMsTimeDelta!()
     # tests for value::Dict
     (k, TL, LL) = _setup_common_variables()
@@ -761,6 +787,22 @@ end
 function test_includeHydraulichint!()
     # TODO: test for value::Dict
     register_tested_methods(includeHydraulichint!, 1)
+end
+
+function test_includeHydraulicFlowHint!()
+    # tests for value::Dict
+    (k, TL, LL) = _setup_common_variables()
+    @test_throws ErrorException includeHydraulicFlowHint!(TL, LL, k, Dict())
+    d = Dict(FLOW_CONCEPT => "MyFlow", "Code" => 1.0)
+    ret = includeHydraulicFlowHint!(TL, LL, k, d)
+    _test_ret(ret, n=1, okvalue=false)
+    @test ret[2] == [Id(FLOW_CONCEPT, "MyFlow")]
+    flow = BaseFlow(Id(FLOW_CONCEPT, "MyFlow"))
+    TL[Id(FLOW_CONCEPT, "MyFlow")] = flow
+    ret = includeHydraulicFlowHint!(TL, LL, k, d)
+    _test_ret(ret, n=1)
+    @test flow.metadata[HYDRAULICFLOWHINTKEY] == 1.0
+    register_tested_methods(includeHydraulicFlowHint!, 1)
 end
 
 function test_includeGlobalEneq!()
