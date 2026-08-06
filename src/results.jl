@@ -190,32 +190,32 @@ function get_results!(problem, prices, rhstermvalues, production, consumption, h
     # Precompute demand classifications
     ndemands = length(demands)
     demand_is_elastic = Vector{Bool}(undef, ndemands)
-    demand_is_exogen = Vector{Bool}(undef, ndemands)
+    demand_is_exogen_balance = Vector{Bool}(undef, ndemands)
     for i in 1:ndemands
         demand_is_elastic[i] = (getconceptname(demands[i]) == DEMAND_CONCEPT)
-        demand_is_exogen[i] = !demand_is_elastic[i] && isexogen(modelobjects[demandbalances[i]])
+        demand_is_exogen_balance[i] = !demand_is_elastic[i] && isexogen(modelobjects[demandbalances[i]])
     end
 
     for (j,jj) in enumerate(powerrange)
         # For powerbalances collect prices and rhsterms (like inelastic demand, wind, solar and RoR)
         for i in 1:length(powerbalances)
-            if !isexogen(powerbalances[i])
-                prices[jj, i] = -getcondual(problem, getid(powerbalances[i]), j)
-                if length(getrhsterms(powerbalances[i])) > 0
-                    for k in 1:length(rhsterms)
-                        if hasrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)
-                            rhstermvalues[jj, k] = getrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)
-                        end
-                    end
-                end
-            else
-                exogenbalance = powerbalances[i]
-                horizon = gethorizon(exogenbalance)
-                price = getprice(exogenbalance)
-                querytime = getstarttime(horizon, j, t)
-                querydelta = gettimedelta(horizon, j)
-                prices[jj, i] = getparamvalue(price, querytime, querydelta)
-            end
+            # if !isexogen(powerbalances[i])
+            prices[jj, i] = -getcondual(problem, getid(powerbalances[i]), j)
+            # if length(getrhsterms(powerbalances[i])) > 0
+            #     for k in 1:length(rhsterms)
+            #         if hasrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)
+            #             rhstermvalues[jj, k] = getrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)
+            #         end
+            #     end
+            # end
+            # else
+            #     exogenbalance = powerbalances[i]
+            #     horizon = gethorizon(exogenbalance)
+            #     price = getprice(exogenbalance)
+            #     querytime = getstarttime(horizon, j, t)
+            #     querydelta = gettimedelta(horizon, j)
+            #     prices[jj, i] = getparamvalue(price, querytime, querydelta)
+            # end
         end
 
         # Collect production of all plants
@@ -255,7 +255,7 @@ function get_results!(problem, prices, rhstermvalues, production, consumption, h
         for i in 1:ndemands
             if demand_is_elastic[i]
                 consumption[jj, i] = getvarvalue(problem, demands[i], j)
-            elseif demand_is_exogen[i]
+            elseif demand_is_exogen_balance[i]
                 arrow = demandarrows[demands[i]]
                 horizon = gethorizon(arrow)
                 conversionparam = getcontributionparam(arrow)
