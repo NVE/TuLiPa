@@ -38,17 +38,17 @@ function order_result_objects(resultobjects, includeexogenprice=true)
         # Powerbalances
         if obj isa Balance
             if getinstancename(getid(getcommodity(obj))) == "Power"
-                if isexogen(obj)
-                    if includeexogenprice
-                        push!(powerbalances, obj)
-                    end
-                else
-                    push!(powerbalances, obj)
-                    for rhsterm in getrhsterms(obj)
-                        push!(rhsterms,getid(rhsterm))
-                        push!(rhstermbalances,getid(obj))
-                    end
-                end
+                # if isexogen(obj)
+                #     if includeexogenprice
+                #         push!(powerbalances, obj)
+                #     end
+                # else
+                push!(powerbalances, obj)
+                #     for rhsterm in getrhsterms(obj)
+                #         push!(rhsterms,getid(rhsterm))
+                #         push!(rhstermbalances,getid(obj))
+                #     end
+                # end
             end
         end
         
@@ -123,27 +123,27 @@ function order_result_objects(resultobjects, includeexogenprice=true)
             end
         end
         
-        # Aggregated supplies (thermal power plants aggregated into one or more equivalent supplies)
-        # TODO: Result should be a sum of all clusters, not separated
-        if obj isa BaseAggSupplyCurve
-            instance = getinstancename(getid(obj))
-            concept = getconceptname(getid(obj))
-            balance = getbalance(obj)
-            for c in 1:getnumclusters(obj)
-                newname = string(instance,"_",c)
-                push!(plants,Id(concept,newname))
-                push!(plantbalances,getid(balance))
-            end
-        end
-        if obj isa ElasticDemand
-            instance = getinstancename(getid(obj))
-            concept = getconceptname(getid(obj))
-            balance = getbalance(obj)
-            for c in 1:obj.N
-                push!(demands, create_segment_id(obj, c))
-                push!(demandbalances, getid(balance))
-            end
-        end
+        # # Aggregated supplies (thermal power plants aggregated into one or more equivalent supplies)
+        # # TODO: Result should be a sum of all clusters, not separated
+        # if obj isa BaseAggSupplyCurve
+        #     instance = getinstancename(getid(obj))
+        #     concept = getconceptname(getid(obj))
+        #     balance = getbalance(obj)
+        #     for c in 1:getnumclusters(obj)
+        #         newname = string(instance,"_",c)
+        #         push!(plants,Id(concept,newname))
+        #         push!(plantbalances,getid(balance))
+        #     end
+        # end
+        # if obj isa ElasticDemand
+        #     instance = getinstancename(getid(obj))
+        #     concept = getconceptname(getid(obj))
+        #     balance = getbalance(obj)
+        #     for c in 1:obj.N
+        #         push!(demands, create_segment_id(obj, c))
+        #         push!(demandbalances, getid(balance))
+        #     end
+        # end
     end
     return powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages
 end
