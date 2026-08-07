@@ -43,7 +43,9 @@ function order_result_objects(resultobjects, includeexogenprice=true)
                 #         push!(powerbalances, obj)
                 #     end
                 # else
-                push!(powerbalances, obj)
+                if !isexogen(obj)
+                    push!(powerbalances, obj)
+                end
                 #     for rhsterm in getrhsterms(obj)
                 #         push!(rhsterms,getid(rhsterm))
                 #         push!(rhstermbalances,getid(obj))
