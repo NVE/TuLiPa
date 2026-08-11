@@ -31,22 +31,26 @@ function order_result_objects(resultobjects, includeexogenprice=true)
     hydrostorages = []
     batterystorages = []
     
+    power_commodity_id = Id("Commodity", "Power")
+    
     for obj in resultobjects
         
         # Powerbalances
         if obj isa Balance
             if getinstancename(getid(getcommodity(obj))) == "Power"
-                if isexogen(obj)
-                    if includeexogenprice
-                        push!(powerbalances, obj)
-                    end
-                else
+                # if isexogen(obj)
+                #     if includeexogenprice
+                #         push!(powerbalances, obj)
+                #     end
+                # else
+                if !isexogen(obj)
                     push!(powerbalances, obj)
-                    for rhsterm in getrhsterms(obj)
-                        push!(rhsterms,getid(rhsterm))
-                        push!(rhstermbalances,getid(obj))
-                    end
                 end
+                #     for rhsterm in getrhsterms(obj)
+                #         push!(rhsterms,getid(rhsterm))
+                #         push!(rhstermbalances,getid(obj))
+                #     end
+                # end
             end
         end
         
@@ -70,7 +74,7 @@ function order_result_objects(resultobjects, includeexogenprice=true)
             arrows = getarrows(obj)
             
             # Simple supplies and demands
-            powerarrowbool = [(getid(getcommodity(getbalance(arrow))) == Id("Commodity", "Power")) & !(arrow isa SegmentedArrow) for arrow in arrows]
+            powerarrowbool = [(getid(getcommodity(getbalance(arrow))) == power_commodity_id) & !(arrow isa SegmentedArrow) for arrow in arrows]
             powerarrows = arrows[powerarrowbool]
             if sum(powerarrowbool) == 1
                 if isingoing(powerarrows[1])
@@ -92,7 +96,7 @@ function order_result_objects(resultobjects, includeexogenprice=true)
             if sum(powerarrowbool) == 2
                 for arrow in arrows
                     balance = getbalance(arrow)
-                    if getid(getcommodity(balance)) == Id("Commodity", "Power")
+                    if getid(getcommodity(balance)) == power_commodity_id
                         if isingoing(arrow) && (balance in resultobjects)
                             push!(plants,getid(obj))
                             push!(plantbalances,getid(balance))
@@ -121,114 +125,148 @@ function order_result_objects(resultobjects, includeexogenprice=true)
             end
         end
         
-        # Aggregated supplies (thermal power plants aggregated into one or more equivalent supplies)
-        # TODO: Result should be a sum of all clusters, not separated
-        if obj isa BaseAggSupplyCurve
-            instance = getinstancename(getid(obj))
-            concept = getconceptname(getid(obj))
-            balance = getbalance(obj)
-            for c in 1:getnumclusters(obj)
-                newname = string(instance,"_",c)
-                push!(plants,Id(concept,newname))
-                push!(plantbalances,getid(balance))
-            end
-        end
-        if obj isa ElasticDemand
-            instance = getinstancename(getid(obj))
-            concept = getconceptname(getid(obj))
-            balance = getbalance(obj)
-            for c in 1:obj.N
-                push!(demands, create_segment_id(obj, c))
-                push!(demandbalances, getid(balance))
-            end
-        end
+        # # Aggregated supplies (thermal power plants aggregated into one or more equivalent supplies)
+        # # TODO: Result should be a sum of all clusters, not separated
+        # if obj isa BaseAggSupplyCurve
+        #     instance = getinstancename(getid(obj))
+        #     concept = getconceptname(getid(obj))
+        #     balance = getbalance(obj)
+        #     for c in 1:getnumclusters(obj)
+        #         newname = string(instance,"_",c)
+        #         push!(plants,Id(concept,newname))
+        #         push!(plantbalances,getid(balance))
+        #     end
+        # end
+        # if obj isa ElasticDemand
+        #     instance = getinstancename(getid(obj))
+        #     concept = getconceptname(getid(obj))
+        #     balance = getbalance(obj)
+        #     for c in 1:obj.N
+        #         push!(demands, create_segment_id(obj, c))
+        #         push!(demandbalances, getid(balance))
+        #     end
+        # end
     end
     return powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages
 end
 
 # Collect results for given modelobjects
 function get_results!(problem, prices, rhstermvalues, production, consumption, hydrolevels, batterylevels, powerbalances, rhsterms, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages, modelobjects, powerrange, hydrorange, periodduration_power, t)
-        
+    
+    # Precompute plant arrow classifications outside the time loop to avoid per-period allocations
+    nplants = length(plants)
+    # For each plant: :pq, :exogen, :normal, or :aggsupply
+    plant_types = Vector{Symbol}(undef, nplants)
+    # For PQ plants, store the SegmentedArrow; for exogen plants, store the arrow from plantarrows
+    plant_pqarrow = Vector{Any}(undef, nplants)
+    plant_is_exogen_balance = Vector{Bool}(undef, nplants)
+    
+    for i in 1:nplants
+        concept = getconceptname(plants[i])
+        if concept == AGGSUPPLYCURVE_CONCEPT
+            plant_types[i] = :aggsupply
+            plant_pqarrow[i] = nothing
+            plant_is_exogen_balance[i] = false
+        else
+            arrows = getarrows(modelobjects[plants[i]])
+            pqarrow = nothing
+            for arrow in arrows
+                if arrow isa SegmentedArrow
+                    pqarrow = arrow
+                    break
+                end
+            end
+            if pqarrow !== nothing
+                plant_types[i] = :pq
+                plant_pqarrow[i] = pqarrow
+                plant_is_exogen_balance[i] = isexogen(getbalance(pqarrow))
+            else
+                exogen = isexogen(modelobjects[plantbalances[i]])
+                plant_types[i] = exogen ? :exogen : :normal
+                plant_pqarrow[i] = nothing
+                plant_is_exogen_balance[i] = exogen
+            end
+        end
+    end
+    
+    # Precompute demand classifications
+    ndemands = length(demands)
+    demand_is_elastic = Vector{Bool}(undef, ndemands)
+    demand_is_exogen_balance = Vector{Bool}(undef, ndemands)
+    for i in 1:ndemands
+        demand_is_elastic[i] = (getconceptname(demands[i]) == DEMAND_CONCEPT)
+        demand_is_exogen_balance[i] = !demand_is_elastic[i] && isexogen(modelobjects[demandbalances[i]])
+    end
+
     for (j,jj) in enumerate(powerrange)
         # For powerbalances collect prices and rhsterms (like inelastic demand, wind, solar and RoR)
         for i in 1:length(powerbalances)
-            if !isexogen(powerbalances[i])
-                prices[jj, i] = -getcondual(problem, getid(powerbalances[i]), j)
-                if length(getrhsterms(powerbalances[i])) > 0
-                    for k in 1:length(rhsterms)
-                        if hasrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)
-                            rhstermvalues[jj, k] = getrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)
-                        end
-                    end
-                end
-            else
-                exogenbalance = powerbalances[i]
-                horizon = gethorizon(exogenbalance)
-                price = getprice(exogenbalance)
-                querytime = getstarttime(horizon, j, t)
-                querydelta = gettimedelta(horizon, j)
-                prices[jj, i] = getparamvalue(price, querytime, querydelta)
-            end
+            # if !isexogen(powerbalances[i])
+            prices[jj, i] = -getcondual(problem, getid(powerbalances[i]), j)
+            # if length(getrhsterms(powerbalances[i])) > 0
+            #     for k in 1:length(rhsterms)
+            #         if hasrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)
+            #             rhstermvalues[jj, k] = getrhsterm(problem, getid(powerbalances[i]), rhsterms[k], j)
+            #         end
+            #     end
+            # end
+            # else
+            #     exogenbalance = powerbalances[i]
+            #     horizon = gethorizon(exogenbalance)
+            #     price = getprice(exogenbalance)
+            #     querytime = getstarttime(horizon, j, t)
+            #     querydelta = gettimedelta(horizon, j)
+            #     prices[jj, i] = getparamvalue(price, querytime, querydelta)
+            # end
         end
 
         # Collect production of all plants
-        for i in 1:length(plants) # TODO: Balance and variable can have different horizons
-            concept = getconceptname(plants[i])
-            if concept != AGGSUPPLYCURVE_CONCEPT
-                arrows = getarrows(modelobjects[plants[i]])
-                pqarrowbool = [arrow isa SegmentedArrow for arrow in arrows]
-                pqarrows = arrows[pqarrowbool]                        
-                if sum(pqarrowbool) == 1
-                    arrow = pqarrows[1]
-                    production[jj, i] = 0
-                    for (k, conversion) in enumerate(getconversions(arrow))
-                        segmentid = getsegmentid(arrow, k)
-                        if isexogen(getbalance(arrow))
-                            # TODO: Balance and variable can have different horizons
-                            horizon = gethorizon(arrow)
-                            querystart = getstarttime(horizon, j, t)
-                            querydelta = gettimedelta(horizon, j)
-                            conversionvalue = getparamvalue(conversion, querystart, querydelta)
-                            production[jj, i] += getvarvalue(problem, segmentid, j)*conversionvalue
-                        else
-                            production[jj, i] += getvarvalue(problem, segmentid, j)*abs(getconcoeff(problem, plantbalances[i], segmentid, j, j))
-                        end
-                    end
-                else
-                    if isexogen(modelobjects[plantbalances[i]])
+        for i in 1:nplants
+            ptype = plant_types[i]
+            if ptype == :pq
+                arrow = plant_pqarrow[i]
+                production[jj, i] = 0
+                for (k, conversion) in enumerate(getconversions(arrow))
+                    segmentid = getsegmentid(arrow, k)
+                    if plant_is_exogen_balance[i]
                         # TODO: Balance and variable can have different horizons
-                        arrow = plantarrows[plants[i]]
                         horizon = gethorizon(arrow)
-                        conversionparam = getcontributionparam(arrow)
-                        querytime = getstarttime(horizon, j, t)
+                        querystart = getstarttime(horizon, j, t)
                         querydelta = gettimedelta(horizon, j)
-                        conversionvalue = getparamvalue(conversionparam, querytime, querydelta)
-                        production[jj, i] = getvarvalue(problem, plants[i], j)*conversionvalue
+                        conversionvalue = getparamvalue(conversion, querystart, querydelta)
+                        production[jj, i] += getvarvalue(problem, segmentid, j)*conversionvalue
                     else
-                        production[jj, i] = getvarvalue(problem, plants[i], j)*abs(getconcoeff(problem, plantbalances[i], plants[i], j, j))
+                        production[jj, i] += getvarvalue(problem, segmentid, j)*abs(getconcoeff(problem, plantbalances[i], segmentid, j, j))
                     end
                 end
-            else
+            elseif ptype == :exogen
+                # TODO: Balance and variable can have different horizons
+                arrow = plantarrows[plants[i]]
+                horizon = gethorizon(arrow)
+                conversionparam = getcontributionparam(arrow)
+                querytime = getstarttime(horizon, j, t)
+                querydelta = gettimedelta(horizon, j)
+                conversionvalue = getparamvalue(conversionparam, querytime, querydelta)
+                production[jj, i] = getvarvalue(problem, plants[i], j)*conversionvalue
+            else # :normal or :aggsupply
                 production[jj, i] = getvarvalue(problem, plants[i], j)*abs(getconcoeff(problem, plantbalances[i], plants[i], j, j))
             end
         end
 
         # Collect demand of all demands
-        for i in 1:length(demands) # TODO: Balance and variable can have different horizons
-            if getconceptname(demands[i]) != DEMAND_CONCEPT
-                if isexogen(modelobjects[demandbalances[i]])
-                    arrow = demandarrows[demands[i]]
-                    horizon = gethorizon(arrow)
-                    conversionparam = getcontributionparam(arrow)
-                    querytime = getstarttime(horizon, j, t)
-                    querydelta = gettimedelta(horizon, j)
-                    conversionvalue = getparamvalue(conversionparam, querytime, querydelta)
-                    consumption[jj, i] = getvarvalue(problem, demands[i], j)*conversionvalue
-                else
-                    consumption[jj, i] = getvarvalue(problem, demands[i], j)*abs(getconcoeff(problem, demandbalances[i], demands[i], j, j))
-                end
-            else
+        for i in 1:ndemands
+            if demand_is_elastic[i]
                 consumption[jj, i] = getvarvalue(problem, demands[i], j)
+            elseif demand_is_exogen_balance[i]
+                arrow = demandarrows[demands[i]]
+                horizon = gethorizon(arrow)
+                conversionparam = getcontributionparam(arrow)
+                querytime = getstarttime(horizon, j, t)
+                querydelta = gettimedelta(horizon, j)
+                conversionvalue = getparamvalue(conversionparam, querytime, querydelta)
+                consumption[jj, i] = getvarvalue(problem, demands[i], j)*conversionvalue
+            else
+                consumption[jj, i] = getvarvalue(problem, demands[i], j)*abs(getconcoeff(problem, demandbalances[i], demands[i], j, j))
             end
         end
         
@@ -338,10 +376,11 @@ function order_result_objects_other(resultobjects, resultinfo::Dict)
             for obj in resultobjects
                 if obj isa Balance
                     commodity = getinstancename(getid(getcommodity(obj)))
-                    if commodity in keys(resultinfo[key])
+                    if haskey(resultinfo[key], commodity)
+                        patterns = resultinfo[key][commodity]
                         for rhsterm in getrhsterms(obj)
                             rhsterminstancename = getinstancename(getid(rhsterm))
-                            if any(key -> occursin(key, rhsterminstancename) , resultinfo[key][commodity])
+                            if any(pattern -> occursin(pattern, rhsterminstancename), patterns)
                                 push!(otherobjects[key][commodity],getid(rhsterm))
                                 push!(otherbalances[key][commodity],getid(obj))
                             end
@@ -354,7 +393,8 @@ function order_result_objects_other(resultobjects, resultinfo::Dict)
                 if obj isa BaseFlow
                     for commodity in keys(resultinfo[key])
                         varinstancename = getinstancename(getid(obj))
-                        if any(key -> occursin(key, varinstancename) , resultinfo[key][commodity])
+                        patterns = resultinfo[key][commodity]
+                        if any(pattern -> occursin(pattern, varinstancename), patterns)
                             push!(otherobjects[key][commodity],getid(obj))
                         end
                     end
@@ -390,20 +430,24 @@ function get_results!(stepnr, problem, otherobjects, otherbalances, othervalues,
             horizon = get_horizon_commodity(modelobjects, commodity)
             numperiods = getnumperiods(horizon)
             periodrange = Int(numperiods*(stepnr-1)+1):Int(numperiods*(stepnr))
+            valuesmat = othervalues[key][commodity]
 
             if key == "RHSTerms"
                 rhsterms = otherobjects[key][commodity]
                 balances = otherbalances[key][commodity]
                 for i in eachindex(rhsterms)
+                    rhsterm_i = rhsterms[i]
+                    balance_i = balances[i]
                     for (j,jj) in enumerate(periodrange)
-                        othervalues[key][commodity][jj, i] = getrhsterm(problem, balances[i], rhsterms[i], j)
+                        valuesmat[jj, i] = getrhsterm(problem, balance_i, rhsterm_i, j)
                     end
                 end
             elseif key == "Vars"
                 vars = otherobjects[key][commodity]
                 for i in eachindex(vars)
+                    var_i = vars[i]
                     for (j,jj) in enumerate(periodrange)
-                        othervalues[key][commodity][jj, i] = getvarvalue(problem, vars[i], j)
+                        valuesmat[jj, i] = getvarvalue(problem, var_i, j)
                     end
                 end
             end

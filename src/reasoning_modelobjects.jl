@@ -435,14 +435,30 @@ function mapbalancesupply(modelobjects) # replace with is simple mc
     for obj in values(modelobjects)
         if obj isa BaseFlow
             arrows = getarrows(obj)
-            if (hascost(obj)) & (length(arrows) == 1)
-                arrow = arrows[1]
-                if isingoing(arrow)
+            if hascost(obj)
+                # Find ingoing arrow to an endogenous balance
+                # Other arrows must be to exogenous balances
+                endobalance = nothing
+                valid = true
+                for arrow in arrows
                     balance = getbalance(arrow)
-                    if ~haskey(mapping_balance_supply,balance)
-                        mapping_balance_supply[balance] = [obj]
+                    if isingoing(arrow) && !isexogen(balance)
+                        if endobalance === nothing
+                            endobalance = balance
+                        else
+                            valid = false
+                            break
+                        end
+                    elseif !isexogen(balance)
+                        valid = false
+                        break
+                    end
+                end
+                if valid && endobalance !== nothing
+                    if ~haskey(mapping_balance_supply, endobalance)
+                        mapping_balance_supply[endobalance] = [obj]
                     else
-                        push!(mapping_balance_supply[balance],obj)
+                        push!(mapping_balance_supply[endobalance], obj)
                     end
                 end
             end
