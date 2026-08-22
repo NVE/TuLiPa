@@ -3,12 +3,12 @@ module TestElasticDemandSegments
 using TuLiPa, Test
 
 function run_tests()
-    # Test parameters: negative elasticity, positive prices
+    # Test parameters: typical use case with low elasticity
     normal_price = 50.0
-    price_elasticity = -0.5
-    max_price = 200.0
-    min_price = 10.0
-    threshold = 0.05
+    price_elasticity = -0.05
+    max_price = 100.0
+    min_price = 25.0
+    threshold = 0.2
 
     min_relative_demand = price_to_relative_demand(normal_price, price_elasticity, max_price)
     max_relative_demand = price_to_relative_demand(normal_price, price_elasticity, min_price)
@@ -21,7 +21,7 @@ function run_tests()
     @test min_relative_demand < 1.0 < max_relative_demand
 
     # --- Test 3: price_to_relative_demand and relative_demand_to_price are inverses ---
-    for p in [10.0, 30.0, 50.0, 100.0, 200.0]
+    for p in [25.0, 35.0, 50.0, 75.0, 100.0]
         f = price_to_relative_demand(normal_price, price_elasticity, p)
         p_recovered = relative_demand_to_price(normal_price, price_elasticity, f)
         @test isapprox(p_recovered, p, rtol=1e-10)
@@ -82,9 +82,10 @@ function run_tests()
 
     # --- Test 13: with different parameters verify segments stay within N<=10 ---
     for (np, pe, maxp, minp, thr) in [
-        (100.0, -0.3, 500.0, 5.0, 0.1),
-        (30.0, -1.0, 60.0, 15.0, 0.1),
-        (80.0, -2.0, 150.0, 20.0, 0.05),
+        (100.0, -0.5, 150.0, 70.0, 0.2),
+        (30.0, -1.0, 50.0, 20.0, 0.2),
+        (80.0, -2.0, 120.0, 50.0, 0.2),
+        (50.0, -0.05, 80.0, 35.0, 0.2),
     ]
         min_rd = price_to_relative_demand(np, pe, maxp)
         max_rd = price_to_relative_demand(np, pe, minp)

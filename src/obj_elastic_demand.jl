@@ -151,7 +151,7 @@ function optimize_segments(normal_price, price_elasticity, min_relative_demand, 
     end
     y_points = relative_demand_to_price(normal_price, price_elasticity, x_points)
     N = length(x_points)
-    @assert N <= 10
+    @assert N <= 10 "Too many segments ($N). Increase threshold or narrow price range."
     return x_points, y_points, N
 end
 
