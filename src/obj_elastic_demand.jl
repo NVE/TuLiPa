@@ -141,10 +141,17 @@ end
 
 function optimize_segments(normal_price, price_elasticity, min_relative_demand, max_relative_demand, tolerance; max_depth = 6)
     f = (x) -> relative_demand_to_price(normal_price, price_elasticity, x)
-    x_points = adaptive_sampling(f, min_relative_demand, max_relative_demand, tolerance, max_depth)
+    # Split at f=1.0 (firm demand level) so that no single segment straddles the normal_price transition
+    if min_relative_demand < 1.0 < max_relative_demand
+        x_lower = adaptive_sampling(f, min_relative_demand, 1.0, tolerance, max_depth - 1)
+        x_upper = adaptive_sampling(f, 1.0, max_relative_demand, tolerance, max_depth - 1)
+        x_points = vcat(x_lower, x_upper[2:end])
+    else
+        x_points = adaptive_sampling(f, min_relative_demand, max_relative_demand, tolerance, max_depth)
+    end
     y_points = relative_demand_to_price(normal_price, price_elasticity, x_points)
     N = length(x_points)
-    @assert N <= 10
+    @assert N <= 10 "Too many segments ($N). Increase threshold or narrow price range."
     return x_points, y_points, N
 end
 

@@ -137,15 +137,11 @@ function order_result_objects(resultobjects, includeexogenprice=true)
         #         push!(plantbalances,getid(balance))
         #     end
         # end
-        # if obj isa ElasticDemand
-        #     instance = getinstancename(getid(obj))
-        #     concept = getconceptname(getid(obj))
-        #     balance = getbalance(obj)
-        #     for c in 1:obj.N
-        #         push!(demands, create_segment_id(obj, c))
-        #         push!(demandbalances, getid(balance))
-        #     end
-        # end
+        if obj isa ElasticDemand
+            balance = getbalance(obj)
+            push!(demands, getid(obj))
+            push!(demandbalances, getid(balance))
+        end
     end
     return powerbalances, rhsterms, rhstermbalances, plants, plantbalances, plantarrows, demands, demandbalances, demandarrows, hydrostorages, batterystorages
 end
@@ -256,7 +252,7 @@ function get_results!(problem, prices, rhstermvalues, production, consumption, h
         # Collect demand of all demands
         for i in 1:ndemands
             if demand_is_elastic[i]
-                consumption[jj, i] = getvarvalue(problem, demands[i], j)
+                consumption[jj, i] = getdemand(problem, modelobjects[demands[i]], j)
             elseif demand_is_exogen_balance[i]
                 arrow = demandarrows[demands[i]]
                 horizon = gethorizon(arrow)
