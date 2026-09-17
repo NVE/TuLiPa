@@ -85,7 +85,7 @@ for sym in names(@__MODULE__; all = true)
     @eval export $sym
 end
 
-include("../test/utils_dummy_data.jl")
+include("../test/fixtures/dummy_data.jl")
 
 using PrecompileTools, JuMP, HiGHS
 

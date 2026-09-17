@@ -2,7 +2,7 @@ module TestApplySettings
 
 using TuLiPa, JuMP, HiGHS, Test
 
-include("utils_dummy_data.jl");
+include("fixtures/dummy_data.jl");
 
 function run_tests()
 	elements = gettestdataset();
