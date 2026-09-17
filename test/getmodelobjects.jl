@@ -2,7 +2,7 @@ module TestGetmodelobjects
 
 using TuLiPa, Test
 
-include("utils_dummy_data.jl");
+include("fixtures/dummy_data.jl");
 
 elements = gettestdataset();
 scenarioyearstart = 1981
